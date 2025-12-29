@@ -1,15 +1,39 @@
 import { AuthContextType, UserType } from "@/types";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { createContext, useContext, useState } from "react";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { createContext, useContext, useEffect, useState } from "react";
 import { auth, firestore } from "@/config/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { getDoc } from "firebase/firestore";
+import { useRouter } from "expo-router";
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
     const [user, setUser] = useState<UserType>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+            console.log("Firebase User:", firebaseUser);
+            if(firebaseUser){
+                const email = firebaseUser.email ?? undefined;
+                const name = firebaseUser.displayName ?? null;
+                setUser({
+                    uid: firebaseUser?.uid,
+                    email,
+                    name,
+                });
+                updateUserData(firebaseUser.uid);
+                router.replace("/(tabs)/home");
+            }else{
+                // no user
+                setUser(null);
+                router.replace("/(auth)/welcome");
+            }
+        });
+        return () => unsub();
+    },[]);
 
     const login = async (email: string, password: string) => {
         try{
@@ -17,6 +41,13 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
             return {success: true, msg: "Login successful"};
         }catch(error: any){
             let msg = error.message;
+            console.log("error logging in:", msg);
+            if(msg.includes('Error (auth/invalid-credential).')){
+                msg = "Wrong credentials. Please check your email and password.";
+            }
+            if(msg.includes('Error (auth/invalid-email).')){
+                msg = "Invalid Email.";
+            }
             return {success: false, msg};
         }
     };
@@ -36,6 +67,13 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
             return {success: true, msg: "Registration successful"};
         }catch(error: any){
             let msg = error.message;
+            console.log("error logging in:", msg);
+            if(msg.includes("Firebase: Error (auth/email-already-in-use).")){
+                msg = "Email is already in use.";
+            }
+            if(msg.includes('Error (auth/invalid-email).')){
+                msg = "Invalid Email.";
+            }
             return {success: false, msg};
         }
     };
