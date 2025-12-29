@@ -9,6 +9,7 @@ import Input from "@/components/Input";
 import * as Icons from "phosphor-react-native";
 import Button from "@/components/Button";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/contexts/authContext";
 
 const Register = () => {
   const emailRef = useRef("");
@@ -16,17 +17,45 @@ const Register = () => {
   const nameRef = useRef("");
   const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
+  const { register: registerUser } = useAuth();
 
-    const handelSubmit = () => {
-        if(!emailRef.current || !passwordRef.current || !nameRef.current) {
-            Alert.alert('Login',"Please fill all the fields");
-            return;
-        }
-        console.log("name:", nameRef.current);
-        console.log("email:", emailRef.current);
-        console.log("password:", passwordRef.current);
-        console.log("good to go!");
-    };
+  const handelSubmit = async () => {
+    if (!emailRef.current || !passwordRef.current || !nameRef.current) {
+      Alert.alert("Sign up", "Please fill all the fields");
+      return;
+    }
+
+    const email = emailRef.current.trim();
+    const password = passwordRef.current;
+    const name = nameRef.current.trim();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Weak Password", "Password must be at least 6 characters");
+      return;
+    }
+
+    if (isLoading) return; // prevent double tap
+
+    setIsLoading(true);
+
+    const res = await registerUser(email, password, name);
+
+    setIsLoading(false);
+
+    console.log("register result:", res);
+
+    if (!res.success) {
+      Alert.alert("Sign up", res.msg);
+    }
+  };
+
   return (
     <ScreenWrapper>
       <View style={styles.container}>
@@ -42,7 +71,7 @@ const Register = () => {
         </View>
 
         {/* form */}
-      
+
         <View style={styles.form}>
           <Typo size={16} color={colors.textLighter}>
             Create an account to track all your expenses
@@ -51,14 +80,22 @@ const Register = () => {
             placeholder="Enter your name"
             onChangeText={(value) => (nameRef.current = value)}
             icon={
-              <Icons.UserIcon size={verticalScale(26)} color={colors.neutral300} weight="fill"/>
+              <Icons.UserIcon
+                size={verticalScale(26)}
+                color={colors.neutral300}
+                weight="fill"
+              />
             }
           />
           <Input
             placeholder="Enter your email"
             onChangeText={(value) => (emailRef.current = value)}
             icon={
-              <Icons.At size={verticalScale(26)} color={colors.neutral300} weight="fill"/>
+              <Icons.At
+                size={verticalScale(26)}
+                color={colors.neutral300}
+                weight="fill"
+              />
             }
           />
 
@@ -67,23 +104,29 @@ const Register = () => {
             secureTextEntry
             onChangeText={(value) => (passwordRef.current = value)}
             icon={
-              <Icons.LockIcon size={verticalScale(26)} color={colors.neutral300} weight="fill"/>
+              <Icons.LockIcon
+                size={verticalScale(26)}
+                color={colors.neutral300}
+                weight="fill"
+              />
             }
           />
-          
+
           <Button loading={isLoading} onPress={handelSubmit}>
             <Typo fontWeight={"700"} color={colors.black} size={21}>
-                Sign Up
+              Sign Up
             </Typo>
-            </Button>
+          </Button>
         </View>
 
         {/* footer */}
         <View style={styles.footer}>
-            <Typo size={15}>Already have an account?</Typo>
-            <Pressable onPress={()=> router.navigate("/(auth)/login")}>
-                <Typo size={15} fontWeight={'700'} color={colors.primary}>Login</Typo>
-            </Pressable>
+          <Typo size={15}>Already have an account?</Typo>
+          <Pressable onPress={() => router.navigate("/(auth)/login")}>
+            <Typo size={15} fontWeight={"700"} color={colors.primary}>
+              Login
+            </Typo>
+          </Pressable>
         </View>
       </View>
     </ScreenWrapper>

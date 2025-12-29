@@ -7,6 +7,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# IDE
+.vscode/
+
 # Native (generated only if you prebuild)
 .kotlin/
 *.orig.*
@@ -72,3 +75,8 @@ coverage/
 
 # CocoaPods
 ios/Pods/
+
+/config/firebase.ts
+*.firebase.ts
+
+
