@@ -10,6 +10,7 @@ import ScreenWrapper from '@/components/ScreenWrapper'
 import { verticalScale } from '@/utils/styling'
 import * as Icons from 'phosphor-react-native'
 import HomeCard from '@/components/HomeCard'
+import TransactionList from '@/components/TransactionList'
 
 const Home = () => {
     const {user} = useAuth();
@@ -44,6 +45,9 @@ const Home = () => {
         <View>
           <HomeCard/>
         </View>
+
+        <TransactionList/>
+
       </ScrollView>
     </View>
   </ScreenWrapper>
