@@ -16,66 +16,45 @@ import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
 import { updateUser } from "@/services/userService";
 import { useRouter } from "expo-router";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import ImageUpload from "@/components/ImageUpload";
-
+import { CreateOrUpdateWallet } from "@/services/walletService";
 
 const WalletModal = () => {
-    const {user, updateUserData} = useAuth();
-    const[wallet, setWallet] = useState<WalletType>({
-        name: "",
-        image: null
-    });
+  const { user, updateUserData } = useAuth();
+  const [wallet, setWallet] = useState<WalletType>({
+    name: "",
+    image: null,
+  });
 
-    const [loading, setLoading] = useState(false);
-    const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-
-    const onPickImage = async () => {
-    // No permissions request is necessary for launching the image library.
-    // Manually request permissions for videos on iOS when `allowsEditing` is set to `false`
-    // and `videoExportPreset` is `'Passthrough'` (the default), ideally before launching the picker
-    // so the app users aren't surprised by a system dialog after picking a video.
-    // See "Invoke permissions for videos" sub section for more details.
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      Alert.alert('Permission required', 'Permission to access the media library is required.');
+  const onSubmit = async () => {
+    // handle profile update logic here
+    let { name, image } = wallet;
+    if (!name.trim() || !image) {
+      Alert.alert("Wallet", "Please fill all the fields");
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+    const data: WalletType = {
+      name,
+      image,
+      uid: user?.uid,
+    };
 
-    console.log(result);
-
-    if (!result.canceled && result.assets?.length) {
-      const asset = result.assets[0];
-    //   setUserData({ ...userData, image: asset.uri });
+    setLoading(true);
+    const res = await CreateOrUpdateWallet(data);
+    setLoading(false);
+    // console.log('result:', res);
+    if (res.success) {
+      router.back();
+    } else {
+      Alert.alert("Wallet", res.msg);
     }
   };
 
-    const onSubmit = async () => {
-        // handle profile update logic here
-        let {name, image} = wallet;
-        if(!name.trim() || !image) {
-            Alert.alert("User", "Please fill all the fields");
-            return;
-        }
-        setLoading(true);
-        const res = await updateUser(user?.uid as string, wallet);
-        setLoading(false);
-        if(res.success) {
-            updateUserData(user?.uid as string);
-            router.back();
-        }else{
-            Alert.alert("User", res.msg);
-        }
-    }
   return (
     <ModalWrapper>
       <View style={styles.container}>
@@ -91,31 +70,33 @@ const WalletModal = () => {
             {/* Name Input */}
             <Typo color={colors.neutral200}>Wallet Name</Typo>
             <Input
-                placeholder="Salary, Cash, etc."
-                value={wallet.name}
-                onChangeText={(value: string) => 
-                    setWallet({...wallet, name: value})
-                }
+              placeholder="Salary, Cash, etc."
+              value={wallet.name}
+              onChangeText={(value: string) =>
+                setWallet({ ...wallet, name: value })
+              }
             />
-            </View>
+          </View>
 
-            <View style={styles.inputContainer}>
+          <View style={styles.inputContainer}>
             {/* Name Input */}
             <Typo color={colors.neutral200}>Wallet Icon</Typo>
-            <ImageUpload 
-                file={wallet.image}
-                onClear={() => setWallet({ ...wallet, image: null})}
-                onSelect={(file) => setWallet({...wallet, image: file})}
-                placeholder="Upload Image"
-             />
-            </View>
+            <ImageUpload
+              file={wallet.image}
+              onClear={() => setWallet({ ...wallet, image: null })}
+              onSelect={(file) => setWallet({ ...wallet, image: file })}
+              placeholder="Upload Image"
+            />
+          </View>
         </ScrollView>
       </View>
-        <View style={styles.footer}>
-            <Button onPress={onSubmit} loading={loading} style={{flex: 1}}>
-                <Typo color={colors.black} fontWeight={"700"}>Add Wallet</Typo>
-            </Button>
-        </View>
+      <View style={styles.footer}>
+        <Button onPress={onSubmit} loading={loading} style={{ flex: 1 }}>
+          <Typo color={colors.black} fontWeight={"700"}>
+            Add Wallet
+          </Typo>
+        </Button>
+      </View>
     </ModalWrapper>
   );
 };
