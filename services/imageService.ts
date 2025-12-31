@@ -51,3 +51,19 @@ export const getProfileImage = (file: any) => {
     // Fallback to local default avatar
     return require('../assets/images/defaultAvatar.png');
 };
+
+export const getProfilePath = (file: any) => {
+    if (typeof file === 'string' && file) return file;
+
+    // Check for uri (image picker result)
+    if (file && typeof file === 'object' && 'uri' in file && file.uri) {
+        return file.uri;
+    }
+
+    // Check for url (uploaded/stored images)
+    if (file && typeof file === 'object' && 'url' in file && file.url) {
+        return (file as { url: string }).url;
+    }
+
+    return null;
+};

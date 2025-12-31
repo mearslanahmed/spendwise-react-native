@@ -50,10 +50,10 @@ const ProfileModal = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsEditing: true,
+      mediaTypes: ['images'],
+      allowsEditing: false,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.5,
     });
 
     console.log(result);
