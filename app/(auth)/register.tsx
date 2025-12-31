@@ -49,7 +49,7 @@ const Register = () => {
 
     setIsLoading(false);
 
-    console.log("register result:", res);
+    // console.log("register result:", res);
 
     if (!res.success) {
       Alert.alert("Sign up", res.msg);

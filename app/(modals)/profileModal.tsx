@@ -56,7 +56,7 @@ const ProfileModal = () => {
       quality: 0.5,
     });
 
-    console.log(result);
+    // console.log(result);
 
     if (!result.canceled && result.assets?.length) {
       const asset = result.assets[0];
