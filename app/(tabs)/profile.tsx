@@ -30,7 +30,7 @@ const Profile = () => {
     {
       title: "Edit Profile",
       icon: <Icons.UserIcon size={26} color={colors.white} weight="fill" />,
-      routeName: "/[modals]/profileModal",
+      routeName: "/(modals)/profileModal",
       bgColor: "#6366f1",
     },
 
@@ -55,18 +55,17 @@ const Profile = () => {
       bgColor: "#e11d48",
     },
   ];
-  
 
   const handleLogout = async () => {
-        // Add your logout logic here
-        await signOut(auth);
-    }
+    // Add your logout logic here
+    await signOut(auth);
+  };
 
   const showLogoutAlert = () => {
     Alert.alert("Confirm", "Are you sure you want to logout?", [
       {
         text: "Cancel",
-        onPress: () => console.log('cancel logout'),
+        onPress: () => console.log("cancel logout"),
         style: "cancel",
       },
       {
@@ -82,7 +81,7 @@ const Profile = () => {
       showLogoutAlert();
     }
 
-    if(item.routeName) router.push(item.routeName);
+    if (item.routeName) router.push(item.routeName);
   };
 
   return (
@@ -119,12 +118,17 @@ const Profile = () => {
         <View style={styles.accountOptions}>
           {accountOptions.map((item, index) => {
             return (
-              <Animated.View 
-              entering={FadeInDown.delay(index * 50)
-                .springify()
-                .damping(14)
-              } key={index.toString()} style={styles.listItem}>
-                <TouchableOpacity style={styles.flexRow} onPress={()=> handlePress(item)}>
+              <Animated.View
+                entering={FadeInDown.delay(index * 50)
+                  .springify()
+                  .damping(14)}
+                key={index.toString()}
+                style={styles.listItem}
+              >
+                <TouchableOpacity
+                  style={styles.flexRow}
+                  onPress={() => handlePress(item)}
+                >
                   {/* icon */}
                   <View
                     style={[
@@ -136,14 +140,14 @@ const Profile = () => {
                   >
                     {item.icon && item.icon}
                   </View>
-                  <Typo size={16} style={{flex: 1}} fontWeight={"500"}>
+                  <Typo size={16} style={{ flex: 1 }} fontWeight={"500"}>
                     {item.title}
                   </Typo>
                   <Icons.CaretRightIcon
                     size={verticalScale(20)}
                     weight="bold"
                     color={colors.white}
-                    />
+                  />
                 </TouchableOpacity>
               </Animated.View>
             );
