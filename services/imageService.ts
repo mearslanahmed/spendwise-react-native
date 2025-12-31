@@ -6,6 +6,7 @@ const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_N
 
 export const uploadFileToCloudinary = async (file: {uri?: string} | string, folderName: string): Promise<ResponseType> => {
     try{
+        if(!file) return {success: true, data: null};
         if(typeof file == 'string'){
             return {success: true, data: file};
         }

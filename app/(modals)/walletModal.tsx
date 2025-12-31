@@ -62,7 +62,7 @@ const WalletModal = () => {
     const onSubmit = async () => {
         // handle profile update logic here
         let {name, image} = wallet;
-        if(!name.trim()) {
+        if(!name.trim() || !image) {
             Alert.alert("User", "Please fill all the fields");
             return;
         }
