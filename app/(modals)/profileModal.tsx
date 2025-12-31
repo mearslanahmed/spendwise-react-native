@@ -49,16 +49,17 @@ const ProfileModal = () => {
       return;
     }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.5,
+      quality: 1,
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
+    console.log(result);
+
+    if (!result.canceled && result.assets?.length) {
       const asset = result.assets[0];
-      // Store URI for rendering and uploads
       setUserData({ ...userData, image: asset.uri });
     }
   };
