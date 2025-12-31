@@ -18,13 +18,24 @@ const WalletListItem = ({
     index: number,
     router: Router
 }) => {
+
+    const openWallet = () =>{
+        router.push({
+            pathname: '/(modals)/walletModal',
+            params: {
+                id: item?.id,
+                name: item?.name,
+                image: item?.image
+            }
+        })
+    }
   return (
     <Animated.View 
         entering ={FadeInDown.delay(index * 50)
             .springify()
             .damping(14)}
     >
-      <TouchableOpacity style={styles.container}>
+      <TouchableOpacity style={styles.container} onPress={openWallet}>
         <View style={styles.imageContainer}>
             <Image
                 style={{flex : 1}}
