@@ -79,4 +79,4 @@ ios/Pods/
 /config/firebase.ts
 *.firebase.ts
 
-
+/constants/index.ts

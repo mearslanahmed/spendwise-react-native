@@ -16,6 +16,8 @@ import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
 import { updateUser } from "@/services/userService";
 import { useRouter } from "expo-router";
+import * as ImagePicker from 'expo-image-picker';
+
 
 const ProfileModal = () => {
     const {user, updateUserData} = useAuth();
@@ -33,6 +35,33 @@ const ProfileModal = () => {
         image: user?.image || null,
         });
     }, [user]);
+
+    const onPickImage = async () => {
+    // No permissions request is necessary for launching the image library.
+    // Manually request permissions for videos on iOS when `allowsEditing` is set to `false`
+    // and `videoExportPreset` is `'Passthrough'` (the default), ideally before launching the picker
+    // so the app users aren't surprised by a system dialog after picking a video.
+    // See "Invoke permissions for videos" sub section for more details.
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert('Permission required', 'Permission to access the media library is required.');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      aspect: [4, 3],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      // Store URI for rendering and uploads
+      setUserData({ ...userData, image: asset.uri });
+    }
+  };
 
     const onSubmit = async () => {
         // handle profile update logic here
@@ -70,7 +99,7 @@ const ProfileModal = () => {
               transition={100}
             />
 
-            <TouchableOpacity style={styles.editIcon}>
+            <TouchableOpacity onPress={onPickImage} style={styles.editIcon}>
                 <Icon.PencilIcon
                     size={verticalScale(20)}
                     color={colors.neutral800}
