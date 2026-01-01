@@ -7,7 +7,7 @@ import Header from '@/components/Header'
 import SegmentedControlTab from "react-native-segmented-control-tab";
 import { BarChart } from "react-native-gifted-charts";
 import Loading from '@/components/Loading'
-import { fetchWeeklyStats } from '@/services/transactionService'
+import { fetchMonthlyStats, fetchWeeklyStats } from '@/services/transactionService'
 import { useAuth } from '@/contexts/authContext'
 import TransactionList from '@/components/TransactionList'
 
@@ -43,7 +43,15 @@ const Statistics = () => {
     }
   }
   const getMonthlyStats = async ()=> {
-    // getMonthly stats
+    setChartLoading(true);
+    let res = await fetchMonthlyStats(user?.uid as string);
+    setChartLoading(false);
+    if(res.success){
+      setChartData(res?.data?.stats);
+      setTransactions(res?.data?.transactions);
+    }else{
+      Alert.alert("Error", res.msg);
+    }
   }
   const getYearlyStats = async ()=> {
     // getYearly stats
