@@ -31,7 +31,7 @@ const Home = () => {
                 loading: transactionLoading,
             } = useFetchData<TransactionType>("transactions", constraints);
     
-    console.log("Recent transactions:", recentTransactions?.length, recentTransactions);
+    // console.log("Recent transactions:", recentTransactions?.length, recentTransactions);
   return (
   <ScreenWrapper>
     <View style={styles.container}>
@@ -45,7 +45,7 @@ const Home = () => {
             {user?.name}
           </Typo>
         </View>
-        <TouchableOpacity style={styles.searchIcon}>
+        <TouchableOpacity style={styles.searchIcon} onPress={() => router.push("/(modals)/searchModal")}>
           <Icons.MagnifyingGlassIcon
             size={verticalScale(22)}
             color={colors.neutral200}
