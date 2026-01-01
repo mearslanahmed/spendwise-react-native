@@ -20,14 +20,14 @@ const Wallet = () => {
   const {data: wallets, error, loading} = useFetchData<WalletType>("wallets",[
     where("uid", "==", user?.uid),
     orderBy("created", "desc"),
-  ])
+  ]);
 
   const getTotalBalance = () => 
     wallets.reduce((total, item) => {
       total = total + (item.amount || 0);
       return total;
     },0);
-    
+
   return (
     <ScreenWrapper style={{ backgroundColor: colors.black }}>
       <View style={styles.container}>

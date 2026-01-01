@@ -2,8 +2,6 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import React from 'react'
 import Button from '@/components/Button'
 import Typo from '@/components/Typo'
-import { signOut } from 'firebase/auth'
-import { auth } from '@/config/firebase'
 import { colors, radius, spacingX, spacingY } from '@/constants/theme'
 import { useAuth } from '@/contexts/authContext'
 import ScreenWrapper from '@/components/ScreenWrapper'
@@ -11,9 +9,15 @@ import { verticalScale } from '@/utils/styling'
 import * as Icons from 'phosphor-react-native'
 import HomeCard from '@/components/HomeCard'
 import TransactionList from '@/components/TransactionList'
+import useFetchData from '@/hooks/useFetchData'
+import { TransactionType } from '@/types'
+import { orderBy, where } from 'firebase/firestore'
+import { useRouter } from 'expo-router'
+
 
 const Home = () => {
     const {user} = useAuth();
+    const router = useRouter();
 
   return (
   <ScreenWrapper>
@@ -46,9 +50,23 @@ const Home = () => {
           <HomeCard/>
         </View>
 
-        <TransactionList/>
+        <TransactionList 
+          
+          data={[1,2,3,4,5]}
+          loading={false}
+          emptyListMessage="No Transaction added yet!"
+          title="Recent Transactions" 
+        />
 
       </ScrollView>
+
+      <Button style={styles.floatingButton} onPress={()=> router.push("/(modals)/transactionModal")}>
+        <Icons.PlusIcon
+          size={verticalScale(24)}
+          color={colors.black}
+          weight="bold"
+        />
+      </Button>
     </View>
   </ScreenWrapper>
 );
