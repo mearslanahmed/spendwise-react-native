@@ -86,7 +86,6 @@ export const deleteTransactionByWalletId = async (walletId: string): Promise<Res
 
             await batch.commit();
 
-            console.log(`Deleted ${transactionSnapshot.size} transactions for walletId: ${walletId}`);
         }
         
         return {success: true, msg: "All transaction deleted successfully!"};
