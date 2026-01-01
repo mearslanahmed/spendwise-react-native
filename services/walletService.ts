@@ -1,6 +1,6 @@
 import { ResponseType, WalletType } from "@/types";
 import { uploadFileToCloudinary } from "./imageService";
-import { collection, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { firestore } from "@/config/firebase";
 
 export const CreateOrUpdateWallet = async (
@@ -52,9 +52,44 @@ export const deleteWallet = async (walletId: string): Promise<ResponseType> => {
         const walletRef = doc(firestore, "wallets", walletId);
         await deleteDoc(walletRef);
 
-        // todo: delete all transactions associated with this wallet
+        deleteTransactionByWalletId(walletId);
         
         return {success: true, msg: "Wallet deleted successfully"};
+    }
+    catch(error: any){
+        console.log("Error deleting wallet:", error);
+        return {success: false, msg: error.message || "Failed to delete wallet"};
+    }
+}
+
+export const deleteTransactionByWalletId = async (walletId: string): Promise<ResponseType> => {
+    try{
+        let hasMoreTransaction = true;
+
+        while(hasMoreTransaction){
+            const transactionQuery = query(
+                collection(firestore, "transactions"),
+                where("walletId", "==", walletId)
+            );
+
+            const transactionSnapshot = await getDocs(transactionQuery);
+            if(transactionSnapshot.size === 0){
+                hasMoreTransaction = false;
+                break;
+            }
+
+            const batch = writeBatch(firestore);
+
+            transactionSnapshot.forEach((transactionDoc)=> {
+                batch.delete(transactionDoc.ref);
+            })
+
+            await batch.commit();
+
+            console.log(`Deleted ${transactionSnapshot.size} transactions for walletId: ${walletId}`);
+        }
+        
+        return {success: true, msg: "All transaction deleted successfully!"};
     }
     catch(error: any){
         console.log("Error deleting wallet:", error);
