@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
-import { TransactionItemsProps, TransactionListType } from "@/types";
+import { TransactionItemsProps, TransactionListType, TransactionType } from "@/types";
 import { verticalScale } from "@/utils/styling";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import Typo from "./Typo";
@@ -11,6 +11,7 @@ import { expenseCategories, incomeCategory } from "@/constants/data";
 import { FadeInDown } from "react-native-reanimated";
 import Animated from "react-native-reanimated";
 import { Timestamp } from "firebase/firestore";
+import { useRouter } from "expo-router";
 
 const TransactionList = ({
   data,
@@ -18,8 +19,22 @@ const TransactionList = ({
   loading,
   emptyListMessage,
 }: TransactionListType) => {
-  const handleClick = () => {
-    // todo: handle click
+    const router = useRouter();
+  const handleClick = (item: TransactionType) => {
+    router.push({
+        pathname: '/(modals)/transactionModal',
+        params: {
+            id: item?.id,
+            type: item?.type,
+            amount: item?.amount?.toString(),
+            category: item?.category,
+            date: (item.date as Timestamp)?.toDate().toISOString(),
+            description: item?.description,
+            image: item?.image,
+            uid: item?.uid,
+            walletId: item?.walletId,
+        }
+    })
   };
   return (
     <View style={styles.container}>
@@ -65,7 +80,6 @@ const TransactionItem = ({
   index,
   handleClick,
 }: TransactionItemsProps) => {
-    console.log("item in transaction list", item?.description);
   let category = 
     item?.type == "income" ? incomeCategory : expenseCategories[item.category!];
   const IconComponent = category.icon;
@@ -79,7 +93,7 @@ const TransactionItem = ({
     <Animated.View
         entering={FadeInDown.delay(index * 70).springify().damping(14)}
     >
-      <TouchableOpacity style={styles.row} onPress={() => handleClick()}>
+      <TouchableOpacity style={styles.row} onPress={() => handleClick(item)}>
         <View style={[styles.icon, { backgroundColor: category.bgColor }]}>
           {IconComponent && (
             <IconComponent

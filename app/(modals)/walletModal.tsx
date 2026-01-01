@@ -32,7 +32,6 @@ const WalletModal = () => {
 
   const oldWallet: {name: string; image: string; id: string} = 
     useLocalSearchParams();
-    // console.log("Old Wallet:", oldWallet);
 
     useEffect(() => {
         if (oldWallet?.id) {
@@ -62,7 +61,6 @@ const WalletModal = () => {
     setLoading(true);
     const res = await CreateOrUpdateWallet(data);
     setLoading(false);
-    // console.log('result:', res);
     if (res.success) {
       router.back();
     } else {

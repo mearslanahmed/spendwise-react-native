@@ -34,7 +34,7 @@ import { orderBy, where } from "firebase/firestore";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { createOrUpdateTransaction } from "@/services/transactionService";
+import { createOrUpdateTransaction, deleteTransaction } from "@/services/transactionService";
 
 const TransactionModal = () => {
   const { user } = useAuth();
@@ -62,7 +62,19 @@ const TransactionModal = () => {
     orderBy("created", "desc"),
   ]);
 
-  const oldTransaction: { name: string; image: string; id: string } =
+  type paramType = {
+    id: string;
+    type: string;
+    amount: string;
+    category? : string;
+    date: string;
+    description?: string;
+    image?: any;
+    uid?: string;
+    walletId: string;
+  }
+
+  const oldTransaction: paramType =
     useLocalSearchParams();
 
   const onDateChange = (event: any, date: any) => {
@@ -70,16 +82,21 @@ const TransactionModal = () => {
     setTransaction({ ...transaction, date: currentDate });
     setShowDatePicker(Platform.OS === "ios" ? true : false);
   };
-  // console.log("Old Wallet:", oldWallet);
 
-  // useEffect(() => {
-  //     if (oldTransaction?.id) {
-  //       setTransaction({
-  //         name: oldTransaction?.name,
-  //         image: oldTransaction?.image,
-  //       });
-  //     }
-  // },[])
+  useEffect(() => {
+      if (oldTransaction?.id) {
+        setTransaction({
+         type: oldTransaction?.type,
+         amount: Number(oldTransaction.amount),
+         description: oldTransaction.description || "",
+         category: oldTransaction?.category || "",
+         date: new Date(oldTransaction?.date),
+         walletId: oldTransaction?.walletId,
+         image: oldTransaction?.image,
+         uid: user?.uid || "",
+        });
+      }
+  },[])
 
   const onSubmit = async () => {
     const { type, amount, description, category, date, walletId, image } =
@@ -90,7 +107,6 @@ const TransactionModal = () => {
       return;
     }
 
-    console.log("Submitting transaction:", transaction);
     let transactionData: TransactionType = {
       type,
       amount,
@@ -98,13 +114,11 @@ const TransactionModal = () => {
       category,
       date,
       walletId,
-      image,
+      image: image ? image : null,
       uid: user?.uid || "",
     };
-    console.log("Transaction Data to submit:", transactionData);
 
-
-    // todo: include transaction id for updating
+    if(oldTransaction?.id) transactionData.id = oldTransaction?.id;
     setLoading(true);
     const res = await createOrUpdateTransaction(transactionData) as any;
 
@@ -120,7 +134,7 @@ const TransactionModal = () => {
   const onDelete = async () => {
     if (!oldTransaction?.id) return;
     setLoading(true);
-    const res = await deleteWallet(oldTransaction?.id);
+    const res = await deleteTransaction(oldTransaction?.id, oldTransaction.walletId);
     setLoading(false);
     if (res.success) {
       router.back();
@@ -131,8 +145,8 @@ const TransactionModal = () => {
 
   const showDeleteAlert = () => {
     Alert.alert(
-      "Delete Transaction?",
-      "This action will permanently delete this transaction.",
+      "Confirm",
+      "Are you sure you want to delete this transaction?",
       [
         {
           text: "Cancel",

@@ -56,8 +56,6 @@ const ProfileModal = () => {
       quality: 0.5,
     });
 
-    // console.log(result);
-
     if (!result.canceled && result.assets?.length) {
       const asset = result.assets[0];
       setUserData({ ...userData, image: asset.uri });
