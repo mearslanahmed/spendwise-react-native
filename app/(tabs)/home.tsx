@@ -11,7 +11,7 @@ import HomeCard from '@/components/HomeCard'
 import TransactionList from '@/components/TransactionList'
 import useFetchData from '@/hooks/useFetchData'
 import { TransactionType } from '@/types'
-import { orderBy, where } from 'firebase/firestore'
+import { limit, orderBy, where } from 'firebase/firestore'
 import { useRouter } from 'expo-router'
 
 
@@ -19,6 +19,19 @@ const Home = () => {
     const {user} = useAuth();
     const router = useRouter();
 
+    const constraints = [
+      where("uid", "==", user?.uid),
+      orderBy("date", "desc"),
+      limit(30),
+    ];
+
+    const {
+                data: recentTransactions,
+                error,
+                loading: transactionLoading,
+            } = useFetchData<TransactionType>("transactions", constraints);
+    
+    console.log("Recent transactions:", recentTransactions?.length, recentTransactions);
   return (
   <ScreenWrapper>
     <View style={styles.container}>
@@ -51,9 +64,8 @@ const Home = () => {
         </View>
 
         <TransactionList 
-          
-          data={[1,2,3,4,5]}
-          loading={false}
+          data={recentTransactions}
+          loading={transactionLoading}
           emptyListMessage="No Transaction added yet!"
           title="Recent Transactions" 
         />
