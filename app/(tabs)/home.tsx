@@ -19,19 +19,18 @@ const Home = () => {
     const {user} = useAuth();
     const router = useRouter();
 
-    const constraints = [
-      where("uid", "==", user?.uid),
+    const constraints = user?.uid ? [
+      where("uid", "==", user.uid),
       orderBy("date", "desc"),
       limit(30),
-    ];
+    ] : [];
 
     const {
                 data: recentTransactions,
                 error,
                 loading: transactionLoading,
-            } = useFetchData<TransactionType>("transactions", constraints);
+            } = useFetchData<TransactionType>(user?.uid ? "transactions" : "", constraints);
     
-    // console.log("Recent transactions:", recentTransactions?.length, recentTransactions);
   return (
   <ScreenWrapper>
     <View style={styles.container}>

@@ -76,7 +76,11 @@ coverage/
 # CocoaPods
 ios/Pods/
 
-/config/firebase.ts
+# Firebase config files
 *.firebase.ts
+/config/firebase.ts
 
 /constants/index.ts
+
+babel.config.js
+eslint.config.js

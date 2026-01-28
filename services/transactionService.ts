@@ -82,7 +82,6 @@ export const createOrUpdateTransaction = async (
       data: { ...transactionData, id: transactionRef.id },
     };
   } catch (error: any) {
-    console.log("Error creating/updating transaction:", error);
     return {
       success: false,
       msg: error.message || "Failed to create/update transaction",
@@ -99,7 +98,6 @@ const updateWalletForNewTransaction = async (
     const walletRef = doc(firestore, "wallets", walletId);
     const walletSnapshot = await getDoc(walletRef);
     if (!walletSnapshot.exists()) {
-      console.log("error updating wallet for new transaction");
       return { success: false, msg: "Wallet not found" };
     }
 
@@ -130,7 +128,6 @@ const updateWalletForNewTransaction = async (
 
     return { success: true };
   } catch (err: any) {
-    console.log("error updating wallet for new transaction: ", err);
     return { success: false, msg: err.message };
   }
 };
@@ -226,7 +223,6 @@ const revertAndUpdateWallets = async (
 
     return { success: true };
   } catch (err: any) {
-    console.log("error updating wallet for new transaction: ", err);
     return { success: false, msg: err.message };
   }
 };
@@ -278,7 +274,6 @@ export const deleteTransaction = async (
 
     return { success: true };
   } catch (err: any) {
-    console.log("error updating wallet for new transaction: ", err);
     return { success: false, msg: err.message };
   }
 };
@@ -350,7 +345,6 @@ export const fetchWeeklyStats = async (uid: string): Promise<ResponseType> => {
     };
 
   } catch (err: any) {
-    console.log("error fetching weekly stats: ", err);
     return { success: false, msg: err.message };
   }
 };

@@ -87,7 +87,7 @@ const WalletModal = () => {
       [
         {
           text: "Cancel",
-          onPress: () => console.log("cancel delete"),
+          onPress: () => {},
           style: "cancel",
         },
         {

@@ -44,7 +44,7 @@ const Profile = () => {
     {
       title: "Privacy Policy",
       icon: <Icons.LockIcon size={26} color={colors.white} weight="fill" />,
-      // routeName: "/[modals]/profileModal",
+      routeName: "/(modals)/privacyPolicyModal",
       bgColor: colors.neutral600,
     },
 
@@ -65,7 +65,7 @@ const Profile = () => {
     Alert.alert("Confirm", "Are you sure you want to logout?", [
       {
         text: "Cancel",
-        onPress: () => console.log("cancel logout"),
+        onPress: () => {},
         style: "cancel",
       },
       {

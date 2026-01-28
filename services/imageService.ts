@@ -29,13 +29,11 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
                 }
             });
 
-            console.log("Cloudinary response:", response.data);
             return {success: true, data: response?.data?.secure_url};
         }
 
         return{success: true, msg: "Image uploaded successfully"};
     }catch(error: any){
-        console.log("Got an error while uploading image", error);
         return {success: false, msg: error.message || "Failed to upload image"};
     }
 }
