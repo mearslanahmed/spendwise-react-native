@@ -59,46 +59,6 @@ SpendWise is a personal finance app for tracking income, expenses, and wallets i
 - **Async Storage** - Local data persistence
 - **React Native Date Time Picker** - Date/time selection
 
-## 📁 Project Structure
-
-```
-SpendWise/
-├── app/                      # App screens and routing
-│   ├── (auth)/              # Authentication screens
-│   ├── (tabs)/              # Main tab screens (home, wallet, statistics, profile)
-│   ├── (modals)/            # Modal screens
-│   ├── _layout.tsx          # Root layout
-│   └── index.tsx            # Root screen
-├── components/              # Reusable components
-│   ├── Button.tsx
-│   ├── Input.tsx
-│   ├── ScreenWrapper.tsx
-│   └── ...
-├── services/                # API and Firebase services
-│   ├── authService.ts
-│   ├── transactionService.ts
-│   ├── userService.ts
-│   ├── walletService.ts
-│   └── imageService.ts
-├── contexts/                # React Context for state management
-│   └── authContext.tsx
-├── hooks/                   # Custom React hooks
-│   └── useFetchData.ts
-├── config/                  # Configuration files
-│   └── firebase.ts
-├── constants/               # App constants
-│   ├── theme.ts            # Color scheme and theme
-│   ├── data.ts             # Static data
-│   └── index.ts
-├── utils/                   # Utility functions
-│   ├── common.ts
-│   └── styling.ts
-├── android/                 # Android-specific configuration
-├── assets/                  # Images and icons
-├── package.json
-├── app.json                # Expo configuration
-├── tsconfig.json           # TypeScript configuration
-└── README.md               # This file
 ```
 
 ## 🚀 Getting Started
