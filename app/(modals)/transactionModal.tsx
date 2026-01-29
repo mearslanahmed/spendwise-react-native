@@ -215,7 +215,7 @@ const TransactionModal = () => {
             <Dropdown
               style={styles.dropdownContainer}
               activeColor={colors.neutral700}
-              //   placeholderStyle={styles.dropdownPlaceholder}
+              placeholderStyle={styles.dropdownPlaceholder}
               selectedTextStyle={styles.dropdownSelectedText}
               iconStyle={styles.dropdownIcon}
               data={wallets.map((wallet) => ({
@@ -249,7 +249,7 @@ const TransactionModal = () => {
               <Dropdown
                 style={styles.dropdownContainer}
                 activeColor={colors.neutral700}
-                //   placeholderStyle={styles.dropdownPlaceholder}
+                placeholderStyle={styles.dropdownPlaceholder}
                 selectedTextStyle={styles.dropdownSelectedText}
                 iconStyle={styles.dropdownIcon}
                 data={Object.values(expenseCategories)}
@@ -259,7 +259,7 @@ const TransactionModal = () => {
                 itemTextStyle={styles.dropdownItemText}
                 itemContainerStyle={styles.dropdownItemContainer}
                 containerStyle={styles.dropdownListContainer}
-                placeholder={"Select Wallet"}
+                placeholder={"Expense Type"}
                 //   searchPlaceholder="Search..."
                 value={transaction.category}
                 //   onFocus={() => setIsFocus(true)}
