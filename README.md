@@ -2,7 +2,7 @@
 
 SpendWise is a personal finance app for tracking income, expenses, and wallets in one place. It provides charts, transaction history, and profile management across Android & iOS.
 
-## 📱 Features
+## Features
 
 - **User Authentication**: Secure email-based sign-up and login with Firebase Authentication
 - **Multi-Wallet Support**: Create and manage multiple wallets for different purposes (e.g., personal, savings, investments)
@@ -30,7 +30,7 @@ SpendWise is a personal finance app for tracking income, expenses, and wallets i
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **React Native 0.76.5** - Cross-platform mobile development
@@ -61,7 +61,7 @@ SpendWise is a personal finance app for tracking income, expenses, and wallets i
 
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -111,7 +111,7 @@ npm run ios
 npx expo run:ios
 ```
 
-## 📝 Available Scripts
+## Available Scripts
 
 | Command | Description |
 |---------|-------------|
@@ -122,7 +122,7 @@ npx expo run:ios
 | `npm run lint` | Run ESLint to check code quality |
 | `npm run reset-project` | Reset project to initial state |
 
-## 🔐 Authentication
+## Authentication
 
 SpendWise uses Firebase Authentication for secure user management:
 
@@ -131,7 +131,7 @@ SpendWise uses Firebase Authentication for secure user management:
 - Authentication state persists using AsyncStorage
 - Session management is automatic
 
-## 💾 Data Management
+## Data Management
 
 All user data is stored in Firebase Firestore:
 
@@ -139,7 +139,7 @@ All user data is stored in Firebase Firestore:
 - **Wallets Collection**: Manages wallet information
 - **Transactions Collection**: Records all income and expense transactions
 
-## 🖼️ Image Storage (Cloudinary)
+## Image Storage (Cloudinary)
 
 Profile images and avatars are stored on Cloudinary with the following setup:
 
@@ -159,7 +159,7 @@ EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
 The image upload is handled in [services/imageService.ts](services/imageService.ts) and used throughout the app for profile management.
 
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -169,13 +169,13 @@ Contributions are welcome! Please follow these steps:
 4. Commit with descriptive messages
 5. Push and create a pull request
 
-## 📱 Supported Platforms
+## Supported Platforms
 
 - **Android** 7.0 (API 24) and above
 - **iOS** 13.0 and above
 - **Web** (via Expo Web)
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Android Build Issues
 - Clear gradle cache: `cd android && ./gradlew clean && cd ..`
@@ -191,16 +191,16 @@ Contributions are welcome! Please follow these steps:
 - Check internet connection
 - Ensure Firebase project is properly set up
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 👨‍💻 Author
+## Author
 
 Created by Arslan Ahmed
 Developed by: Arslan Ahmed - [arslanahmednaseem@gmail.com](mailto:arslanahmednaseem@gmail.com)  
 
-## 📞 Support
+## Support
 
 For issues or questions, please create an issue in the repository or contact the development team.
 
