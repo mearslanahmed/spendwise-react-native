@@ -137,6 +137,7 @@ export type UserType = {
     email?: string;
     name: string | null;
     image?: any;
+    emailVerified?: boolean;
 } | null;
 
 export type UserDataType = {
@@ -157,6 +158,8 @@ export type AuthContextType = {
         name: string
     )=> Promise<{success: boolean; msg?: string}>;
     updateUserData: (userId: string) => Promise<void>;
+    resetPassword: (email: string) => Promise<{success: boolean; msg?: string}>;
+    loginWithGoogle: (idToken: string) => Promise<{success: boolean; msg?: string}>;
 };
 
 export type ResponseType = {

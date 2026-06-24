@@ -29,17 +29,17 @@ const SearchModal = () => {
   const router = useRouter();
   const [search, setSearch] = useState("");
 
-  const constraints = [
+  const constraints = user?.uid ? [
     where("uid", "==", user?.uid),
     orderBy("date", "desc"),
     limit(30),
-  ];
+  ] : [];
 
   const {
     data: allTransactions,
     error,
     loading: transactionLoading,
-  } = useFetchData<TransactionType>("transactions", constraints);
+  } = useFetchData<TransactionType>("transactions", constraints, [user?.uid]);
 
   const filteredTransactions = allTransactions.filter((item) => {
   if (search.length > 1) {

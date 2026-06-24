@@ -15,10 +15,13 @@ const HomeCard = () => {
             data: wallets,
             error,
             loading: walletLoading
-        } = useFetchData<WalletType>("wallets",[
-        where("uid", "==", user?.uid),
-        orderBy("created", "desc"),
-      ]);
+        } = useFetchData<WalletType>("wallets",
+        user?.uid ? [
+          where("uid", "==", user?.uid),
+          orderBy("created", "desc"),
+        ] : [],
+        [user?.uid]
+      );
 
       const getTotals = () => {
        return wallets.reduce((totals: any, item: WalletType) => {

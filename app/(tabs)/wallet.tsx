@@ -17,10 +17,13 @@ const Wallet = () => {
   const router = useRouter();
   const {user} = useAuth();
 
-  const {data: wallets, error, loading} = useFetchData<WalletType>("wallets",[
-    where("uid", "==", user?.uid),
-    orderBy("created", "desc"),
-  ]);
+  const {data: wallets, error, loading} = useFetchData<WalletType>("wallets",
+    user?.uid ? [
+      where("uid", "==", user?.uid),
+      orderBy("created", "desc"),
+    ] : [],
+    [user?.uid]
+  );
 
   const getTotalBalance = () => 
     wallets.reduce((total, item) => {

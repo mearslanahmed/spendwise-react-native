@@ -6,12 +6,12 @@ import BackButton from "@/components/BackButton";
 import Typo from "@/components/Typo";
 import { colors, spacingX, spacingY } from "@/constants/theme";
 
-const PrivacyPolicyModal = () => {
+const TermsOfServiceModal = () => {
   return (
     <ModalWrapper>
       <View style={styles.container}>
         <Header
-          title="Privacy Policy"
+          title="Terms of Service"
           leftIcon={<BackButton />}
           style={{ marginBottom: spacingY._10 }}
         />
@@ -23,62 +23,62 @@ const PrivacyPolicyModal = () => {
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              1. Information We Collect
+              1. Acceptance of Terms
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              We collect information you provide (such as name and email) and
-              data you create in the app, including wallets, transactions, and
-              uploaded images.
+              By creating an account or using SpendWise, you agree to follow and be bound
+              by these Terms of Service. If you do not agree, please do not use the app.
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              2. How We Use Your Information
+              2. User Accounts
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              We use your information to authenticate your account, sync your
-              data across devices, and provide core app features.
+              You are responsible for safeguarding your login credentials. Any activity 
+              carried out under your account is your sole responsibility. Please notify us 
+              immediately if you suspect any security breaches.
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              3. Data Storage
+              3. Data Ownership & Usage
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              Your data is stored securely using industry-standard cloud database
-              services. We do not sell your personal data.
+              You retain all rights to the financial transactions, descriptions, and assets 
+              you input into the app. We host and sync this data using secure cloud hosting 
+              providers to deliver the core app experience.
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              4. Images & Uploads
+              4. Prohibited Uses
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              Images you upload are used only to personalize your profile or
-              transactions and are stored securely.
+              You agree not to modify, reverse-engineer, or attempt to hack any part of the 
+              application, databases, or API communication layers.
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              5. Your Choices
+              5. Disclaimer of Warranties
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              You can update your profile information at any time. To delete
-              your account or data, contact us using the details below.
+              {"SpendWise is provided 'as is' without warranties of any kind. We do not guarantee uninterrupted service or that the app is entirely free of bugs or errors."}
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              6. Contact
+              6. Changes to Terms
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              If you have questions about this policy, contact us at:
-              privacy@spendwise.app
+              We reserve the right to modify these terms at any time. Continued use of the 
+              app following modifications constitutes acceptance of the new terms.
             </Typo>
           </View>
         </ScrollView>
@@ -87,7 +87,7 @@ const PrivacyPolicyModal = () => {
   );
 };
 
-export default PrivacyPolicyModal;
+export default TermsOfServiceModal;
 
 const styles = StyleSheet.create({
   container: {

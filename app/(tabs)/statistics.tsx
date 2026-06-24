@@ -57,9 +57,8 @@ const Statistics = () => {
     }
   };
 
-  if (!user) return null;
-
   useEffect(()=>{
+    if (!user?.uid) return;
     setQueryLimit(30);
     if(activeIndex==0){
       getWeeklyStats();
@@ -70,11 +69,14 @@ const Statistics = () => {
     if(activeIndex==2){
       getYearlyStats();
     }
-  },[activeIndex]);
+  },[activeIndex, user?.uid]);
+
+  if (!user) return null;
 
   const getWeeklyStats = async ()=>{
+    if (!user?.uid) return;
     setChartLoading(true);
-    let res = await fetchWeeklyStats(user?.uid as string);
+    let res = await fetchWeeklyStats(user.uid);
     setChartLoading(false);
     if(res.success){
       setChartData(res?.data?.stats);
@@ -83,8 +85,9 @@ const Statistics = () => {
     }
   }
   const getMonthlyStats = async ()=> {
+    if (!user?.uid) return;
     setChartLoading(true);
-    let res = await fetchMonthlyStats(user?.uid as string);
+    let res = await fetchMonthlyStats(user.uid);
     setChartLoading(false);
     if(res.success){
       setChartData(res?.data?.stats);
@@ -93,8 +96,9 @@ const Statistics = () => {
     }
   }
   const getYearlyStats = async ()=> {
+    if (!user?.uid) return;
     setChartLoading(true);
-    let res = await fetchYearlyStats(user?.uid as string);
+    let res = await fetchYearlyStats(user.uid);
     setChartLoading(false);
     if(res.success){
       setChartData(res?.data?.stats);

@@ -79,6 +79,7 @@ ios/Pods/
 # Firebase config files
 *.firebase.ts
 /config/firebase.ts
+google-services.json
 
 /constants/index.ts
 

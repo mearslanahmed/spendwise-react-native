@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import React, { useRef } from "react";
+import { Pressable, StyleSheet, Text, View, TouchableOpacity, Platform } from "react-native";
+import React, { useRef, useState, useEffect } from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
-import { colors, spacingX, spacingY } from "@/constants/theme";
+import { colors, spacingX, spacingY, radius } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
 import BackButton from "@/components/BackButton";
 import Typo from "@/components/Typo";
@@ -12,25 +12,80 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/authContext";
 import Toast from 'react-native-toast-message';
 
+// Safely require native modules to prevent load crashes in Expo Go
+let GoogleSignin: any = null;
+try {
+  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
+} catch (error) {
+  // console.log("GoogleSignin native module not available");
+}
+
 const Login = () => {
   const emailRef = useRef("");
   const passwordRef = useRef("");
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const {login: loginUser} = useAuth();
+  const { login: loginUser, loginWithGoogle } = useAuth();
 
-    const handelSubmit = async () => {
-        if(!emailRef.current || !passwordRef.current) {
-            Toast.show({ type: 'error', text1: 'Login', text2: "Please fill all the fields" });
-            return;
+  const handelSubmit = async () => {
+    const email = emailRef.current.trim();
+    const password = passwordRef.current;
+
+    if (!email || !password) {
+      Toast.show({ type: 'error', text1: 'Login', text2: "Please fill all the fields" });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Toast.show({ type: 'error', text1: 'Invalid Email', text2: "Please enter a valid email address" });
+      return;
+    }
+
+    setIsLoading(true);
+    const res = await loginUser(email, password);
+    setIsLoading(false);
+    if (!res.success) {
+      Toast.show({ type: 'error', text1: 'Login', text2: res.msg });
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!GoogleSignin) {
+      Toast.show({
+        type: 'error',
+        text1: 'Social Sign-In',
+        text2: 'Google Sign-In is only available in standalone native builds.',
+      });
+      return;
+    }
+    try {
+      setIsLoading(true);
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_FIREBASE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+      });
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      if (userInfo.type === 'success') {
+        const idToken = userInfo.data.idToken;
+        if (idToken) {
+          const res = await loginWithGoogle(idToken);
+          if (res.success) {
+            Toast.show({ type: 'success', text1: 'Welcome', text2: 'Logged in successfully with Google!' });
+          } else {
+            Toast.show({ type: 'error', text1: 'Google Sign In', text2: res.msg });
+          }
         }
-        setIsLoading(true);
-        const res = await loginUser(emailRef.current.trim(), passwordRef.current);
-        setIsLoading(false);
-        if(!res.success) {
-            Toast.show({ type: 'error', text1: 'Login', text2: res.msg });
-        }
-    };
+      }
+    } catch (error: any) {
+      if (error.code !== 'SIGN_IN_CANCELLED') {
+        Toast.show({ type: 'error', text1: 'Google Sign In', text2: error.message });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <ScreenWrapper>
       <View style={styles.container}>
@@ -53,37 +108,66 @@ const Login = () => {
           </Typo>
           <Input
             placeholder="Enter your email"
+            keyboardType="email-address"
+            autoCapitalize="none"
             onChangeText={(value) => (emailRef.current = value)}
             icon={
-              <Icons.At size={verticalScale(26)} color={colors.neutral300} weight="fill"/>
+              <Icons.At size={verticalScale(26)} color={colors.neutral300} weight="fill" />
             }
           />
 
           <Input
             placeholder="Enter your password"
             secureTextEntry
+            autoCapitalize="none"
             onChangeText={(value) => (passwordRef.current = value)}
             icon={
-              <Icons.Lock size={verticalScale(26)} color={colors.neutral300} weight="fill"/>
+              <Icons.Lock size={verticalScale(26)} color={colors.neutral300} weight="fill" />
             }
           />
-          <Typo size={14} style={styles.forgotPassword}>
-            Forgot Password?
-          </Typo>
+          
+          <Pressable onPress={() => !isLoading && router.push("/(auth)/forgot-password")} style={styles.forgotPasswordContainer} disabled={isLoading}>
+            <Typo size={14} style={[styles.forgotPassword, isLoading && { opacity: 0.5 }]}>
+              Forgot Password?
+            </Typo>
+          </Pressable>
 
           <Button loading={isLoading} onPress={handelSubmit}>
             <Typo fontWeight={"700"} color={colors.black} size={21}>
-                Login
+              Login
             </Typo>
-            </Button>
+          </Button>
+
+          {/* divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Typo size={14} color={colors.neutral500} style={styles.dividerText}>
+              Or continue with
+            </Typo>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* social login buttons */}
+          <View style={styles.socialContainer}>
+            <TouchableOpacity 
+              style={[styles.socialButton, isLoading && { opacity: 0.6 }]} 
+              onPress={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <Icons.GoogleLogo size={24} color={colors.white} weight="bold" />
+              <Typo size={16} fontWeight="600" color={colors.white}>
+                Google
+              </Typo>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* footer */}
         <View style={styles.footer}>
-            <Typo size={15}>Don't have an account?</Typo>
-            <Pressable onPress={()=> router.navigate("/(auth)/register")}>
-                <Typo size={15} fontWeight={'700'} color={colors.primary}>Sign Up</Typo>
-            </Pressable>
+          <Typo size={15}>{"Don't have an account?"}</Typo>
+          <Pressable onPress={() => !isLoading && router.navigate("/(auth)/register")} disabled={isLoading}>
+            <Typo size={15} fontWeight={'700'} color={isLoading ? colors.neutral600 : colors.primary}>Sign Up</Typo>
+          </Pressable>
         </View>
       </View>
     </ScreenWrapper>
@@ -109,10 +193,48 @@ const styles = StyleSheet.create({
     gap: spacingY._20,
   },
 
+  forgotPasswordContainer: {
+    alignSelf: "flex-end",
+  },
+
   forgotPassword: {
-    textAlign: "right",
     fontWeight: "500",
     color: colors.text,
+  },
+
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: spacingY._5,
+  },
+
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.neutral700,
+  },
+
+  dividerText: {
+    paddingHorizontal: spacingX._10,
+  },
+
+  socialContainer: {
+    flexDirection: "row",
+    gap: spacingX._15,
+    justifyContent: "center",
+  },
+
+  socialButton: {
+    flex: 1,
+    flexDirection: "row",
+    height: verticalScale(54),
+    borderWidth: 1,
+    borderColor: colors.neutral700,
+    borderRadius: radius._17,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacingX._10,
+    backgroundColor: colors.neutral900,
   },
 
   footer: {
@@ -120,6 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 5,
+    marginTop: spacingY._10,
   },
 
   footerText: {

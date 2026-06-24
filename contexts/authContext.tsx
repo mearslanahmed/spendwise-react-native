@@ -1,10 +1,16 @@
 import { AuthContextType, UserType } from "@/types";
-import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  sendEmailVerification, 
+  sendPasswordResetEmail, 
+  GoogleAuthProvider, 
+  signInWithCredential 
+} from "firebase/auth";
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, firestore } from "@/config/firebase";
-import { doc, setDoc } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "expo-router";
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,9 +28,15 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                     uid: firebaseUser?.uid,
                     email,
                     name,
+                    emailVerified: firebaseUser.emailVerified,
                 });
                 updateUserData(firebaseUser.uid);
-                router.replace("/(tabs)/home");
+                
+                if (firebaseUser.emailVerified) {
+                    router.replace("/(tabs)/home");
+                } else {
+                    router.replace("/(auth)/verify-email");
+                }
             }else{
                 // no user
                 setUser(null);
@@ -40,11 +52,12 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
             return {success: true, msg: "Login successful"};
         }catch(error: any){
             let msg = error.message;
-            if(msg.includes('Error (auth/invalid-credential).')){
+            if(msg.includes('auth/invalid-credential')){
                 msg = "Wrong credentials. Please check your email and password.";
-            }
-            if(msg.includes('Error (auth/invalid-email).')){
+            } else if(msg.includes('auth/invalid-email')){
                 msg = "Invalid Email.";
+            } else if(msg.includes('auth/too-many-requests')){
+                msg = "Too many failed attempts. Access to this account has been temporarily disabled. Please try again later.";
             }
             return {success: false, msg};
         }
@@ -57,21 +70,62 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                 email,
                 password
             );
+            // Send email verification immediately
+            await sendEmailVerification(response.user);
+
             await setDoc(doc(firestore, "users", response.user.uid),{
                 name,
                 email,
                 uid: response?.user?.uid,
             });
-            return {success: true, msg: "Registration successful"};
+            return {success: true, msg: "Registration successful. Please verify your email."};
         }catch(error: any){
             let msg = error.message;
-            if(msg.includes("Firebase: Error (auth/email-already-in-use).")){
+            if(msg.includes("auth/email-already-in-use")){
                 msg = "Email is already in use.";
-            }
-            if(msg.includes('Error (auth/invalid-email).')){
+            } else if(msg.includes('auth/invalid-email')){
                 msg = "Invalid Email.";
+            } else if(msg.includes('auth/weak-password')){
+                msg = "Password must be at least 6 characters.";
             }
             return {success: false, msg};
+        }
+    };
+
+    const resetPassword = async (email: string) => {
+        try {
+            await sendPasswordResetEmail(auth, email);
+            return { success: true, msg: "Password reset email sent! Please check your inbox." };
+        } catch (error: any) {
+            let msg = error.message;
+            if (msg.includes("auth/user-not-found")) {
+                msg = "No user found with this email address.";
+            } else if (msg.includes("auth/invalid-email")) {
+                msg = "Invalid email format.";
+            }
+            return { success: false, msg };
+        }
+    };
+
+    const loginWithGoogle = async (idToken: string) => {
+        try {
+            const credential = GoogleAuthProvider.credential(idToken);
+            const response = await signInWithCredential(auth, credential);
+            
+            // Check if Firestore document exists for the user; if not, create it
+            const docRef = doc(firestore, "users", response.user.uid);
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists()) {
+                await setDoc(docRef, {
+                    name: response.user.displayName || "Google User",
+                    email: response.user.email,
+                    uid: response.user.uid,
+                    image: response.user.photoURL || null,
+                });
+            }
+            return { success: true, msg: "Google login successful" };
+        } catch (error: any) {
+            return { success: false, msg: error.message };
         }
     };
 
@@ -87,12 +141,12 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                     name: data?.name || null,
                     email: data?.email || null,
                     image: data.image || null,
+                    emailVerified: auth.currentUser?.emailVerified || false,
                 };
                 setUser({...userData});
             }
         }catch(error: any){
-            let msg = error.message;
-            // return {success: false, msg};
+            // console.log("Error updating user data:", error);
         }
     };
 
@@ -101,7 +155,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
         setUser,
         login,
         register,
-        updateUserData
+        updateUserData,
+        resetPassword,
+        loginWithGoogle
     }
 
     return(
