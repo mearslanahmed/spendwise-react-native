@@ -21,23 +21,21 @@ const Home = () => {
 
     const [queryLimit, setQueryLimit] = React.useState(30);
 
-    const constraints = [
-      where("uid", "==", user?.uid),
-      orderBy("date", "desc"),
-      limit(queryLimit),
-    ];
-
-    const {
-                data: recentTransactions,
-                error,
-                loading: transactionLoading,
-            } = useFetchData<TransactionType>("transactions", constraints);
+    const { data: recentTransactions, loading: transactionLoading } = useFetchData<TransactionType>("transactions", 
+      user?.uid ? [
+        where("uid", "==", user?.uid),
+        orderBy("date", "desc"),
+        limit(queryLimit)
+      ] : []
+    );
 
     const loadMore = () => {
       if (recentTransactions.length >= queryLimit) {
         setQueryLimit((prev) => prev + 30);
       }
     };
+
+    if (!user) return null;
     
   return (
   <ScreenWrapper>

@@ -10,6 +10,7 @@ import * as Icons from "phosphor-react-native";
 import Button from "@/components/Button";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/authContext";
+import Toast from 'react-native-toast-message';
 
 const Register = () => {
   const emailRef = useRef("");
@@ -20,8 +21,8 @@ const Register = () => {
   const { register: registerUser } = useAuth();
 
   const handelSubmit = async () => {
-    if (!emailRef.current || !passwordRef.current || !nameRef.current) {
-      Alert.alert("Sign up", "Please fill all the fields");
+    if (!nameRef.current || !emailRef.current || !passwordRef.current) {
+      Toast.show({ type: 'error', text1: 'Sign up', text2: "Please fill all the fields" });
       return;
     }
 
@@ -31,13 +32,13 @@ const Register = () => {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailRegex.test(email)) {
-      Alert.alert("Invalid Email", "Please enter a valid email address");
+    if (!emailRegex.test(emailRef.current)) {
+      Toast.show({ type: 'error', text1: 'Invalid Email', text2: "Please enter a valid email address" });
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert("Weak Password", "Password must be at least 6 characters");
+    if (passwordRef.current.length < 6) {
+      Toast.show({ type: 'error', text1: 'Weak Password', text2: "Password must be at least 6 characters" });
       return;
     }
 
@@ -51,8 +52,8 @@ const Register = () => {
 
     // console.log("register result:", res);
 
-    if (!res.success) {
-      Alert.alert("Sign up", res.msg);
+    if(!res.success) {
+      Toast.show({ type: 'error', text1: 'Sign up', text2: res.msg });
     }
   };
 

@@ -14,20 +14,21 @@ import Input from "@/components/Input";
 import { UserDataType, WalletType } from "@/types";
 import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
-import { updateUser } from "@/services/userService";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 import ImageUpload from "@/components/ImageUpload";
 import { CreateOrUpdateWallet, deleteWallet } from "@/services/walletService";
+import Toast from 'react-native-toast-message';
+import CustomAlert from "@/components/CustomAlert";
 
 const WalletModal = () => {
-  const { user, updateUserData } = useAuth();
+  const { user } = useAuth();
   const [wallet, setWallet] = useState<WalletType>({
     name: "",
     image: null,
   });
 
   const [loading, setLoading] = useState(false);
+  const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
   const router = useRouter();
 
   const oldWallet: {name: string; image: string; id: string} = 
@@ -46,8 +47,8 @@ const WalletModal = () => {
   const onSubmit = async () => {
     // handle profile update logic here
     let { name, image } = wallet;
-    if (!name.trim() || !image) {
-      Alert.alert("Wallet", "Please fill all the fields");
+    if (!wallet.name || !wallet.image) {
+      Toast.show({ type: 'error', text1: 'Wallet', text2: "Please fill all the fields" });
       return;
     }
 
@@ -64,39 +65,25 @@ const WalletModal = () => {
     if (res.success) {
       router.back();
     } else {
-      Alert.alert("Wallet", res.msg);
+      Toast.show({ type: 'error', text1: 'Wallet', text2: res.msg });
     }
   };
 
   const onDelete = async () => {
     if(!oldWallet?.id) return;
+    setDeleteAlertVisible(false);
     setLoading(true);
     const res = await deleteWallet(oldWallet?.id);
     setLoading(false);
     if (res.success) {
       router.back();
     } else {
-      Alert.alert("Wallet", res.msg);
+      Toast.show({ type: 'error', text1: 'Wallet', text2: res.msg });
     }
   };
 
   const showDeleteAlert = () => {
-    Alert.alert(
-      "Delete Wallet?",
-      "This action will permanently delete this wallet and all its transactions.",
-      [
-        {
-          text: "Cancel",
-          onPress: () => {},
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          onPress: () => onDelete(),
-          style: "destructive",
-        }
-      ]
-    );
+    setDeleteAlertVisible(true);
   }
 
   return (
@@ -158,6 +145,16 @@ const WalletModal = () => {
           </Typo>
         </Button>
       </View>
+
+      <CustomAlert
+        visible={deleteAlertVisible}
+        title="Delete Wallet?"
+        message="This action will permanently delete this wallet and all its transactions."
+        onCancel={() => setDeleteAlertVisible(false)}
+        onConfirm={onDelete}
+        confirmText="Delete"
+        loading={loading}
+      />
     </ModalWrapper>
   );
 };

@@ -8,7 +8,7 @@ import { scale, verticalScale } from '@/utils/styling';
 import { Image } from 'expo-image';
 import { getProfilePath } from '@/services/imageService';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 const ImageUpload = ({
     file = null,
@@ -22,7 +22,7 @@ const ImageUpload = ({
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         
             if (!permissionResult.granted) {
-              Alert.alert('Permission required', 'Permission to access the media library is required.');
+              Toast.show({ type: 'error', text1: 'Permission required', text2: 'Permission to access the media library is required.' });
               return;
             }
         

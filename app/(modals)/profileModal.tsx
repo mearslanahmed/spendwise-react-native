@@ -4,6 +4,7 @@ import { colors, spacingX, spacingY } from "@/constants/theme";
 import { scale, verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
 import Header from "@/components/Header";
+import Toast from 'react-native-toast-message';
 import BackButton from "@/components/BackButton";
 import { Image } from "expo-image";
 import { getProfileImage } from "@/services/imageService";
@@ -42,17 +43,17 @@ const ProfileModal = () => {
     // and `videoExportPreset` is `'Passthrough'` (the default), ideally before launching the picker
     // so the app users aren't surprised by a system dialog after picking a video.
     // See "Invoke permissions for videos" sub section for more details.
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      Alert.alert('Permission required', 'Permission to access the media library is required.');
-      return;
+    if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Permission required', text2: 'Permission to access the media library is required.' });
+        return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: false,
-      aspect: [4, 3],
+      allowsEditing: true,
+      aspect: [4, 4],
       quality: 0.5,
     });
 
@@ -66,7 +67,7 @@ const ProfileModal = () => {
         // handle profile update logic here
         let {name, image} = userData;
         if(!name.trim()) {
-            Alert.alert("User", "Please fill all the fields");
+            Toast.show({ type: 'error', text1: 'User', text2: "Please fill all the fields" });
             return;
         }
         setLoading(true);
@@ -75,8 +76,8 @@ const ProfileModal = () => {
         if(res.success) {
             updateUserData(user?.uid as string);
             router.back();
-        }else{
-            Alert.alert("User", res.msg);
+        } else {
+            Toast.show({ type: 'error', text1: 'User', text2: res.msg });
         }
     }
   return (

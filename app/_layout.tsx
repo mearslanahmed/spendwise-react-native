@@ -2,6 +2,8 @@ import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import { Stack } from 'expo-router'
 import { AuthProvider } from '@/contexts/authContext'
+import Toast from 'react-native-toast-message'
+import { customToastConfig } from '@/config/toastConfig'
 
 const StackLayout = () => {
   return (
@@ -19,6 +21,7 @@ const StackLayout = () => {
 export default function _layout() {
   return <AuthProvider>
     <StackLayout/>
+    <Toast config={customToastConfig} position="top" topOffset={50} />
   </AuthProvider>
 }
 

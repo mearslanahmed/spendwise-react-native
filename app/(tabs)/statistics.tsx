@@ -1,9 +1,10 @@
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import ScreenWrapper from '@/components/ScreenWrapper'
 import { colors, radius, spacingX, spacingY } from '@/constants/theme'
 import { scale, verticalScale } from '@/utils/styling'
 import Header from '@/components/Header'
+import Toast from 'react-native-toast-message';
 import SegmentedControlTab from "react-native-segmented-control-tab";
 import { BarChart } from "react-native-gifted-charts";
 import Loading from '@/components/Loading'
@@ -45,13 +46,17 @@ const Statistics = () => {
     return baseConstraints;
   };
 
-  const { data: transactions, loading: transactionLoading } = useFetchData<TransactionType>("transactions", getConstraints());
+  const { data: transactions, loading: transactionLoading } = useFetchData<TransactionType>("transactions", 
+    user?.uid ? getConstraints() : []
+  );
 
   const loadMore = () => {
     if (transactions.length >= queryLimit) {
       setQueryLimit((prev) => prev + 30);
     }
   };
+
+  if (!user) return null;
 
   useEffect(()=>{
     setQueryLimit(30);
@@ -73,7 +78,7 @@ const Statistics = () => {
     if(res.success){
       setChartData(res?.data?.stats);
     }else{
-      Alert.alert("Error", res.msg);
+      Toast.show({ type: 'error', text1: 'Error', text2: res.msg });
     }
   }
   const getMonthlyStats = async ()=> {
@@ -83,7 +88,7 @@ const Statistics = () => {
     if(res.success){
       setChartData(res?.data?.stats);
     }else{
-      Alert.alert("Error", res.msg);
+      Toast.show({ type: 'error', text1: 'Error', text2: res.msg });
     }
   }
   const getYearlyStats = async ()=> {
@@ -93,7 +98,7 @@ const Statistics = () => {
     if(res.success){
       setChartData(res?.data?.stats);
     }else{
-      Alert.alert("Error", res.msg);
+      Toast.show({ type: 'error', text1: 'Error', text2: res.msg });
     }
   }
   return (

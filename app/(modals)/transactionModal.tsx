@@ -22,11 +22,13 @@ import Input from "@/components/Input";
 import { TransactionType, UserDataType, WalletType } from "@/types";
 import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
+import Toast from 'react-native-toast-message';
 import { updateUser } from "@/services/userService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import ImageUpload from "@/components/ImageUpload";
 import { CreateOrUpdateWallet, deleteWallet } from "@/services/walletService";
+import CustomAlert from "@/components/CustomAlert";
 import { Dropdown } from "react-native-element-dropdown";
 import { expenseCategories, transactionTypes } from "@/constants/data";
 import useFetchData from "@/hooks/useFetchData";
@@ -50,6 +52,7 @@ const TransactionModal = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
   const router = useRouter();
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -102,8 +105,8 @@ const TransactionModal = () => {
     const { type, amount, description, category, date, walletId, image } =
       transaction;
 
-    if (!walletId || !date || !amount || (type == "expense" && !category)) {
-      Alert.alert("Transaction", "Please fill all the required fields");
+    if (!walletId || !date || !amount || (type == 'expense' && !category)) {
+      Toast.show({ type: 'error', text1: 'Transaction', text2: "Please fill all the required fields" });
       return;
     }
 
@@ -127,39 +130,25 @@ const TransactionModal = () => {
       router.back();
     }
     else {
-      Alert.alert("Transaction", res?.msg || "Failed to create transaction");
+      Toast.show({ type: 'error', text1: 'Transaction', text2: res?.msg || "Failed to create transaction" });
     }
   };
 
   const onDelete = async () => {
     if (!oldTransaction?.id) return;
+    setDeleteAlertVisible(false);
     setLoading(true);
     const res = await deleteTransaction(oldTransaction?.id, oldTransaction.walletId);
     setLoading(false);
     if (res.success) {
       router.back();
     } else {
-      Alert.alert("Transaction", res.msg);
+      Toast.show({ type: 'error', text1: 'Transaction', text2: res.msg });
     }
   };
 
   const showDeleteAlert = () => {
-    Alert.alert(
-      "Confirm",
-      "Are you sure you want to delete this transaction?",
-      [
-        {
-          text: "Cancel",
-          onPress: () => console.log("cancel delete"),
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          onPress: () => onDelete(),
-          style: "destructive",
-        },
-      ]
-    );
+    setDeleteAlertVisible(true);
   };
 
   return (
@@ -406,6 +395,16 @@ const TransactionModal = () => {
           </Typo>
         </Button>
       </View>
+
+      <CustomAlert
+        visible={deleteAlertVisible}
+        title="Confirm"
+        message="Are you sure you want to delete this transaction?\n\nThis action cannot be undone."
+        onCancel={() => setDeleteAlertVisible(false)}
+        onConfirm={onDelete}
+        confirmText="Delete"
+        loading={loading}
+      />
     </ModalWrapper>
   );
 };

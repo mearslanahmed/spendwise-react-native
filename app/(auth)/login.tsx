@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import React, { useRef } from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { colors, spacingX, spacingY } from "@/constants/theme";
@@ -10,6 +10,7 @@ import * as Icons from "phosphor-react-native";
 import Button from "@/components/Button";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/authContext";
+import Toast from 'react-native-toast-message';
 
 const Login = () => {
   const emailRef = useRef("");
@@ -20,14 +21,14 @@ const Login = () => {
 
     const handelSubmit = async () => {
         if(!emailRef.current || !passwordRef.current) {
-            Alert.alert('Login',"Please fill all the fields");
+            Toast.show({ type: 'error', text1: 'Login', text2: "Please fill all the fields" });
             return;
         }
         setIsLoading(true);
         const res = await loginUser(emailRef.current.trim(), passwordRef.current);
         setIsLoading(false);
         if(!res.success) {
-            Alert.alert('Login', res.msg);
+            Toast.show({ type: 'error', text1: 'Login', text2: res.msg });
         }
     };
   return (

@@ -13,6 +13,8 @@ import { verticalScale } from "@/utils/styling";
 import Header from "@/components/Header";
 import Typo from "@/components/Typo";
 import { useAuth } from "@/contexts/authContext";
+import Toast from 'react-native-toast-message';
+import CustomAlert from "@/components/CustomAlert";
 import { Image } from "expo-image";
 import { getProfileImage } from "@/services/imageService";
 import { accountOptionType } from "@/types";
@@ -25,6 +27,7 @@ import { useRouter } from "expo-router";
 const Profile = () => {
   const { user } = useAuth();
   const router = useRouter();
+  const [logoutAlertVisible, setLogoutAlertVisible] = React.useState(false);
 
   const accountOptions: accountOptionType[] = [
     {
@@ -57,24 +60,18 @@ const Profile = () => {
   ];
 
   const handleLogout = async () => {
-    // Add your logout logic here
+    Toast.show({ type: 'success', text1: 'Logged out', text2: 'You have been successfully logged out.' });
     await signOut(auth);
   };
 
   const showLogoutAlert = () => {
-    Alert.alert("Confirm", "Are you sure you want to logout?", [
-      {
-        text: "Cancel",
-        onPress: () => {},
-        style: "cancel",
-      },
-      {
-        text: "Logout",
-        onPress: () => handleLogout(),
-        style: "destructive",
-      },
-    ]);
+    setLogoutAlertVisible(true);
   };
+
+  const confirmLogout = () => {
+    setLogoutAlertVisible(false);
+    handleLogout();
+  }
 
   const handlePress = (item: accountOptionType) => {
     if (item.title === "Logout") {
@@ -154,6 +151,15 @@ const Profile = () => {
           })}
         </View>
       </View>
+
+      <CustomAlert
+        visible={logoutAlertVisible}
+        title="Confirm Logout"
+        message="Are you sure you want to logout?"
+        onCancel={() => setLogoutAlertVisible(false)}
+        onConfirm={confirmLogout}
+        confirmText="Logout"
+      />
     </ScreenWrapper>
   );
 };
