@@ -96,6 +96,7 @@ export type TransactionListType = {
     title: string;
     loading: boolean;
     emptyListMessage?: string;
+    ListHeaderComponent?: React.ReactElement | React.ComponentType<any> | null;
 };
 
 export type TransactionItemsProps = {

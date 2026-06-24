@@ -53,23 +53,21 @@ const Home = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollViewStyle}
-        showsVerticalScrollIndicator={false}
+      <View
+        style={styles.scrollViewStyle}
       >
-        {/* card */}
-        <View>
-          <HomeCard/>
-        </View>
-
         <TransactionList 
           data={recentTransactions}
           loading={transactionLoading}
           emptyListMessage="No Transaction added yet!"
-          title="Recent Transactions" 
+          title="Recent Transactions"
+          ListHeaderComponent={
+            <View style={{ marginBottom: spacingY._25 }}>
+              <HomeCard/>
+            </View>
+          } 
         />
-
-      </ScrollView>
+      </View>
 
       <Button style={styles.floatingButton} onPress={()=> router.push("/(modals)/transactionModal")}>
         <Icons.PlusIcon
@@ -117,6 +115,7 @@ const styles = StyleSheet.create({
 
   // ScrollView Layout
   scrollViewStyle: {
+    flex: 1,
     marginTop: spacingY._10,
     paddingBottom: verticalScale(100),
     gap: spacingY._25,

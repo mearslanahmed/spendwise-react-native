@@ -18,6 +18,7 @@ const TransactionList = ({
   title,
   loading,
   emptyListMessage,
+  ListHeaderComponent,
 }: TransactionListType) => {
     const router = useRouter();
   const handleClick = (item: TransactionType) => {
@@ -47,6 +48,7 @@ const TransactionList = ({
       <View style={styles.list}>
         <FlashList
           data={data}
+          ListHeaderComponent={ListHeaderComponent}
           renderItem={({ item, index }) => (
             <TransactionItem
               item={item}

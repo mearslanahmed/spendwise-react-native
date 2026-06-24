@@ -12,6 +12,7 @@ import {
   Timestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { uploadFileToCloudinary } from "./imageService";
 import { CreateOrUpdateWallet } from "./walletService";
@@ -28,6 +29,9 @@ export const createOrUpdateTransaction = async (
     if (!amount || amount <= 0 || !walletId || !type) {
       return { success: false, msg: "Please fill all the required fields" };
     }
+
+    const batch = writeBatch(firestore);
+
     if (id) {
       // update existing transaction
       const oldTransactionSnapshot = await getDoc(
@@ -35,15 +39,16 @@ export const createOrUpdateTransaction = async (
       );
       const oldTransaction = oldTransactionSnapshot.data() as TransactionType;
       const shouldRevertOriginal =
-        oldTransaction.type != type ||
-        oldTransaction.amount != amount ||
-        oldTransaction.walletId != walletId;
+        oldTransaction.type !== type ||
+        oldTransaction.amount !== amount ||
+        oldTransaction.walletId !== walletId;
       if (shouldRevertOriginal) {
         let res = await revertAndUpdateWallets(
           oldTransaction,
           Number(amount),
           type,
-          walletId
+          walletId,
+          batch
         );
         if (!res.success) return res;
       }
@@ -52,7 +57,8 @@ export const createOrUpdateTransaction = async (
       let res = await updateWalletForNewTransaction(
         walletId!,
         Number(amount!),
-        type
+        type,
+        batch
       );
       if (!res.success) return res;
     }
@@ -75,7 +81,9 @@ export const createOrUpdateTransaction = async (
       ? doc(firestore, "transactions", id)
       : doc(collection(firestore, "transactions"));
 
-    await setDoc(transactionRef, transactionData, { merge: true }); // updates only the data provided
+    batch.set(transactionRef, transactionData, { merge: true }); // updates only the data provided
+
+    await batch.commit();
 
     return {
       success: true,
@@ -92,7 +100,8 @@ export const createOrUpdateTransaction = async (
 const updateWalletForNewTransaction = async (
   walletId: string,
   amount: number,
-  type: string
+  type: string,
+  batch: any
 ) => {
   try {
     const walletRef = doc(firestore, "wallets", walletId);
@@ -103,25 +112,25 @@ const updateWalletForNewTransaction = async (
 
     const walletData = walletSnapshot.data() as WalletType;
 
-    if (type == "expense" && walletData.amount! - amount < 0) {
+    if (type === "expense" && walletData.amount! - amount < 0) {
       return {
         success: false,
         msg: "Selected wallet don't have enough balance",
       };
     }
 
-    const updateType = type == "income" ? "totalIncome" : "totalExpense";
+    const updateType = type === "income" ? "totalIncome" : "totalExpense";
     const updatedWalletAmount =
-      type == "income"
+      type === "income"
         ? Number(walletData.amount) + amount
         : Number(walletData.amount) - amount;
 
     const updatedTotals =
-      type == "income"
+      type === "income"
         ? Number(walletData.totalIncome) + amount
         : Number(walletData.totalExpense) + amount;
 
-    await updateDoc(walletRef, {
+    batch.update(walletRef, {
       amount: updatedWalletAmount,
       [updateType]: updatedTotals,
     });
@@ -136,27 +145,24 @@ const revertAndUpdateWallets = async (
   oldTransaction: TransactionType,
   newTransactionAmount: number,
   newTransactionType: string,
-  newWalletId: string
+  newWalletId: string,
+  batch: any
 ) => {
   try {
-    const originalWalletSnapshot = await getDoc(
-      doc(firestore, "wallets", oldTransaction.walletId!)
-    );
+    const originalWalletRef = doc(firestore, "wallets", oldTransaction.walletId!);
+    const originalWalletSnapshot = await getDoc(originalWalletRef);
 
     const originalWallet = originalWalletSnapshot.data() as WalletType;
-    const originalWalletId = originalWalletSnapshot.id;
 
-    let newWalletSnapshot = await getDoc(
-      doc(firestore, "wallets", newWalletId)
-    );
+    const newWalletRef = doc(firestore, "wallets", newWalletId);
+    let newWalletSnapshot = await getDoc(newWalletRef);
 
     let newWallet = newWalletSnapshot.data() as WalletType;
-    const newWalletDocId = newWalletSnapshot.id;
 
     const revertType =
-      oldTransaction.type == "income" ? "totalIncome" : "totalExpense";
+      oldTransaction.type === "income" ? "totalIncome" : "totalExpense";
     const revertIncomeExpense: number =
-      oldTransaction.type == "income"
+      oldTransaction.type === "income"
         ? -Number(oldTransaction.amount!)
         : Number(oldTransaction.amount!);
 
@@ -166,12 +172,12 @@ const revertAndUpdateWallets = async (
     const revertedIncomeExpenseAmount =
       Number(originalWallet[revertType]) - Number(oldTransaction.amount!);
 
-    if (newTransactionType == "expense") {
+    if (newTransactionType === "expense") {
       // if user tries to convert income to expense on the same wallet
       // or if user tries to increase the expense amount and don't have enough balance
 
       if (
-        oldTransaction.walletId == newWalletId &&
+        oldTransaction.walletId === newWalletId &&
         revertedWalletAmount < newTransactionAmount
       ) {
         return {
@@ -180,7 +186,7 @@ const revertAndUpdateWallets = async (
         };
       }
       // if user tries to add expense from a new wallet but the wallet don't have enough balance
-      if (newWallet.amount! < newTransactionAmount) {
+      if (oldTransaction.walletId !== newWalletId && newWallet.amount! < newTransactionAmount) {
         return {
           success: false,
           msg: "Selected wallet don't have enough balance",
@@ -188,8 +194,7 @@ const revertAndUpdateWallets = async (
       }
     }
 
-    await CreateOrUpdateWallet({
-      id: originalWalletId,
+    batch.update(originalWalletRef, {
       amount: revertedWalletAmount,
       [revertType]: revertedIncomeExpenseAmount,
     });
@@ -197,26 +202,31 @@ const revertAndUpdateWallets = async (
     // revert completed
     //////////////////////////////////////////////////////////////////////////////////////
 
-    // refetch the newWallet because we might have just updated it
-    newWalletSnapshot = await getDoc(doc(firestore, "wallets", newWalletId));
-
-    newWallet = newWalletSnapshot.data() as WalletType;
+    // Since we are using batches, we can't refetch the newWallet and expect the updated value 
+    // if the original and new wallet are the SAME wallet. 
+    // We must calculate the final state manually if they are the same wallet!
+    const isSameWallet = oldTransaction.walletId === newWalletId;
 
     const updateType =
       newTransactionType === "income" ? "totalIncome" : "totalExpense";
 
     const updatedTransactionAmount: number =
-      newTransactionType == "income"
+      newTransactionType === "income"
         ? Number(newTransactionAmount)
         : -Number(newTransactionAmount);
 
-    const newWalletAmount = Number(newWallet.amount) + updatedTransactionAmount;
+    const baseAmount = isSameWallet ? revertedWalletAmount : Number(newWallet.amount);
+    const newWalletAmount = baseAmount + updatedTransactionAmount;
 
+    // We must also handle if it's the same wallet AND the same updateType (e.g. income -> income)
+    const baseIncomeExpenseAmount = (isSameWallet && revertType === updateType) 
+        ? revertedIncomeExpenseAmount 
+        : Number(newWallet[updateType] ?? 0);
+        
     const newIncomeExpenseAmount =
-      Number(newWallet[updateType] ?? 0) + Number(newTransactionAmount);
+      baseIncomeExpenseAmount + Number(newTransactionAmount);
 
-    await CreateOrUpdateWallet({
-      id: newWalletDocId,
+    batch.update(newWalletRef, {
       amount: newWalletAmount,
       [updateType]: newIncomeExpenseAmount,
     });
@@ -245,7 +255,8 @@ export const deleteTransaction = async (
     const transactionAmount = transactionData?.amount;
 
     // fetch wallet to update amount, totalIncome or totalExpenses
-    const walletSnapshot = await getDoc(doc(firestore, "wallets", walletId));
+    const walletRef = doc(firestore, "wallets", walletId);
+    const walletSnapshot = await getDoc(walletRef);
     const walletData = walletSnapshot.data() as WalletType;
 
     // check fields to be updated based on transaction type
@@ -254,23 +265,26 @@ export const deleteTransaction = async (
 
     const newWalletAmount =
       walletData?.amount! -
-      (transactionType == "income" ? transactionAmount : -transactionAmount);
+      (transactionType === "income" ? transactionAmount : -transactionAmount);
 
     const newIncomeExpenseAmount =
       Number(walletData[updateType] ?? 0) - Number(transactionAmount ?? 0);
 
     // if its expense and the wallet amount can go below zero
-    if (transactionType == "expense" && newWalletAmount < 0) {
+    if (transactionType === "expense" && newWalletAmount < 0) {
       return { success: false, msg: "You cannot delete this transaction" };
     }
 
-    await CreateOrUpdateWallet({
-      id: walletId,
+    const batch = writeBatch(firestore);
+
+    batch.update(walletRef, {
       amount: newWalletAmount,
       [updateType]: newIncomeExpenseAmount,
     });
 
-    await deleteDoc(transactionRef);
+    batch.delete(transactionRef);
+    
+    await batch.commit();
 
     return { success: true };
   } catch (err: any) {
