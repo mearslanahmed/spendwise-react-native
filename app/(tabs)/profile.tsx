@@ -40,7 +40,7 @@ const Profile = () => {
     {
       title: "Settings",
       icon: <Icons.GearSixIcon size={26} color={colors.white} weight="fill" />,
-      // routeName: "/[modals]/profileModal",
+      routeName: "/(modals)/settingsModal",
       bgColor: "#6366f1",
     },
 
@@ -52,9 +52,15 @@ const Profile = () => {
     },
 
     {
+      title: "Terms of Service",
+      icon: <Icons.FileTextIcon size={26} color={colors.white} weight="fill" />,
+      routeName: "/(modals)/termsOfServiceModal",
+      bgColor: colors.neutral600,
+    },
+
+    {
       title: "Logout",
       icon: <Icons.SignOutIcon size={26} color={colors.white} weight="fill" />,
-      // routeName: "/[modals]/profileModal",
       bgColor: "#e11d48",
     },
   ];

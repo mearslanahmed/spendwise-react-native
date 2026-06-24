@@ -59,7 +59,7 @@ const ProfileModal = () => {
 
     if (!result.canceled && result.assets?.length) {
       const asset = result.assets[0];
-      setUserData({ ...userData, image: asset.uri });
+      setUserData({ ...userData, image: asset });
     }
   };
 

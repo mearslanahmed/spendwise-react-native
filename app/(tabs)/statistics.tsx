@@ -142,7 +142,7 @@ const Statistics = () => {
                       roundedTop
                       roundedBottom
                       hideRules
-                      yAxisLabelPrefix="$"
+                      yAxisLabelPrefix={user?.currency || "$"}
                       yAxisThickness={0}
                       xAxisThickness={0}
                       yAxisLabelWidth={[1,2].includes(activeIndex) ? scale(38) : scale(35)}

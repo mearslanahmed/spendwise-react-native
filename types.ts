@@ -138,6 +138,7 @@ export type UserType = {
     name: string | null;
     image?: any;
     emailVerified?: boolean;
+    currency?: string;
 } | null;
 
 export type UserDataType = {

@@ -142,6 +142,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                     email: data?.email || null,
                     image: data.image || null,
                     emailVerified: auth.currentUser?.emailVerified || false,
+                    currency: data?.currency || "$",
                 };
                 setUser({...userData});
             }

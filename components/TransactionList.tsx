@@ -12,6 +12,7 @@ import { FadeInDown } from "react-native-reanimated";
 import Animated from "react-native-reanimated";
 import { Timestamp } from "firebase/firestore";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/contexts/authContext";
 
 const TransactionList = ({
   data,
@@ -90,6 +91,7 @@ const TransactionItem = ({
   index,
   handleClick,
 }: TransactionItemsProps) => {
+  const { user } = useAuth();
   let category = 
     item?.type == "income" ? incomeCategory : expenseCategories[item.category!];
   const IconComponent = category.icon;
@@ -126,7 +128,7 @@ const TransactionItem = ({
 
         <View style={styles.amountDate}>
           <Typo fontWeight={"500"} color={item?.type == 'income' ? colors.primary : colors.rose}>
-              {`${item?.type == "income" ? "+ $" : "- $"}${item?.amount}`}
+              {`${item?.type == "income" ? `+ ${user?.currency || "$"}` : `- ${user?.currency || "$"}`}${item?.amount}`}
             
           </Typo>
           <Typo size={13} color={colors.neutral400}>

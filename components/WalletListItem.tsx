@@ -3,6 +3,7 @@ import React from 'react'
 import Typo from './Typo'
 import { WalletType } from '@/types'
 import { Router } from 'expo-router'
+import { useAuth } from '@/contexts/authContext'
 import { verticalScale } from '@/utils/styling'
 import { colors, radius, spacingX } from '@/constants/theme'
 import { Image } from 'expo-image'
@@ -18,6 +19,7 @@ const WalletListItem = ({
     index: number,
     router: Router
 }) => {
+    const { user } = useAuth();
 
     const openWallet = () =>{
         router.push({
@@ -46,7 +48,7 @@ const WalletListItem = ({
         </View>
         <View style={styles.nameContainer}>
             <Typo size={16}>{item?.name}</Typo>
-            <Typo size={14} color={colors.neutral400}>${item?.amount}</Typo>
+            <Typo size={14} color={colors.neutral400}>{user?.currency || "$"}{item?.amount}</Typo>
         </View>
 
         <Icons.CaretRightIcon size={verticalScale(20)} weight="bold" color={colors.white} />
