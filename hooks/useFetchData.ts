@@ -5,7 +5,8 @@ import { firestore } from '@/config/firebase'
 
 const useFetchData = <T>(
   collectionName: string,
-  constraints: QueryConstraint[] = []
+  constraints: QueryConstraint[] = [],
+  dependencies: any[] = []
 ) => {
 
   const [data, setData] = useState<T[]>([])
@@ -37,8 +38,8 @@ const useFetchData = <T>(
         setLoading(false);
     });
     return () => unsub();
-  }, [collectionName, JSON.stringify(constraints)]) 
-  // We stringify constraints to deep-compare so we can dynamically pass limits from the outside!
+  }, [collectionName, ...dependencies]) 
+  // We use explicit dependencies instead of JSON.stringify on constraints to avoid infinite re-renders or stringification errors with complex Firestore objects
 
   return {data, loading, error};
 }

@@ -29,10 +29,16 @@ export const createOrUpdateTransaction = async (
   transactionData: Partial<TransactionType>
 ): Promise<ResponseType> => {
   try {
-    const { id, type, walletId, image, amount } = transactionData;
-    if (!amount || amount <= 0 || !walletId || !type) {
+    let { id, type, walletId, image, amount } = transactionData;
+    
+    // Normalize persisted amount before relying on aggregate sums
+    const normalizedAmount = Number(amount);
+    if (isNaN(normalizedAmount) || normalizedAmount <= 0 || !walletId || !type) {
       return { success: false, msg: "Please fill all the required fields" };
     }
+    
+    // Ensure the payload has the numeric amount
+    transactionData.amount = normalizedAmount;
 
     const batch = writeBatch(firestore);
 
@@ -49,7 +55,7 @@ export const createOrUpdateTransaction = async (
       if (shouldRevertOriginal) {
         let res = await revertAndUpdateWallets(
           oldTransaction,
-          Number(amount),
+          normalizedAmount,
           type,
           walletId,
           batch
@@ -60,7 +66,7 @@ export const createOrUpdateTransaction = async (
       // update wallet for new transaction
       let res = await updateWalletForNewTransaction(
         walletId!,
-        Number(amount!),
+        normalizedAmount,
         type,
         batch
       );
@@ -94,9 +100,10 @@ export const createOrUpdateTransaction = async (
       data: { ...transactionData, id: transactionRef.id },
     };
   } catch (error: any) {
+    const msg = error instanceof Error || error instanceof FirebaseError ? error.message : "Failed to create/update transaction";
     return {
       success: false,
-      msg: error.message || "Failed to create/update transaction",
+      msg
     };
   }
 };

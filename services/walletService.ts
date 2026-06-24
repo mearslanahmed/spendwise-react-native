@@ -42,7 +42,8 @@ export const CreateOrUpdateWallet = async (
             
     }
     catch(error: any){
-        return {success: false, msg: error.message || "Failed to create/update wallet"};
+        const msg = error instanceof Error ? error.message : "Failed to create/update wallet";
+        return {success: false, msg};
     }
 }
 
@@ -56,7 +57,8 @@ export const deleteWallet = async (walletId: string): Promise<ResponseType> => {
         return {success: true, msg: "Wallet deleted successfully"};
     }
     catch(error: any){
-        return {success: false, msg: error.message || "Failed to delete wallet"};
+        const msg = error instanceof Error ? error.message : "Failed to delete wallet";
+        return {success: false, msg};
     }
 }
 
@@ -89,6 +91,7 @@ export const deleteTransactionByWalletId = async (walletId: string): Promise<Res
         return {success: true, msg: "All transaction deleted successfully!"};
     }
     catch(error: any){
-        return {success: false, msg: error.message || "Failed to delete wallet"};
+        const msg = error instanceof Error ? error.message : "Failed to delete transactions";
+        return {success: false, msg};
     }
 }

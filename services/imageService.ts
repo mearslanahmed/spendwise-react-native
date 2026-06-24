@@ -34,7 +34,8 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
 
         return{success: true, msg: "Image uploaded successfully"};
     }catch(error: any){
-        return {success: false, msg: error.message || "Failed to upload image"};
+        const msg = error instanceof Error ? error.message : "Failed to upload image";
+        return {success: false, msg};
     }
 }
 

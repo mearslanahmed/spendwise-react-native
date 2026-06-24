@@ -63,7 +63,7 @@ const TransactionModal = () => {
   } = useFetchData<WalletType>("wallets", [
     where("uid", "==", user?.uid),
     orderBy("created", "desc"),
-  ]);
+  ], [user?.uid]);
 
   type paramType = {
     id: string;

@@ -47,7 +47,8 @@ const Statistics = () => {
   };
 
   const { data: transactions, loading: transactionLoading } = useFetchData<TransactionType>("transactions", 
-    user?.uid ? getConstraints() : []
+    user?.uid ? getConstraints() : [],
+    [user?.uid, queryLimit, activeIndex]
   );
 
   const loadMore = () => {

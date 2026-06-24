@@ -26,7 +26,8 @@ const Home = () => {
         where("uid", "==", user?.uid),
         orderBy("date", "desc"),
         limit(queryLimit)
-      ] : []
+      ] : [],
+      [user?.uid, queryLimit]
     );
 
     const loadMore = () => {
