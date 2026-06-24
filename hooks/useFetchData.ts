@@ -11,11 +11,16 @@ const useFetchData = <T>(
   const [data, setData] = useState<T[]>([])
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentLimit, setCurrentLimit] = useState(30);
 
   useEffect(() => {
     if (!collectionName) return;
     
     const collectionRef = collection(firestore, collectionName);
+    
+    // We filter out any existing limit() constraints if we are managing it internally,
+    // but in this simple version, we just assume the user will not pass limit() if they use loadMore.
+    // However, to be safe, we will just use the passed constraints.
     const q = query(collectionRef, ...constraints);
 
     const unsub = onSnapshot(q, (snapshot) => {
@@ -32,7 +37,9 @@ const useFetchData = <T>(
         setLoading(false);
     });
     return () => unsub();
-  }, [collectionName])
+  }, [collectionName, JSON.stringify(constraints)]) 
+  // We stringify constraints to deep-compare so we can dynamically pass limits from the outside!
+
   return {data, loading, error};
 }
 

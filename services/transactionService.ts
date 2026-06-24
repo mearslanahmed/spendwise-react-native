@@ -1,3 +1,4 @@
+import { FirebaseError } from "firebase/app";
 import { firestore } from "@/config/firebase";
 import { TransactionType, WalletType, ResponseType } from "@/types";
 import {
@@ -13,6 +14,9 @@ import {
   updateDoc,
   where,
   writeBatch,
+  getAggregateFromServer,
+  sum,
+  limit,
 } from "firebase/firestore";
 import { uploadFileToCloudinary } from "./imageService";
 import { CreateOrUpdateWallet } from "./walletService";
@@ -136,8 +140,9 @@ const updateWalletForNewTransaction = async (
     });
 
     return { success: true };
-  } catch (err: any) {
-    return { success: false, msg: err.message };
+  } catch (error) {
+    const msg = error instanceof FirebaseError ? error.message : (error as Error).message;
+    return { success: false, msg };
   }
 };
 
@@ -232,8 +237,9 @@ const revertAndUpdateWallets = async (
     });
 
     return { success: true };
-  } catch (err: any) {
-    return { success: false, msg: err.message };
+  } catch (error) {
+    const msg = error instanceof FirebaseError ? error.message : (error as Error).message;
+    return { success: false, msg };
   }
 };
 
@@ -287,8 +293,9 @@ export const deleteTransaction = async (
     await batch.commit();
 
     return { success: true };
-  } catch (err: any) {
-    return { success: false, msg: err.message };
+  } catch (error) {
+    const msg = error instanceof FirebaseError ? error.message : (error as Error).message;
+    return { success: false, msg };
   }
 };
 
@@ -296,141 +303,123 @@ export const deleteTransaction = async (
 export const fetchWeeklyStats = async (uid: string): Promise<ResponseType> => {
   try {
     const db = firestore;
-    const today = new Date();
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
-
-    const transactionsQuery = query(
-      collection(db, "transactions"),
-      where("date", ">=", Timestamp.fromDate(sevenDaysAgo)),
-      where("date", "<=", Timestamp.fromDate(today)),
-      orderBy("date", "desc"),
-      where("uid", "==", uid)
-    );
-
-    const querySnapshot = await getDocs(transactionsQuery);
     const weeklyData = getLast7Days();
-    const transactions: TransactionType[] = [];
 
-    // mapping each transaction in day
-    querySnapshot.forEach((doc) => {
-      const transaction = doc.data() as TransactionType;
-      transaction.id = doc.id;
-      transactions.push(transaction);
+    const statsPromises = weeklyData.map(async (day) => {
+      const startOfDay = new Date(day.date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(day.date);
+      endOfDay.setHours(23, 59, 59, 999);
 
-      const transactionDate = (transaction.date as Timestamp)
-        .toDate()
-        .toISOString()
-        .split("T")[0]; // as specific date
+      const incomeQuery = query(
+        collection(db, "transactions"),
+        where("uid", "==", uid),
+        where("type", "==", "income"),
+        where("date", ">=", Timestamp.fromDate(startOfDay)),
+        where("date", "<=", Timestamp.fromDate(endOfDay))
+      );
 
-      const dayData = weeklyData.find((day) => day.date == transactionDate);
+      const expenseQuery = query(
+        collection(db, "transactions"),
+        where("uid", "==", uid),
+        where("type", "==", "expense"),
+        where("date", ">=", Timestamp.fromDate(startOfDay)),
+        where("date", "<=", Timestamp.fromDate(endOfDay))
+      );
 
-      if (dayData) {
-        if (transaction.type == "income") {
-          dayData.income += transaction.amount;
-        } else if (transaction.type == "expense") {
-          dayData.expense += transaction.amount;
-        }
-      }
+      const [incomeSnap, expenseSnap] = await Promise.all([
+        getAggregateFromServer(incomeQuery, { total: sum("amount") }),
+        getAggregateFromServer(expenseQuery, { total: sum("amount") }),
+      ]);
+
+      day.income = incomeSnap.data().total || 0;
+      day.expense = expenseSnap.data().total || 0;
     });
 
-    // takes each day and creates two entries in stats array, one for income and one for expense
+    await Promise.all(statsPromises);
+
     const stats = weeklyData.flatMap((day) => [
       {
         value: day.income,
         label: day.day,
         spacing: scale(4),
         labelWidth: scale(30),
-
         frontColor: colors.primary,
       },
       {
         value: day.expense,
         frontColor: colors.rose,
-      }
+      },
     ]);
 
     return {
       success: true,
-      data: { 
-        stats,
-        transactions
-      },
+      data: { stats },
     };
-
-  } catch (err: any) {
-    return { success: false, msg: err.message };
+  } catch (error) {
+    const msg = error instanceof FirebaseError ? error.message : (error as Error).message;
+    return { success: false, msg };
   }
 };
-
-// fetchMonthlyStats function
 
 export const fetchMonthlyStats = async (uid: string): Promise<ResponseType> => {
   try {
     const db = firestore;
-    const today = new Date();
-    const twelveMonthsAgo = new Date(today);
-    twelveMonthsAgo.setMonth(today.getMonth() - 12);
-
-    // Define query to fetch transactions in the last 12 months
-    const transactionsQuery = query(
-      collection(db, "transactions"),
-      where("date", ">=", Timestamp.fromDate(twelveMonthsAgo)),
-      where("date", "<=", Timestamp.fromDate(today)),
-      orderBy("date", "desc"),
-      where("uid", "==", uid)
-    );
-
-    const querySnapshot = await getDocs(transactionsQuery);
     const monthlyData = getLast12Months();
-    const transactions: TransactionType[] = [];
 
-    // Process transactions to calculate income and expense for each month
-    querySnapshot.forEach((doc) => {
-      const transaction = doc.data() as TransactionType;
-      transaction.id = doc.id; // Include document ID in transaction data
-      transactions.push(transaction);
+    const statsPromises = monthlyData.map(async (month) => {
+      // month.fullDate is "YYYY-MM-DD"
+      const [yearStr, monthStr] = month.fullDate.split("-");
+      const year = parseInt(yearStr);
+      const monthIndex = parseInt(monthStr) - 1;
 
-      const transactionDate = (transaction.date as Timestamp).toDate();
-      const monthName = transactionDate.toLocaleString("default", {
-        month: "short",
-      });
-      const shortYear = transactionDate.getFullYear().toString().slice(-2);
-      
-      const monthData = monthlyData.find(
-        (month) => month.month === `${monthName} ${shortYear}`
+      const startOfMonth = new Date(year, monthIndex, 1);
+      const endOfMonth = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+
+      const incomeQuery = query(
+        collection(db, "transactions"),
+        where("uid", "==", uid),
+        where("type", "==", "income"),
+        where("date", ">=", Timestamp.fromDate(startOfMonth)),
+        where("date", "<=", Timestamp.fromDate(endOfMonth))
       );
 
-      if (monthData) {
-        if (transaction.type === "income") {
-          monthData.income += transaction.amount;
-        } else if (transaction.type === "expense") {
-          monthData.expense += transaction.amount;
-        }
-      }
+      const expenseQuery = query(
+        collection(db, "transactions"),
+        where("uid", "==", uid),
+        where("type", "==", "expense"),
+        where("date", ">=", Timestamp.fromDate(startOfMonth)),
+        where("date", "<=", Timestamp.fromDate(endOfMonth))
+      );
+
+      const [incomeSnap, expenseSnap] = await Promise.all([
+        getAggregateFromServer(incomeQuery, { total: sum("amount") }),
+        getAggregateFromServer(expenseQuery, { total: sum("amount") }),
+      ]);
+
+      month.income = incomeSnap.data().total || 0;
+      month.expense = expenseSnap.data().total || 0;
     });
 
-    // Reformat monthlyData for the bar chart with income and expense entries for each month
+    await Promise.all(statsPromises);
+
     const stats = monthlyData.flatMap((month) => [
       {
         value: month.income,
         label: month.month,
         spacing: scale(4),
         labelWidth: scale(46),
-        frontColor: colors.primary, // Income bar color
+        frontColor: colors.primary,
       },
       {
         value: month.expense,
-        frontColor: colors.rose, // Expense bar color
+        frontColor: colors.rose,
       },
     ]);
 
     return {
       success: true,
-      data: {
-        stats,
-        transactions, // Include all transaction details
-      },
+      data: { stats },
     };
   } catch (error) {
     console.error("Error fetching monthly transactions:", error);
@@ -446,68 +435,71 @@ export const fetchYearlyStats = async (uid: string): Promise<ResponseType> => {
   try {
     const db = firestore;
 
-    // Define query to fetch transactions in the last 12 months
-    const transactionsQuery = query(
+    // Get earliest transaction to determine year range
+    const firstTxQuery = query(
       collection(db, "transactions"),
-      orderBy("date", "desc"),
-      where("uid", "==", uid)
+      where("uid", "==", uid),
+      orderBy("date", "asc"),
+      limit(1)
     );
-
-    const querySnapshot = await getDocs(transactionsQuery);
-    const transactions: TransactionType[] = [];
-
-    const firstTransaction = querySnapshot.docs.reduce((earliest, doc) => {
-      const transactionDate = doc.data() .date.toDate();
-      return transactionDate < earliest ? transactionDate: earliest;
-    }, new Date());
-
-    const firstYear = firstTransaction.getFullYear();
+    const firstTxSnap = await getDocs(firstTxQuery);
+    
+    let firstYear = new Date().getFullYear();
+    if (!firstTxSnap.empty) {
+      firstYear = (firstTxSnap.docs[0].data().date as Timestamp).toDate().getFullYear();
+    }
     const currentYear = new Date().getFullYear();
-
     const yearsData = getYearsRange(firstYear, currentYear);
 
-    // Process transactions to calculate income and expense for each month
-    querySnapshot.forEach((doc) => {
-      const transaction = doc.data() as TransactionType;
-      transaction.id = doc.id; // Include document ID in transaction data
-      transactions.push(transaction);
+    const statsPromises = yearsData.map(async (yearObj: any) => {
+      const year = parseInt(yearObj.year);
+      const startOfYear = new Date(year, 0, 1);
+      const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
 
-      const transactionYear = (transaction.date as Timestamp).toDate().getFullYear();
-      
-      const yearData = yearsData.find(
-        (item: any) => item.year === transactionYear.toString()
+      const incomeQuery = query(
+        collection(db, "transactions"),
+        where("uid", "==", uid),
+        where("type", "==", "income"),
+        where("date", ">=", Timestamp.fromDate(startOfYear)),
+        where("date", "<=", Timestamp.fromDate(endOfYear))
       );
 
-      if (yearData) {
-        if (transaction.type === "income") {
-          yearData.income += transaction.amount;
-        } else if (transaction.type === "expense") {
-          yearData.expense += transaction.amount;
-        }
-      }
+      const expenseQuery = query(
+        collection(db, "transactions"),
+        where("uid", "==", uid),
+        where("type", "==", "expense"),
+        where("date", ">=", Timestamp.fromDate(startOfYear)),
+        where("date", "<=", Timestamp.fromDate(endOfYear))
+      );
+
+      const [incomeSnap, expenseSnap] = await Promise.all([
+        getAggregateFromServer(incomeQuery, { total: sum("amount") }),
+        getAggregateFromServer(expenseQuery, { total: sum("amount") }),
+      ]);
+
+      yearObj.income = incomeSnap.data().total || 0;
+      yearObj.expense = expenseSnap.data().total || 0;
     });
 
-    // Reformat monthlyData for the bar chart with income and expense entries for each month
+    await Promise.all(statsPromises);
+
     const stats = yearsData.flatMap((year: any) => [
       {
         value: year.income,
         label: year.year,
         spacing: scale(4),
         labelWidth: scale(35),
-        frontColor: colors.primary, // Income bar color
+        frontColor: colors.primary,
       },
       {
         value: year.expense,
-        frontColor: colors.rose, // Expense bar color
+        frontColor: colors.rose,
       },
     ]);
 
     return {
       success: true,
-      data: {
-        stats,
-        transactions, // Include all transaction details
-      },
+      data: { stats },
     };
   } catch (error) {
     console.error("Error fetching yearly transactions:", error);

@@ -19,10 +19,12 @@ const Home = () => {
     const {user} = useAuth();
     const router = useRouter();
 
+    const [queryLimit, setQueryLimit] = React.useState(30);
+
     const constraints = [
       where("uid", "==", user?.uid),
       orderBy("date", "desc"),
-      limit(30),
+      limit(queryLimit),
     ];
 
     const {
@@ -30,6 +32,12 @@ const Home = () => {
                 error,
                 loading: transactionLoading,
             } = useFetchData<TransactionType>("transactions", constraints);
+
+    const loadMore = () => {
+      if (recentTransactions.length >= queryLimit) {
+        setQueryLimit((prev) => prev + 30);
+      }
+    };
     
   return (
   <ScreenWrapper>
@@ -61,6 +69,7 @@ const Home = () => {
           loading={transactionLoading}
           emptyListMessage="No Transaction added yet!"
           title="Recent Transactions"
+          onEndReached={loadMore}
           ListHeaderComponent={
             <View style={{ marginBottom: spacingY._25 }}>
               <HomeCard/>
@@ -117,7 +126,6 @@ const styles = StyleSheet.create({
   scrollViewStyle: {
     flex: 1,
     marginTop: spacingY._10,
-    paddingBottom: verticalScale(100),
     gap: spacingY._25,
   },
 

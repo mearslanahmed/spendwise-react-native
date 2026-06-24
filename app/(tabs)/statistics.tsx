@@ -10,16 +10,51 @@ import Loading from '@/components/Loading'
 import { fetchMonthlyStats, fetchWeeklyStats, fetchYearlyStats } from '@/services/transactionService'
 import { useAuth } from '@/contexts/authContext'
 import TransactionList from '@/components/TransactionList'
+import useFetchData from '@/hooks/useFetchData'
+import { TransactionType } from '@/types'
+import { limit, orderBy, Timestamp, where } from 'firebase/firestore'
 
 
 const Statistics = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const {user} = useAuth();
-  const [chartData, setChartData] = useState([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
-  const [transactions, setTransactions] = useState([]);
+  const [queryLimit, setQueryLimit] = useState(30);
+
+  const getConstraints = () => {
+    let baseConstraints: any[] = [
+      where("uid", "==", user?.uid),
+      orderBy("date", "desc"),
+      limit(queryLimit)
+    ];
+
+    const today = new Date();
+    if (activeIndex === 0) {
+      // Weekly
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      baseConstraints.push(where("date", ">=", Timestamp.fromDate(sevenDaysAgo)));
+    } else if (activeIndex === 1) {
+      // Monthly
+      const twelveMonthsAgo = new Date(today);
+      twelveMonthsAgo.setMonth(today.getMonth() - 12);
+      baseConstraints.push(where("date", ">=", Timestamp.fromDate(twelveMonthsAgo)));
+    }
+    // Yearly has no date limit, gets all years
+    return baseConstraints;
+  };
+
+  const { data: transactions, loading: transactionLoading } = useFetchData<TransactionType>("transactions", getConstraints());
+
+  const loadMore = () => {
+    if (transactions.length >= queryLimit) {
+      setQueryLimit((prev) => prev + 30);
+    }
+  };
 
   useEffect(()=>{
+    setQueryLimit(30);
     if(activeIndex==0){
       getWeeklyStats();
     }
@@ -37,7 +72,6 @@ const Statistics = () => {
     setChartLoading(false);
     if(res.success){
       setChartData(res?.data?.stats);
-      setTransactions(res?.data?.transactions);
     }else{
       Alert.alert("Error", res.msg);
     }
@@ -48,7 +82,6 @@ const Statistics = () => {
     setChartLoading(false);
     if(res.success){
       setChartData(res?.data?.stats);
-      setTransactions(res?.data?.transactions);
     }else{
       Alert.alert("Error", res.msg);
     }
@@ -59,7 +92,6 @@ const Statistics = () => {
     setChartLoading(false);
     if(res.success){
       setChartData(res?.data?.stats);
-      setTransactions(res?.data?.transactions);
     }else{
       Alert.alert("Error", res.msg);
     }
@@ -71,73 +103,63 @@ const Statistics = () => {
           <Header title="Statistics" />
         </View>
 
-        <ScrollView
-          contentContainerStyle={{
-            gap: spacingY._20,
-            paddingTop: spacingY._5,
-            paddingBottom: verticalScale(100),
-          }}
-          showsVerticalScrollIndicator={false}
-          >
-            <SegmentedControlTab
-          values={["Weekly", "Monthly", "Yearly"]}
-          selectedIndex={activeIndex}
-          onTabPress={setActiveIndex}
-          // styling
-          tabsContainerStyle={styles.segmentStyle}
-          tabStyle={{ backgroundColor: colors.neutral800, borderColor: colors.neutral700 }}
-          activeTabStyle={{ backgroundColor: colors.neutral200 }}
-          tabTextStyle={{...styles.segmentFontStyle, color: colors.white}}
-          activeTabTextStyle={{...styles.segmentFontStyle, color: colors.black}}
-        />
+        <TransactionList 
+          loading={transactionLoading}
+          title='Transactions'
+          emptyListMessage='No transaction found'
+          data={transactions}
+          onEndReached={loadMore}
+          ListHeaderComponent={
+            <View style={{ gap: spacingY._20, paddingTop: spacingY._5, paddingBottom: spacingY._20 }}>
+              <SegmentedControlTab
+                values={["Weekly", "Monthly", "Yearly"]}
+                selectedIndex={activeIndex}
+                onTabPress={setActiveIndex}
+                tabsContainerStyle={styles.segmentStyle}
+                tabStyle={{ backgroundColor: colors.neutral800, borderColor: colors.neutral700 }}
+                activeTabStyle={{ backgroundColor: colors.neutral200 }}
+                tabTextStyle={{...styles.segmentFontStyle, color: colors.white}}
+                activeTabTextStyle={{...styles.segmentFontStyle, color: colors.black}}
+              />
 
-        <View style={styles.chartContainer}>
-          {
-            chartData.length > 0? (
-              <BarChart
-                data={chartData}
-                barWidth={scale(12)}
-                spacing={[1,2].includes(activeIndex) ? scale(25) : scale(16)}
-                roundedTop
-                roundedBottom
-                hideRules
-                yAxisLabelPrefix="5"
-                yAxisThickness={0}
-                xAxisThickness={0}
-                yAxisLabelWidth={[1,2].includes(activeIndex) ? scale(38) : scale(35)}
-                yAxisTextStyle={{ color: colors.neutral350}}
-                xAxisLabelTextStyle={{
-                  color: colors.neutral350,
-                  fontSize: verticalScale(12),
-                }}
-                noOfSections={3}
-                minHeight={5}
-                isAnimated={true}
-                // maxValue={100}
-                />
-            ):(
-              <View style={styles.noChart}/>
-            )
-          }
-          {
-            chartLoading && (
-              <View style={styles.chartLoadingContainer}>
-                <Loading color={colors.white}/>
+              <View style={styles.chartContainer}>
+                {
+                  chartData.length > 0? (
+                    <BarChart
+                      data={chartData}
+                      barWidth={scale(12)}
+                      spacing={[1,2].includes(activeIndex) ? scale(25) : scale(16)}
+                      roundedTop
+                      roundedBottom
+                      hideRules
+                      yAxisLabelPrefix="$"
+                      yAxisThickness={0}
+                      xAxisThickness={0}
+                      yAxisLabelWidth={[1,2].includes(activeIndex) ? scale(38) : scale(35)}
+                      yAxisTextStyle={{ color: colors.neutral350}}
+                      xAxisLabelTextStyle={{
+                        color: colors.neutral350,
+                        fontSize: verticalScale(12),
+                      }}
+                      noOfSections={3}
+                      minHeight={5}
+                      isAnimated={true}
+                    />
+                  ):(
+                    <View style={styles.noChart}/>
+                  )
+                }
+                {
+                  chartLoading && (
+                    <View style={styles.chartLoadingContainer}>
+                      <Loading color={colors.white}/>
+                    </View>
+                  )
+                }
               </View>
-            )
+            </View>
           }
-        </View>
-
-        {/* transaction */}
-        <View>
-          <TransactionList 
-            loading={chartLoading}
-            title='Transactions'
-            emptyListMessage='No transaction found'
-            data={transactions}
-          />
-        </View>
-          </ScrollView>
+        />
       </View>
     </ScreenWrapper>
   )
@@ -184,5 +206,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacingX._20,
     paddingVertical: spacingY._5,
     gap: spacingY._10,
+    flex: 1,
   },
 })

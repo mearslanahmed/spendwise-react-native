@@ -19,6 +19,7 @@ const TransactionList = ({
   loading,
   emptyListMessage,
   ListHeaderComponent,
+  onEndReached,
 }: TransactionListType) => {
     const router = useRouter();
   const handleClick = (item: TransactionType) => {
@@ -39,16 +40,23 @@ const TransactionList = ({
   };
   return (
     <View style={styles.container}>
-      {title && (
-        <Typo size={20} fontWeight={"500"}>
-          {title}
-        </Typo>
-      )}
-
       <View style={styles.list}>
         <FlashList
           data={data}
-          ListHeaderComponent={ListHeaderComponent}
+          ListHeaderComponent={
+            <View>
+              {ListHeaderComponent}
+              {title && (
+                <Typo size={20} fontWeight={"500"} style={{ marginBottom: spacingY._15 }}>
+                  {title}
+                </Typo>
+              )}
+            </View>
+          }
+          estimatedItemSize={70}
+          contentContainerStyle={{ paddingBottom: verticalScale(100) }}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
           renderItem={({ item, index }) => (
             <TransactionItem
               item={item}
@@ -135,10 +143,10 @@ export default TransactionList;
 const styles = StyleSheet.create({
   container: {
     gap: spacingY._17,
-    // flex: 1,
-    // backgroundColor: colors.red,
+    flex: 1,
   },
   list: {
+    flex: 1,
     minHeight: 3,
   },
 
