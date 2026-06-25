@@ -48,7 +48,7 @@ const TransactionList = ({
           data={data}
           ListHeaderComponent={
             <View>
-              {ListHeaderComponent}
+              {ListHeaderComponent as any}
               {title && (
                 <Typo size={20} fontWeight={"500"} style={{ marginBottom: spacingY._15, paddingHorizontal: horizontalPadding }}>
                   {title}
@@ -56,11 +56,11 @@ const TransactionList = ({
               )}
             </View>
           }
-          estimatedItemSize={70}
-          contentContainerStyle={{ paddingBottom: verticalScale(100) }}
+          {...( { estimatedItemSize: 70 } as any )}
+          contentContainerStyle={{ paddingBottom: verticalScale(120) }}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}
-          renderItem={({ item, index }) => (
+          renderItem={({ item, index }: any) => (
             <View style={{ paddingHorizontal: horizontalPadding }}>
               <TransactionItem
                 item={item}

@@ -248,7 +248,7 @@ const Statistics = () => {
   }, [activeIndex, allUserTransactions]);
 
   const maxValue = React.useMemo(() => {
-    const maxVal = chartData.reduce((max, item) => Math.max(max, item.value || 0), 0);
+    const maxVal = chartData.reduce((max: number, item: any) => Math.max(max, item.value || 0), 0);
     return maxVal > 0 ? maxVal : 100;
   }, [chartData]);
 
@@ -267,7 +267,7 @@ const Statistics = () => {
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.scrollContainer}
+          contentContainerStyle={[styles.scrollContainer, { paddingBottom: verticalScale(120) }]}
           showsVerticalScrollIndicator={false}
         >
           <SegmentedControlTab
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   savingsAdvice: {
-    marginTop: spacingY._2,
+    marginTop: scale(2),
     fontWeight: '500',
   },
   breakdownSection: {

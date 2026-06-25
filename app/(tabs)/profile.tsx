@@ -5,6 +5,7 @@ import {
   Touchable,
   TouchableOpacity,
   View,
+  ScrollView,
 } from "react-native";
 import React from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
@@ -89,7 +90,10 @@ const Profile = () => {
 
   return (
     <ScreenWrapper>
-      <View style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={[styles.container, { paddingBottom: verticalScale(120) }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Header title="Profile" style={{ marginVertical: spacingY._10 }} />
 
         {/* user info */}
@@ -156,7 +160,7 @@ const Profile = () => {
             );
           })}
         </View>
-      </View>
+      </ScrollView>
 
       <CustomAlert
         visible={logoutAlertVisible}

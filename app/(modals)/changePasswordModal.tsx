@@ -252,12 +252,12 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral700,
     borderRadius: radius._12,
     padding: spacingY._12,
-    gap: spacingY._8,
+    gap: scale(8),
   },
   checkRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacingX._8,
+    gap: scale(8),
   },
   footer: {
     alignItems: "center",

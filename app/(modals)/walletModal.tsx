@@ -104,7 +104,7 @@ const WalletModal = () => {
 
   const isPreset = typeof wallet.image === "string" && wallet.image.startsWith("preset_");
   const activePreset = isPreset ? (walletPresets[wallet.image] || walletPresets.preset_bank) : null;
-  const previewGradient = activePreset ? activePreset.gradient : ["#475569", "#1e293b"];
+  const previewGradient = (activePreset ? activePreset.gradient : ["#475569", "#1e293b"]) as unknown as readonly [string, string, ...string[]];
   const PreviewIcon = activePreset ? activePreset.icon : Icon.CreditCardIcon;
   const previewBg = activePreset ? activePreset.bgColor : colors.neutral600;
 
@@ -219,7 +219,7 @@ const WalletModal = () => {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                   />
-                  <Typo size={14} color="rgba(255, 255, 255, 0.9)" fontWeight="600" letterSpacing={3}>
+                  <Typo size={14} color="rgba(255, 255, 255, 0.9)" fontWeight="600" style={{ letterSpacing: 3 }}>
                     ***   ***   ***   8899
                   </Typo>
                 </View>
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   previewContainer: {
-    gap: spacingY._8,
+    gap: scale(8),
   },
   previewCardWrapper: {
     width: '100%',

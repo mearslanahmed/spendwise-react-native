@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     width: scale(160),
     padding: spacingY._12,
     borderRadius: radius._15,
-    gap: spacingY._8,
+    gap: scale(8),
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,

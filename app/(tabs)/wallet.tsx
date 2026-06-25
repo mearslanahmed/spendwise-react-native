@@ -37,8 +37,10 @@ const Wallet = () => {
 
   const wallets = useMemo(() => {
     return [...allWallets].sort((a, b) => {
-      const aTime = a.created?.toDate ? a.created.toDate().getTime() : new Date(a.created || 0).getTime();
-      const bTime = b.created?.toDate ? b.created.toDate().getTime() : new Date(b.created || 0).getTime();
+      const aCreated = a.created as any;
+      const bCreated = b.created as any;
+      const aTime = aCreated?.toDate ? aCreated.toDate().getTime() : new Date(aCreated || 0).getTime();
+      const bTime = bCreated?.toDate ? bCreated.toDate().getTime() : new Date(bCreated || 0).getTime();
       return bTime - aTime;
     });
   }, [allWallets]);
@@ -112,7 +114,7 @@ const Wallet = () => {
     const PresetIcon = preset ? preset.icon : null;
     
     // Choose gradient theme
-    const cardGradient = preset ? preset.gradient : ["#374151", "#1f2937"]; // Fallback charcoal
+    const cardGradient = (preset ? preset.gradient : ["#374151", "#1f2937"]) as unknown as readonly [string, string, ...string[]];
     const brandBg = preset ? preset.bgColor : colors.neutral700;
 
     // Mask card number using wallet ID
@@ -161,7 +163,7 @@ const Wallet = () => {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             />
-            <Typo size={14} color="rgba(255, 255, 255, 0.9)" fontWeight="600" letterSpacing={2}>
+            <Typo size={14} color="rgba(255, 255, 255, 0.9)" fontWeight="600" style={{ letterSpacing: 2 }}>
               {maskedCardNumber}
             </Typo>
           </View>
@@ -331,7 +333,7 @@ const Wallet = () => {
                               Total Income
                             </Typo>
                           </View>
-                          <Typo size={16} fontWeight="700" color={colors.green} style={{ marginTop: spacingY._6 }}>
+                          <Typo size={16} fontWeight="700" color={colors.green} style={{ marginTop: scale(6) }}>
                           {isBalanceHidden ? "••••" : `${user?.currency || "$"}${activeWalletStats.income.toFixed(2)}`}
                         </Typo>
                         </View>
@@ -347,7 +349,7 @@ const Wallet = () => {
                               Total Expense
                             </Typo>
                           </View>
-                          <Typo size={16} fontWeight="700" color={colors.rose} style={{ marginTop: spacingY._6 }}>
+                          <Typo size={16} fontWeight="700" color={colors.rose} style={{ marginTop: scale(6) }}>
                           {isBalanceHidden ? "••••" : `${user?.currency || "$"}${activeWalletStats.expense.toFixed(2)}`}
                         </Typo>
                         </View>

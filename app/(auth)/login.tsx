@@ -129,7 +129,7 @@ const Login = () => {
           />
           
           <Pressable onPress={() => !isLoading && router.push("/(auth)/forgot-password")} style={styles.forgotPasswordContainer} disabled={isLoading}>
-            <Typo size={14} style={[styles.forgotPassword, isLoading && { opacity: 0.5 }]}>
+            <Typo size={14} style={[styles.forgotPassword, isLoading && { opacity: 0.5 }] as any}>
               Forgot Password?
             </Typo>
           </Pressable>

@@ -16,8 +16,10 @@ const HomeCard = () => {
 
     const wallets = React.useMemo(() => {
       return [...allWallets].sort((a, b) => {
-        const aTime = a.created?.toDate ? a.created.toDate().getTime() : new Date(a.created || 0).getTime();
-        const bTime = b.created?.toDate ? b.created.toDate().getTime() : new Date(b.created || 0).getTime();
+        const aCreated = a.created as any;
+        const bCreated = b.created as any;
+        const aTime = aCreated?.toDate ? aCreated.toDate().getTime() : new Date(aCreated || 0).getTime();
+        const bTime = bCreated?.toDate ? bCreated.toDate().getTime() : new Date(bCreated || 0).getTime();
         return bTime - aTime;
       });
     }, [allWallets]);

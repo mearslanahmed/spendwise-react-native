@@ -1,10 +1,59 @@
+import React, { useEffect } from "react";
 import { View, TouchableOpacity, StyleSheet, Platform } from "react-native";
-import { Text } from "@react-navigation/elements";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { colors, spacingY } from "@/constants/theme";
-import { verticalScale } from "@/utils/styling";
+import { colors, radius } from "@/constants/theme";
+import { verticalScale, scale } from "@/utils/styling";
 import * as Icons from "phosphor-react-native";
 import { useTheme } from "@/contexts/themeContext";
+import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from "react-native-reanimated";
+
+// Animated Tab Item Component
+const TabItem = ({ route, isFocused, options, onPress, onLongPress, iconRender, themeColors }: any) => {
+  const scaleValue = useSharedValue(isFocused ? 1.15 : 1);
+  const dotOpacity = useSharedValue(isFocused ? 1 : 0);
+
+  useEffect(() => {
+    scaleValue.value = withSpring(isFocused ? 1.15 : 1, { damping: 10, stiffness: 100 });
+    dotOpacity.value = withTiming(isFocused ? 1 : 0, { duration: 250 });
+  }, [isFocused]);
+
+  const animatedIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scaleValue.value }],
+  }));
+
+  const animatedDotStyle = useAnimatedStyle(() => ({
+    opacity: dotOpacity.value,
+    transform: [{ scale: dotOpacity.value }],
+    backgroundColor: colors.primary, // Using primary color for the dot
+  }));
+
+  const handlePress = () => {
+    if (!isFocused) {
+      Haptics.selectionAsync(); // Subtle premium vibration
+    }
+    onPress();
+  };
+
+  return (
+    <TouchableOpacity
+      accessibilityState={isFocused ? { selected: true } : {}}
+      accessibilityLabel={options.tabBarAccessibilityLabel}
+      testID={options.tabBarButtonTestID}
+      onPress={handlePress}
+      onLongPress={onLongPress}
+      style={styles.tabbarItem}
+      activeOpacity={0.7}
+    >
+      <Animated.View style={animatedIconStyle}>
+        {iconRender(isFocused)}
+      </Animated.View>
+      <Animated.View style={[styles.activeDot, animatedDotStyle]} />
+    </TouchableOpacity>
+  );
+};
+
 
 function CustomTabs(props: BottomTabBarProps) {
   "use no memo";
@@ -14,12 +63,12 @@ function CustomTabs(props: BottomTabBarProps) {
 function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps) {
   "use no memo";
 
-  const { colors: themeColors } = useTheme();
+  const { colors: themeColors, isDark } = useTheme();
 
   const tabbarIcons: any = { 
     home: (isFocused: boolean) => (
       <Icons.HouseIcon
-        size={verticalScale(30)}
+        size={verticalScale(24)}
         weight={isFocused ? "fill" : "regular"}
         color={isFocused ? colors.primary : themeColors.textLighter}
       />
@@ -27,7 +76,7 @@ function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps
 
     statistics: (isFocused: boolean) => (
       <Icons.ChartBarIcon
-        size={verticalScale(30)}
+        size={verticalScale(24)}
         weight={isFocused ? "fill" : "regular"}
         color={isFocused ? colors.primary : themeColors.textLighter}
       />
@@ -35,7 +84,7 @@ function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps
 
     wallet: (isFocused: boolean) => (
       <Icons.WalletIcon
-        size={verticalScale(30)}
+        size={verticalScale(24)}
         weight={isFocused ? "fill" : "regular"}
         color={isFocused ? colors.primary : themeColors.textLighter}
       />
@@ -43,23 +92,17 @@ function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps
 
     profile: (isFocused: boolean) => (
       <Icons.UserIcon
-        size={verticalScale(30)}
+        size={verticalScale(24)}
         weight={isFocused ? "fill" : "regular"}
         color={isFocused ? colors.primary : themeColors.textLighter}
       />
     ),
   };
-  return (
-    <View style={[styles.tabbar, { backgroundColor: themeColors.card, borderTopColor: themeColors.border }]}>
+
+  const renderTabs = () => (
+    <View style={styles.tabbarItemsContainer}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
-        const label: any =
-          options.tabBarLabel !== undefined
-            ? options.tabBarLabel
-            : options.title !== undefined
-            ? options.title
-            : route.name;
-
         const isFocused = state.index === index;
 
         const onPress = () => {
@@ -82,19 +125,41 @@ function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps
         };
 
         return (
-          <TouchableOpacity
+          <TabItem
             key={route.key}
-            accessibilityState={isFocused ? { selected: true } : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
-            testID={options.tabBarButtonTestID}
+            route={route}
+            isFocused={isFocused}
+            options={options}
             onPress={onPress}
             onLongPress={onLongPress}
-            style={styles.tabbarItem}
-          >
-            {tabbarIcons[route.name]?.(isFocused)}
-          </TouchableOpacity>
+            iconRender={tabbarIcons[route.name]}
+            themeColors={themeColors}
+          />
         );
       })}
+    </View>
+  );
+
+  if (Platform.OS === 'ios') {
+    return (
+      <View style={styles.floatingContainer}>
+        <BlurView 
+          intensity={isDark ? 80 : 90} 
+          tint={isDark ? "dark" : "light"} 
+          style={styles.blurContainer}
+        >
+          {renderTabs()}
+        </BlurView>
+      </View>
+    );
+  }
+
+  // Android: Samsung UI 8.5 style floating pill
+  return (
+    <View style={[styles.floatingContainer, styles.androidElevation]}>
+      <View style={[styles.androidContainer, { backgroundColor: isDark ? colors.neutral800 : colors.white }]}>
+        {renderTabs()}
+      </View>
     </View>
   );
 }
@@ -102,20 +167,55 @@ function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps
 export default CustomTabs;
 
 const styles = StyleSheet.create({
-    tabbar: {
-        flexDirection: "row", 
-        width: "100%", 
-        height: Platform.OS === 'ios' ? verticalScale(73) : verticalScale(55),
-        backgroundColor: colors.neutral800,
+    floatingContainer: {
+        position: 'absolute',
+        bottom: verticalScale(20),
+        left: scale(20),
+        right: scale(20),
+        height: verticalScale(65),
+        borderRadius: radius._30,
+        overflow: 'hidden',
+    },
+    blurContainer: {
+        flex: 1,
+        borderRadius: radius._30,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    androidContainer: {
+        flex: 1,
+        borderRadius: radius._30,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    androidElevation: {
+        overflow: 'visible',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 15,
+        elevation: 10,
+        borderRadius: radius._30,
+    },
+    tabbarItemsContainer: {
+        flex: 1,
+        flexDirection: "row",
         justifyContent: "space-around",
         alignItems: "center",
-        borderTopColor: colors.neutral700,
-        borderTopWidth: 1,
+        paddingHorizontal: scale(10),
     },
-
     tabbarItem: {
-        marginBottom: Platform.OS === 'ios' ? spacingY._10 : spacingY._5,
+        flex: 1,
         alignItems: "center",
         justifyContent: "center",
+        height: '100%',
+        position: 'relative', // Added for absolute dot positioning
+    },
+    activeDot: {
+        position: 'absolute',
+        bottom: verticalScale(12), // Positioning dot under icon
+        width: 4,
+        height: 4,
+        borderRadius: 2,
     }
 });
