@@ -55,17 +55,26 @@ const TermsOfServiceModal = () => {
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              4. Prohibited Uses
+              4. Premium Features
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              You agree not to modify, reverse-engineer, or attempt to hack any part of the 
-              application, databases, or API communication layers.
+              Certain features may require a premium subscription or one-time purchase. 
+              Pricing and terms will be clearly displayed before any transaction.
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              5. Disclaimer of Warranties
+              5. Push Notifications & Privacy
+            </Typo>
+            <Typo size={14} color={colors.neutral300}>
+              SpendWise may ask for permission to send you Push Notifications (e.g., budget alerts and daily reminders). These notifications are generated locally on your device or triggered securely. We do not sell or share your notification data or financial habits with third parties for marketing purposes. You can disable push notifications at any time in the app Settings.
+            </Typo>
+          </View>
+
+          <View style={styles.section}>
+            <Typo size={18} fontWeight="700">
+              6. Limitation of Liability
             </Typo>
             <Typo size={14} color={colors.neutral300}>
               {"SpendWise is provided 'as is' without warranties of any kind. We do not guarantee uninterrupted service or that the app is entirely free of bugs or errors."}

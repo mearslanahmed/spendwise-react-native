@@ -97,6 +97,7 @@ export type TransactionListType = {
     loading: boolean;
     emptyListMessage?: string;
     ListHeaderComponent?: React.ReactElement | React.ComponentType<any> | null;
+    titleRightComponent?: React.ReactNode;
     onEndReached?: () => void;
     horizontalPadding?: number;
 };
@@ -141,6 +142,8 @@ export type UserType = {
     emailVerified?: boolean;
     currency?: string;
     theme?: 'dark' | 'light' | 'system';
+    pushNotificationsEnabled?: boolean;
+    reminderTime?: string; // Format "HH:mm"
 } | null;
 
 export type UserDataType = {
@@ -188,4 +191,14 @@ export type BudgetType = {
     category: string;
     amount: number;
     created?: any;
+};
+
+export type NotificationType = {
+    id?: string;
+    uid: string;
+    title: string;
+    message: string;
+    type: "budget_alert" | "system" | "reminder";
+    read: boolean;
+    createdAt?: Date | Timestamp | string | any;
 };

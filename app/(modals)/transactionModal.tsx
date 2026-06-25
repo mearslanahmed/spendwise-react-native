@@ -38,6 +38,8 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { createOrUpdateTransaction, deleteTransaction } from "@/services/transactionService";
 import { useTheme } from "@/contexts/themeContext";
+import { addNotification } from "@/services/notificationService";
+import { scheduleLocalNotification } from "@/services/expoNotificationService";
 
 const TransactionModal = () => {
   const { user } = useAuth();
@@ -191,6 +193,24 @@ const TransactionModal = () => {
 
     setLoading(false);
     if (res?.success) {
+      if (!oldTransaction?.id && transaction.type === 'expense' && warning && user?.uid) {
+        const title = "Budget Exceeded! 🚨";
+        const message = `You've exceeded your ${warning.categoryLabel} budget by $${warning.exceededBy.toFixed(2)}.`;
+        
+        // 1. Add to In-App Inbox
+        await addNotification({
+          uid: user.uid,
+          title,
+          message,
+          type: "budget_alert",
+          read: false,
+        });
+
+        // 2. Fire OS-Level Mobile Notification (if enabled)
+        if (user.pushNotificationsEnabled) {
+          await scheduleLocalNotification(title, message);
+        }
+      }
       router.back();
     }
     else {

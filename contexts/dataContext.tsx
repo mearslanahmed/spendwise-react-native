@@ -2,21 +2,24 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./authContext";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { firestore } from "@/config/firebase";
-import { TransactionType, BudgetType, WalletType } from "@/types";
+import { TransactionType, BudgetType, WalletType, NotificationType } from "@/types";
 
 interface DataContextType {
   transactions: TransactionType[];
   budgets: BudgetType[];
   wallets: WalletType[];
+  notifications: NotificationType[];
   loading: {
     transactions: boolean;
     budgets: boolean;
     wallets: boolean;
+    notifications: boolean;
   };
   error: {
     transactions: string | null;
     budgets: string | null;
     wallets: string | null;
+    notifications: string | null;
   };
 }
 
@@ -27,21 +30,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [transactions, setTransactions] = useState<TransactionType[]>([]);
   const [budgets, setBudgets] = useState<BudgetType[]>([]);
   const [wallets, setWallets] = useState<WalletType[]>([]);
+  const [notifications, setNotifications] = useState<NotificationType[]>([]);
 
   const [loading, setLoading] = useState({
     transactions: true,
     budgets: true,
     wallets: true,
+    notifications: true,
   });
 
   const [error, setError] = useState<{
     transactions: string | null;
     budgets: string | null;
     wallets: string | null;
+    notifications: string | null;
   }>({
     transactions: null,
     budgets: null,
     wallets: null,
+    notifications: null,
   });
 
   useEffect(() => {
@@ -49,12 +56,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setTransactions([]);
       setBudgets([]);
       setWallets([]);
-      setLoading({ transactions: false, budgets: false, wallets: false });
+      setNotifications([]);
+      setLoading({ transactions: false, budgets: false, wallets: false, notifications: false });
       return;
     }
 
-    setLoading({ transactions: true, budgets: true, wallets: true });
-    setError({ transactions: null, budgets: null, wallets: null });
+    setLoading({ transactions: true, budgets: true, wallets: true, notifications: true });
+    setError({ transactions: null, budgets: null, wallets: null, notifications: null });
 
     // Transactions listener
     const txQuery = query(
@@ -122,15 +130,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    // Notifications listener
+    const notificationQuery = query(
+      collection(firestore, "notifications"),
+      where("uid", "==", user.uid)
+    );
+    const unsubNotification = onSnapshot(
+      notificationQuery,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as NotificationType[];
+        
+        // Sort by createdAt descending (newest first)
+        data.sort((a, b) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+            return dateB - dateA;
+        });
+
+        setNotifications(data);
+        setLoading((prev) => ({ ...prev, notifications: false }));
+      },
+      (err) => {
+        console.error("DataContext Notifications error:", err);
+        setError((prev) => ({ ...prev, notifications: err.message }));
+        setLoading((prev) => ({ ...prev, notifications: false }));
+      }
+    );
+
     return () => {
       unsubTx();
       unsubBudget();
       unsubWallet();
+      unsubNotification();
     };
   }, [user?.uid]);
 
   return (
-    <DataContext.Provider value={{ transactions, budgets, wallets, loading, error }}>
+    <DataContext.Provider value={{ transactions, budgets, wallets, notifications, loading, error }}>
       {children}
     </DataContext.Provider>
   );

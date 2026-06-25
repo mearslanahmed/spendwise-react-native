@@ -1,4 +1,4 @@
-import { ActivityIndicator, Linking, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, StyleSheet, TouchableOpacity, View, Switch } from "react-native";
 import React, { useState } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
@@ -19,6 +19,8 @@ import { useRouter } from "expo-router";
 import { cacheDirectory, writeAsStringAsync, StorageAccessFramework } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { useTheme } from "@/contexts/themeContext";
+import { registerForPushNotificationsAsync, scheduleDailyReminder, cancelAllScheduledNotifications } from "@/services/expoNotificationService";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 const currencies = [
   { label: "USD ($)", value: "$" },
@@ -44,7 +46,94 @@ const SettingsModal = () => {
   const [confirmResetVisible, setConfirmResetVisible] = useState(false);
 
   const selectedCurrency = user?.currency || "$";
+  const pushEnabled = user?.pushNotificationsEnabled || false;
+  
+  // By default, 8:00 PM if none is set
+  const initialReminderDate = new Date();
+  if (user?.reminderTime) {
+    const [hours, minutes] = user.reminderTime.split(":");
+    initialReminderDate.setHours(Number(hours), Number(minutes), 0, 0);
+  } else {
+    initialReminderDate.setHours(20, 0, 0, 0);
+  }
+  
+  const [reminderDate, setReminderDate] = useState(initialReminderDate);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
+  const handleTogglePushNotifications = async (value: boolean) => {
+    if (!user?.uid) return;
+    setLoading(true);
+    try {
+      if (value) {
+        const token = await registerForPushNotificationsAsync();
+        if (!token) {
+          Toast.show({
+            type: "error",
+            text1: "Permission Denied",
+            text2: "You must enable notifications in your phone settings.",
+          });
+          setLoading(false);
+          return;
+        }
+        await scheduleDailyReminder(reminderDate.getHours(), reminderDate.getMinutes());
+      } else {
+        await cancelAllScheduledNotifications();
+      }
+      
+      const userRef = doc(firestore, "users", user.uid);
+      await updateDoc(userRef, { pushNotificationsEnabled: value });
+      await updateUserData(user.uid);
+      
+      Toast.show({
+        type: "success",
+        text1: "Settings Updated",
+        text2: `Push Notifications ${value ? "Enabled" : "Disabled"}.`,
+      });
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error.message || "Failed to update notification settings",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleTimeChange = async (event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === "android") {
+      setShowTimePicker(false);
+    }
+    
+    if (event.type === "set" && date && user?.uid) {
+      setReminderDate(date);
+      const timeString = `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+      
+      setLoading(true);
+      try {
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, { reminderTime: timeString });
+        await updateUserData(user.uid);
+        
+        if (pushEnabled) {
+          await scheduleDailyReminder(date.getHours(), date.getMinutes());
+        }
+        
+        Toast.show({
+          type: "success",
+          text1: "Reminder Time Updated",
+          text2: `Your daily reminder is set for ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+        });
+      } catch (error: any) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to save reminder time.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   const handleCurrencyChange = async (item: { label: string; value: string }) => {
     if (!user?.uid) return;
@@ -331,6 +420,48 @@ const SettingsModal = () => {
                 disable={loading}
               />
             </View>
+
+            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+
+            <View style={styles.settingRow}>
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+                Push Notifications
+              </Typo>
+              <Switch
+                value={pushEnabled}
+                onValueChange={handleTogglePushNotifications}
+                disabled={loading}
+                trackColor={{ false: themeColors.border, true: colors.primary }}
+                thumbColor={colors.white}
+              />
+            </View>
+
+            {pushEnabled && (
+              <>
+                <View style={[styles.divider, { backgroundColor: themeColors.border, marginLeft: spacingX._20 }]} />
+                <TouchableOpacity
+                  style={styles.settingRow}
+                  onPress={() => setShowTimePicker(true)}
+                  disabled={loading}
+                >
+                  <Typo size={15} color={themeColors.textLighter} style={{ flex: 1, paddingLeft: spacingX._15 }}>
+                    Daily Reminder Time
+                  </Typo>
+                  <Typo size={15} color={colors.primary} fontWeight="600">
+                    {reminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Typo>
+                </TouchableOpacity>
+
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={reminderDate}
+                    mode="time"
+                    display="default"
+                    onChange={handleTimeChange}
+                  />
+                )}
+              </>
+            )}
           </View>
 
           {/* Support Section */}

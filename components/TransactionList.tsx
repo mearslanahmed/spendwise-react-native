@@ -21,6 +21,7 @@ const TransactionList = ({
   loading,
   emptyListMessage,
   ListHeaderComponent,
+  titleRightComponent,
   onEndReached,
   horizontalPadding = 0,
 }: TransactionListType) => {
@@ -49,14 +50,30 @@ const TransactionList = ({
           ListHeaderComponent={
             <View>
               {ListHeaderComponent as any}
-              {title && (
-                <Typo size={20} fontWeight={"500"} style={{ marginBottom: spacingY._15, paddingHorizontal: horizontalPadding }}>
-                  {title}
-                </Typo>
+              {(title || titleRightComponent) && (
+                <View style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  marginBottom: spacingY._15, 
+                  paddingHorizontal: horizontalPadding 
+                }}>
+                  {title ? (
+                    <Typo size={20} fontWeight={"500"}>
+                      {title}
+                    </Typo>
+                  ) : <View />}
+                  {titleRightComponent && (
+                    <View style={{ flex: 1, alignItems: 'flex-end', marginLeft: 10 }}>
+                      {titleRightComponent}
+                    </View>
+                  )}
+                </View>
               )}
             </View>
           }
           {...( { estimatedItemSize: 70 } as any )}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: verticalScale(120) }}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}

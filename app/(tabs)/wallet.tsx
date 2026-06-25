@@ -13,6 +13,7 @@ import Loading from "@/components/Loading";
 import { walletPresets } from "@/constants/data";
 import { LinearGradient } from "expo-linear-gradient";
 import TransactionList from "@/components/TransactionList";
+import FilterTabs from "@/components/FilterTabs";
 import { Image } from "expo-image";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -31,6 +32,7 @@ const Wallet = () => {
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("All");
 
   const maskAmount = (val: number) =>
     isBalanceHidden ? "••••" : `${user?.currency || "$"}${val.toFixed(2)}`;
@@ -53,8 +55,35 @@ const Wallet = () => {
   // Filter transactions specifically for the active wallet
   const filteredTransactions = useMemo(() => {
     if (!activeWallet) return [];
-    return allUserTransactions.filter((tx) => tx.walletId === activeWallet.id);
-  }, [allUserTransactions, activeWallet]);
+    let txs = allUserTransactions.filter((tx) => tx.walletId === activeWallet.id);
+    
+    if (activeFilter === "Income") {
+      txs = txs.filter((tx) => tx.type === "income");
+    } else if (activeFilter === "Expense") {
+      txs = txs.filter((tx) => tx.type === "expense");
+    } else if (activeFilter === "This Week") {
+      const now = new Date();
+      const day = now.getDay() || 7; 
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1).getTime();
+      const endOfWeek = startOfWeek + (7 * 24 * 60 * 60 * 1000) - 1;
+      
+      txs = txs.filter((tx) => {
+        const txTime = (tx.date as any)?.toDate ? (tx.date as any).toDate().getTime() : new Date(tx.date as string).getTime();
+        return txTime >= startOfWeek && txTime <= endOfWeek;
+      });
+    } else if (activeFilter === "This Month") {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+      
+      txs = txs.filter((tx) => {
+        const txTime = (tx.date as any)?.toDate ? (tx.date as any).toDate().getTime() : new Date(tx.date as string).getTime();
+        return txTime >= startOfMonth && txTime <= endOfMonth;
+      });
+    }
+    
+    return txs;
+  }, [allUserTransactions, activeWallet, activeFilter]);
 
   // Compute stats specifically for the active wallet
   const activeWalletStats = useMemo(() => {
@@ -198,6 +227,16 @@ const Wallet = () => {
         title={activeWallet ? "Recent Transactions" : ""}
         loading={transactionsLoading}
         emptyListMessage={activeWallet ? "No transactions found for this wallet." : "Please create a wallet to start adding transactions."}
+        titleRightComponent={
+          activeWallet ? (
+            <FilterTabs 
+              filters={["All", "Income", "Expense", "This Week", "This Month"]}
+              activeFilter={activeFilter}
+              onFilterSelect={setActiveFilter}
+              style={{ marginVertical: 0 }}
+            />
+          ) : null
+        }
         horizontalPadding={spacingX._20}
         ListHeaderComponent={
           <View style={styles.headerComponent}>

@@ -10,7 +10,7 @@ import {
 import React from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
-import { verticalScale } from "@/utils/styling";
+import { verticalScale, scale } from "@/utils/styling";
 import Header from "@/components/Header";
 import Typo from "@/components/Typo";
 import { useAuth } from "@/contexts/authContext";
@@ -24,9 +24,10 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { signOut } from "firebase/auth";
 import { auth } from "@/config/firebase";
 import { useRouter } from "expo-router";
-
+import * as ImagePicker from "expo-image-picker";
+import { updateUser } from "@/services/userService";
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, updateUserData } = useAuth();
   const router = useRouter();
   const [logoutAlertVisible, setLogoutAlertVisible] = React.useState(false);
 
@@ -71,6 +72,26 @@ const Profile = () => {
     await signOut(auth);
   };
 
+  const handleImagePick = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && user?.uid) {
+      const selectedImage = result.assets[0];
+      const res = await updateUser(user.uid, { ...user, image: selectedImage as any } as any);
+      if (res.success) {
+        Toast.show({ type: "success", text1: "Avatar updated", text2: "Your profile picture has been changed." });
+        updateUserData(user.uid);
+      } else {
+        Toast.show({ type: "error", text1: "Update failed", text2: res.msg });
+      }
+    }
+  };
+
   const showLogoutAlert = () => {
     setLogoutAlertVisible(true);
   };
@@ -99,7 +120,7 @@ const Profile = () => {
         {/* user info */}
         <View style={styles.userInfo}>
           {/* avatar */}
-          <View>
+          <TouchableOpacity onPress={handleImagePick} style={styles.avatarContainer}>
             {/* user image */}
             <Image
               source={getProfileImage(user?.image)}
@@ -107,7 +128,10 @@ const Profile = () => {
               contentFit="cover"
               transition={100}
             />
-          </View>
+            <View style={styles.editIcon}>
+              <Icons.CameraIcon size={20} color={colors.black} weight="fill" />
+            </View>
+          </TouchableOpacity>
 
           {/* name & email */}
           <View style={styles.nameContainer}>
@@ -160,6 +184,13 @@ const Profile = () => {
             );
           })}
         </View>
+
+        {/* app version */}
+        <View style={styles.versionContainer}>
+          <Typo size={12} color={colors.neutral500} style={{ textAlign: "center" }}>
+            SpendWise v1.0.0
+          </Typo>
+        </View>
       </ScrollView>
 
       <CustomAlert
@@ -183,7 +214,7 @@ const styles = StyleSheet.create({
   },
 
   userInfo: {
-    marginTop: verticalScale(30),
+    marginTop: verticalScale(10),
     alignItems: "center",
     gap: spacingY._15,
   },
@@ -245,5 +276,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacingX._10,
+  },
+  versionContainer: {
+    marginTop: spacingY._30,
+    marginBottom: spacingY._10,
+    alignItems: "center",
   },
 });

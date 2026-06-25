@@ -9,6 +9,7 @@ import { scale, verticalScale } from '@/utils/styling'
 import * as Icons from 'phosphor-react-native'
 import HomeCard from '@/components/HomeCard'
 import TransactionList from '@/components/TransactionList'
+import FilterTabs from '@/components/FilterTabs'
 import { useData } from '@/contexts/dataContext'
 import { BudgetType, TransactionType } from '@/types'
 import { Timestamp } from 'firebase/firestore'
@@ -21,9 +22,14 @@ const Home = () => {
     const { user } = useAuth();
     const router = useRouter();
     const { colors: themeColors, isDark } = useTheme();
-    const { transactions, budgets, loading } = useData();
+    const { transactions, budgets, notifications, loading } = useData();
+
+    const unreadCount = React.useMemo(() => {
+      return notifications?.filter(n => !n.read).length || 0;
+    }, [notifications]);
 
     const [queryLimit, setQueryLimit] = React.useState(30);
+    const [activeFilter, setActiveFilter] = React.useState("All");
 
     const transactionLoading = loading.transactions;
 
@@ -35,13 +41,40 @@ const Home = () => {
     }, []);
 
     const recentTransactions = React.useMemo(() => {
-      const sorted = [...transactions].sort((a, b) => {
+      let filtered = [...transactions];
+      
+      if (activeFilter === "Income") {
+        filtered = filtered.filter(tx => tx.type === "income");
+      } else if (activeFilter === "Expense") {
+        filtered = filtered.filter(tx => tx.type === "expense");
+      } else if (activeFilter === "This Week") {
+        const now = new Date();
+        const day = now.getDay() || 7; 
+        const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1).getTime();
+        const endOfWeek = startOfWeek + (7 * 24 * 60 * 60 * 1000) - 1;
+        
+        filtered = filtered.filter(tx => {
+          const txTime = (tx.date as any)?.toDate ? (tx.date as any).toDate().getTime() : new Date(tx.date as string).getTime();
+          return txTime >= startOfWeek && txTime <= endOfWeek;
+        });
+      } else if (activeFilter === "This Month") {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+        
+        filtered = filtered.filter(tx => {
+          const txTime = (tx.date as any)?.toDate ? (tx.date as any).toDate().getTime() : new Date(tx.date as string).getTime();
+          return txTime >= startOfMonth && txTime <= endOfMonth;
+        });
+      }
+      
+      const sorted = filtered.sort((a, b) => {
         const aTime = (a.date as Timestamp)?.toDate().getTime() || new Date(a.date as string).getTime();
         const bTime = (b.date as Timestamp)?.toDate().getTime() || new Date(b.date as string).getTime();
         return bTime - aTime;
       });
       return sorted.slice(0, queryLimit);
-    }, [transactions, queryLimit]);
+    }, [transactions, queryLimit, activeFilter]);
 
     const monthTransactions = React.useMemo(() => {
       const limitTime = startOfMonth.getTime();
@@ -98,16 +131,32 @@ const Home = () => {
             {user?.name}
           </Typo>
         </View>
-        <TouchableOpacity 
-          style={[styles.searchIcon, { backgroundColor: themeColors.inputBg }]} 
-          onPress={() => router.push("/(modals)/searchModal")}
-        >
-          <Icons.MagnifyingGlassIcon
-            size={verticalScale(22)}
-            color={themeColors.textLighter}
-            weight="bold"
-          />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={[styles.searchIcon, { backgroundColor: themeColors.inputBg }]} 
+            onPress={() => router.push("/(modals)/searchModal")}
+          >
+            <Icons.MagnifyingGlassIcon
+              size={verticalScale(22)}
+              color={themeColors.textLighter}
+              weight="bold"
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.searchIcon, { backgroundColor: themeColors.inputBg }]} 
+            onPress={() => router.push("/(modals)/notificationsModal" as any)}
+          >
+            <Icons.BellIcon
+              size={verticalScale(22)}
+              color={themeColors.textLighter}
+              weight={unreadCount > 0 ? "fill" : "bold"}
+            />
+            {unreadCount > 0 && (
+              <View style={styles.notificationBadge} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View
@@ -119,6 +168,14 @@ const Home = () => {
           emptyListMessage="No Transaction added yet!"
           title="Recent Transactions"
           onEndReached={loadMore}
+          titleRightComponent={
+            <FilterTabs 
+              filters={["All", "Income", "Expense", "This Week", "This Month"]}
+              activeFilter={activeFilter}
+              onFilterSelect={setActiveFilter}
+              style={{ marginVertical: 0 }}
+            />
+          }
           ListHeaderComponent={
             <View style={{ marginBottom: spacingY._25, gap: spacingY._15 }}>
               <HomeCard />
@@ -242,6 +299,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacingY._10,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(10),
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.rose,
+  },
   searchIcon: {
     backgroundColor: colors.neutral700,
     padding: spacingX._10,
@@ -254,8 +325,9 @@ const styles = StyleSheet.create({
     width: verticalScale(50),
     borderRadius: 100,
     position: "absolute",
-    bottom: verticalScale(30),
-    right: verticalScale(30),
+    bottom: verticalScale(100),
+    right: verticalScale(20),
+    zIndex: 999,
   },
 
   // ScrollView Layout
