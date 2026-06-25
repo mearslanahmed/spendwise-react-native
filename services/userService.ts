@@ -54,7 +54,15 @@ export const deleteUserAccountData = async (uid: string): Promise<ResponseType> 
       batch.delete(doc.ref);
     });
 
-    // 3. Delete user document from Firestore
+    // 3. Delete all budgets of the user
+    const budgetsRef = collection(firestore, "budgets");
+    const budgetsQuery = query(budgetsRef, where("uid", "==", uid));
+    const budgetDocs = await getDocs(budgetsQuery);
+    budgetDocs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    // 4. Delete user document from Firestore
     const userRef = doc(firestore, "users", uid);
     batch.delete(userRef);
 
@@ -86,6 +94,14 @@ export const resetUserAccountData = async (uid: string): Promise<ResponseType> =
     const walletsQuery = query(walletsRef, where("uid", "==", uid));
     const walletDocs = await getDocs(walletsQuery);
     walletDocs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    // 3. Delete all budgets of the user
+    const budgetsRef = collection(firestore, "budgets");
+    const budgetsQuery = query(budgetsRef, where("uid", "==", uid));
+    const budgetDocs = await getDocs(budgetsQuery);
+    budgetDocs.forEach((doc) => {
       batch.delete(doc.ref);
     });
 
