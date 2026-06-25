@@ -1,4 +1,4 @@
-import { ImageBackground, StyleSheet, Text, View } from 'react-native'
+import { ImageBackground, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
 import React from 'react'
 import Typo from './Typo'
 import { scale, verticalScale } from '@/utils/styling'
@@ -12,6 +12,7 @@ const HomeCard = () => {
     const {user} = useAuth();
     const { wallets: allWallets, loading: dataLoading } = useData();
     const walletLoading = dataLoading.wallets;
+    const [isBalanceHidden, setIsBalanceHidden] = React.useState(false);
 
     const wallets = React.useMemo(() => {
       return [...allWallets].sort((a, b) => {
@@ -42,9 +43,15 @@ const HomeCard = () => {
                     <Typo size={17} color={colors.neutral800} fontWeight={"500"}>
                         Total Balance
                     </Typo>
+                    <TouchableOpacity onPress={() => setIsBalanceHidden(!isBalanceHidden)}>
+                        {isBalanceHidden 
+                            ? <Icons.EyeSlashIcon size={verticalScale(20)} color={colors.neutral800} weight="bold" />
+                            : <Icons.EyeIcon size={verticalScale(20)} color={colors.neutral800} weight="bold" />
+                        }
+                    </TouchableOpacity>
                 </View>
                 <Typo size={30} fontWeight={"bold"} color={colors.black}>
-                    {user?.currency || "$"}{walletLoading? "----": getTotals()?.balance?.toFixed(2)}
+                    {isBalanceHidden ? "••••" : `${user?.currency || "$"}${walletLoading ? "----" : getTotals()?.balance?.toFixed(2)}`}
                 </Typo>
             </View>
 
@@ -66,7 +73,7 @@ const HomeCard = () => {
                     </View>
                     <View style={{alignSelf: "center"}}>
                         <Typo size={17} fontWeight={"500"} color={colors.green}>
-                            {user?.currency || "$"}{walletLoading? "----" : getTotals()?.income?.toFixed(2)}
+                            {isBalanceHidden ? "••••" : `${user?.currency || "$"}${walletLoading ? "----" : getTotals()?.income?.toFixed(2)}`}
                         </Typo>
                     </View>
                 </View>
@@ -87,7 +94,7 @@ const HomeCard = () => {
                     </View>
                     <View style={{alignSelf: "center"}}>
                         <Typo size={17} fontWeight={"500"} color={colors.rose}>
-                            {user?.currency || "$"}{walletLoading? "----" : getTotals()?.expense?.toFixed(2)}
+                            {isBalanceHidden ? "••••" : `${user?.currency || "$"}${walletLoading ? "----" : getTotals()?.expense?.toFixed(2)}`}
                         </Typo>
                     </View>
                 </View>

@@ -121,7 +121,7 @@ const Home = () => {
           onEndReached={loadMore}
           ListHeaderComponent={
             <View style={{ marginBottom: spacingY._25, gap: spacingY._15 }}>
-              <HomeCard/>
+              <HomeCard />
 
               {warningBudgets.length > 0 && (
                 <View style={styles.warningsSection}>
