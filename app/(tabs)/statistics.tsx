@@ -5,7 +5,7 @@ import { colors, radius, spacingX, spacingY } from '@/constants/theme'
 import { scale, verticalScale } from '@/utils/styling'
 import Header from '@/components/Header'
 import Typo from '@/components/Typo'
-import SegmentedControlTab from "react-native-segmented-control-tab";
+import FilterTabs from '@/components/FilterTabs';
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import Loading from '@/components/Loading'
 import { useAuth } from '@/contexts/authContext'
@@ -270,15 +270,14 @@ const Statistics = () => {
           contentContainerStyle={[styles.scrollContainer, { paddingBottom: verticalScale(120) }]}
           showsVerticalScrollIndicator={false}
         >
-          <SegmentedControlTab
-            values={["Weekly", "Monthly", "Yearly"]}
-            selectedIndex={activeIndex}
-            onTabPress={setActiveIndex}
-            tabsContainerStyle={styles.segmentStyle}
-            tabStyle={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border }}
-            activeTabStyle={{ backgroundColor: colors.primary }}
-            tabTextStyle={{...styles.segmentFontStyle, color: themeColors.textLight}}
-            activeTabTextStyle={{...styles.segmentFontStyle, color: colors.black}}
+          <FilterTabs 
+            filters={["Weekly", "Monthly", "Yearly"]}
+            activeFilter={["Weekly", "Monthly", "Yearly"][activeIndex]}
+            onFilterSelect={(filter) => {
+              const idx = ["Weekly", "Monthly", "Yearly"].indexOf(filter);
+              setActiveIndex(idx);
+            }}
+            style={{ marginBottom: spacingY._20 }}
           />
 
           <View style={styles.chartContainer}>
@@ -586,14 +585,6 @@ const styles = StyleSheet.create({
     height: verticalScale(35),
     width: verticalScale(35),
     borderCurve: "continuous",
-  },
-  segmentStyle: {
-    height: scale(37),
-  },
-  segmentFontStyle: {
-    fontSize: verticalScale(13),
-    fontWeight: "bold",
-    color: colors.black,
   },
   container: {
     paddingHorizontal: spacingX._20,
