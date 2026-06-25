@@ -2,24 +2,28 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./authContext";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { firestore } from "@/config/firebase";
-import { TransactionType, BudgetType, WalletType, NotificationType } from "@/types";
+import { TransactionType, BudgetType, WalletType, NotificationType, SubscriptionType } from "@/types";
+import { checkAndProcessSubscriptions } from "@/services/subscriptionService";
 
 interface DataContextType {
   transactions: TransactionType[];
   budgets: BudgetType[];
   wallets: WalletType[];
   notifications: NotificationType[];
+  subscriptions: SubscriptionType[];
   loading: {
     transactions: boolean;
     budgets: boolean;
     wallets: boolean;
     notifications: boolean;
+    subscriptions: boolean;
   };
   error: {
     transactions: string | null;
     budgets: string | null;
     wallets: string | null;
     notifications: string | null;
+    subscriptions: string | null;
   };
 }
 
@@ -31,12 +35,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [budgets, setBudgets] = useState<BudgetType[]>([]);
   const [wallets, setWallets] = useState<WalletType[]>([]);
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  const [subscriptions, setSubscriptions] = useState<SubscriptionType[]>([]);
 
   const [loading, setLoading] = useState({
     transactions: true,
     budgets: true,
     wallets: true,
     notifications: true,
+    subscriptions: true,
   });
 
   const [error, setError] = useState<{
@@ -44,11 +50,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     budgets: string | null;
     wallets: string | null;
     notifications: string | null;
+    subscriptions: string | null;
   }>({
     transactions: null,
     budgets: null,
     wallets: null,
     notifications: null,
+    subscriptions: null,
   });
 
   useEffect(() => {
@@ -57,12 +65,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setBudgets([]);
       setWallets([]);
       setNotifications([]);
-      setLoading({ transactions: false, budgets: false, wallets: false, notifications: false });
+      setSubscriptions([]);
+      setLoading({ transactions: false, budgets: false, wallets: false, notifications: false, subscriptions: false });
       return;
     }
 
-    setLoading({ transactions: true, budgets: true, wallets: true, notifications: true });
-    setError({ transactions: null, budgets: null, wallets: null, notifications: null });
+    setLoading({ transactions: true, budgets: true, wallets: true, notifications: true, subscriptions: true });
+    setError({ transactions: null, budgets: null, wallets: null, notifications: null, subscriptions: null });
+
+    // Process auto-deduction before setting up listeners
+    checkAndProcessSubscriptions(user.uid);
 
     // Transactions listener
     const txQuery = query(
@@ -160,16 +172,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    // Subscriptions listener
+    const subscriptionQuery = query(
+      collection(firestore, "subscriptions"),
+      where("uid", "==", user.uid)
+    );
+    const unsubSubscription = onSnapshot(
+      subscriptionQuery,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as SubscriptionType[];
+        setSubscriptions(data);
+        setLoading((prev) => ({ ...prev, subscriptions: false }));
+      },
+      (err) => {
+        console.error("DataContext Subscriptions error:", err);
+        setError((prev) => ({ ...prev, subscriptions: err.message }));
+        setLoading((prev) => ({ ...prev, subscriptions: false }));
+      }
+    );
+
     return () => {
       unsubTx();
       unsubBudget();
       unsubWallet();
       unsubNotification();
+      unsubSubscription();
     };
-  }, [user?.uid]);
+  }, [user]);
 
   return (
-    <DataContext.Provider value={{ transactions, budgets, wallets, notifications, loading, error }}>
+    <DataContext.Provider value={{ transactions, budgets, wallets, notifications, subscriptions, loading, error }}>
       {children}
     </DataContext.Provider>
   );

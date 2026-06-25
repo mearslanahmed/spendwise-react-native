@@ -5,7 +5,7 @@ import { colors, radius, spacingX, spacingY } from '@/constants/theme'
 import { scale, verticalScale } from '@/utils/styling'
 import Header from '@/components/Header'
 import Typo from '@/components/Typo'
-import FilterTabs from '@/components/FilterTabs';
+import SegmentedPill from '@/components/SegmentedPill';
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import Loading from '@/components/Loading'
 import { useAuth } from '@/contexts/authContext'
@@ -270,13 +270,10 @@ const Statistics = () => {
           contentContainerStyle={[styles.scrollContainer, { paddingBottom: verticalScale(120) }]}
           showsVerticalScrollIndicator={false}
         >
-          <FilterTabs 
-            filters={["Weekly", "Monthly", "Yearly"]}
-            activeFilter={["Weekly", "Monthly", "Yearly"][activeIndex]}
-            onFilterSelect={(filter) => {
-              const idx = ["Weekly", "Monthly", "Yearly"].indexOf(filter);
-              setActiveIndex(idx);
-            }}
+          <SegmentedPill 
+            tabs={["Weekly", "Monthly", "Yearly"]}
+            activeIndex={activeIndex}
+            onChange={setActiveIndex}
             style={{ marginBottom: spacingY._20 }}
           />
 

@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import TransactionList from "@/components/TransactionList";
 import FilterTabs from "@/components/FilterTabs";
 import { Image } from "expo-image";
+import UpcomingBills from "@/components/UpcomingBills";
 
 const { width: screenWidth } = Dimensions.get("window");
 const cardWidth = scale(295);
@@ -26,7 +27,7 @@ const Wallet = () => {
   const { user } = useAuth();
   const { colors: themeColors } = useTheme();
 
-  const { wallets: allWallets, transactions: allUserTransactions, loading: dataLoading } = useData();
+  const { wallets: allWallets, transactions: allUserTransactions, loading: dataLoading, subscriptions } = useData();
   const walletsLoading = dataLoading.wallets;
   const transactionsLoading = dataLoading.transactions;
 
@@ -410,6 +411,9 @@ const Wallet = () => {
                 })()}
               </View>
             )}
+            <View style={{ marginTop: spacingY._20 }}>
+              <UpcomingBills subscriptions={subscriptions} />
+            </View>
           </View>
         }
       />

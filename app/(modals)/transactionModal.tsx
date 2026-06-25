@@ -195,7 +195,7 @@ const TransactionModal = () => {
     if (res?.success) {
       if (!oldTransaction?.id && transaction.type === 'expense' && warning && user?.uid) {
         const title = "Budget Exceeded! 🚨";
-        const message = `You've exceeded your ${warning.categoryLabel} budget by $${warning.exceededBy.toFixed(2)}.`;
+        const message = `You've exceeded your ${warning.categoryLabel} budget by ${user.currency || "$"}${warning.exceededBy.toFixed(2)}.`;
         
         // 1. Add to In-App Inbox
         await addNotification({

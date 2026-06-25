@@ -10,36 +10,43 @@ import Typo from "@/components/Typo";
 import { useAuth } from "@/contexts/authContext";
 import { useData } from "@/contexts/dataContext";
 import { useTheme } from "@/contexts/themeContext";
-import { deleteNotification, markAllAsRead } from "@/services/notificationService";
+import { deleteAllNotifications, deleteNotification, markAllAsRead } from "@/services/notificationService";
 import { Timestamp } from "firebase/firestore";
+import CustomAlert from "@/components/CustomAlert";
 
 const NotificationsModal = () => {
   const { user } = useAuth();
   const { notifications } = useData();
   const { colors: themeColors, isDark } = useTheme();
 
-  // Mark all as read when the modal opens
-  useEffect(() => {
+  // Optionally keep the automatic mark as read, but let's give users a manual button too
+  const handleMarkAllAsRead = async () => {
     if (user?.uid) {
-      const hasUnread = notifications.some(n => !n.read);
-      if (hasUnread) {
-        markAllAsRead(user.uid);
-      }
+      await markAllAsRead(user.uid);
     }
-  }, [user?.uid, notifications]);
+  };
 
-  const handleDelete = async (id?: string) => {
+  const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
+  const [deleteAllAlertVisible, setDeleteAllAlertVisible] = useState(false);
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
+
+  const handleDelete = (id?: string) => {
     if (!id) return;
-    Alert.alert("Delete", "Are you sure you want to delete this notification?", [
-      { text: "Cancel", style: "cancel" },
-      { 
-        text: "Delete", 
-        style: "destructive",
-        onPress: async () => {
-          await deleteNotification(id);
-        }
-      }
-    ]);
+    setSelectedNotificationId(id);
+    setDeleteAlertVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedNotificationId) return;
+    setDeleteAlertVisible(false);
+    await deleteNotification(selectedNotificationId);
+  };
+
+  const confirmDeleteAll = async () => {
+    if (user?.uid) {
+      setDeleteAllAlertVisible(false);
+      await deleteAllNotifications(user.uid);
+    }
   };
 
   const renderIcon = (type: string) => {
@@ -66,7 +73,23 @@ const NotificationsModal = () => {
           title="Notifications"
           leftIcon={<BackButton />}
           style={{ marginBottom: spacingY._10 }}
+          rightIcon={
+            notifications.length > 0 ? (
+              <TouchableOpacity onPress={() => setDeleteAllAlertVisible(true)} style={styles.headerActionBtn}>
+                <Icon.TrashIcon size={22} color={colors.rose} weight="bold" />
+              </TouchableOpacity>
+            ) : null
+          }
         />
+
+        {notifications.length > 0 && notifications.some(n => !n.read) && (
+          <View style={styles.listHeader}>
+            <Typo size={14} color={themeColors.textLighter}>You have unread notifications</Typo>
+            <TouchableOpacity onPress={handleMarkAllAsRead}>
+              <Typo size={14} color={colors.primary} fontWeight="600">Mark all as read</Typo>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
           {notifications.length === 0 ? (
@@ -82,10 +105,11 @@ const NotificationsModal = () => {
                 key={item.id} 
                 style={[
                   styles.notificationCard, 
-                  { backgroundColor: themeColors.card, borderColor: themeColors.border },
-                  !item.read && { borderColor: colors.primary, borderWidth: 1 }
+                  { backgroundColor: themeColors.card },
+                  !item.read && styles.unreadCard
                 ]}
               >
+                {!item.read && <View style={styles.unreadDot} />}
                 <View style={styles.iconContainer}>
                   {renderIcon(item.type)}
                 </View>
@@ -110,6 +134,24 @@ const NotificationsModal = () => {
           )}
         </ScrollView>
       </View>
+      
+      <CustomAlert
+        visible={deleteAlertVisible}
+        title="Delete Notification"
+        message="Are you sure you want to delete this notification?"
+        onCancel={() => setDeleteAlertVisible(false)}
+        onConfirm={confirmDelete}
+        confirmText="Delete"
+      />
+
+      <CustomAlert
+        visible={deleteAllAlertVisible}
+        title="Clear All Notifications"
+        message="Are you sure you want to delete all notifications? This action cannot be undone."
+        onCancel={() => setDeleteAllAlertVisible(false)}
+        onConfirm={confirmDeleteAll}
+        confirmText="Clear All"
+      />
     </ModalWrapper>
   );
 };
@@ -119,7 +161,8 @@ export default NotificationsModal;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: spacingY._20,
+    paddingHorizontal: spacingX._25,
+    paddingTop: spacingY._15,
   },
   listContainer: {
     paddingBottom: verticalScale(40),
@@ -130,8 +173,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: spacingY._15,
     borderRadius: radius._15,
-    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'flex-start',
+    position: 'relative',
+  },
+  unreadCard: {
+    // Removed background tint to match seen notifications UI
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
   },
   iconContainer: {
     marginRight: spacingX._15,
@@ -148,12 +203,32 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     paddingLeft: spacingX._10,
-    marginLeft: spacingX._10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  markReadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: "rgba(74, 222, 128, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   emptyContainer: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     marginTop: verticalScale(100),
+  },
+  headerActionBtn: {
+    padding: spacingX._5,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacingY._10,
+    marginTop: spacingY._5,
   }
 });

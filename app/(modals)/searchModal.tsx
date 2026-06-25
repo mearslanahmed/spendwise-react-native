@@ -97,7 +97,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "space-between",
-    paddingHorizontal: spacingY._20,
+    paddingHorizontal: spacingX._25,
+    paddingTop: spacingY._15,
   },
   form: {
     gap: spacingY._30,

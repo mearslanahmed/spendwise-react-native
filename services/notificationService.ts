@@ -39,15 +39,23 @@ export const markAsRead = async (notificationId: string): Promise<ResponseType> 
 export const markAllAsRead = async (uid: string): Promise<ResponseType> => {
     try {
         const notificationsRef = collection(firestore, "notifications");
-        const q = query(notificationsRef, where("uid", "==", uid), where("read", "==", false));
+        const q = query(notificationsRef, where("uid", "==", uid));
         const querySnapshot = await getDocs(q);
         
         const batch = writeBatch(firestore);
+        let count = 0;
         querySnapshot.forEach((document) => {
-            batch.update(document.ref, { read: true });
+            const data = document.data();
+            if (data.read === false || data.isRead === false) {
+                // Set both to true just in case, though only 'read' is used now
+                batch.update(document.ref, { read: true, isRead: true });
+                count++;
+            }
         });
         
-        await batch.commit();
+        if (count > 0) {
+            await batch.commit();
+        }
         return { success: true };
     } catch (error: any) {
         return { success: false, msg: error.message };
@@ -58,6 +66,28 @@ export const deleteNotification = async (notificationId: string): Promise<Respon
     try {
         const docRef = doc(firestore, "notifications", notificationId);
         await deleteDoc(docRef);
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, msg: error.message };
+    }
+};
+
+export const deleteAllNotifications = async (uid: string): Promise<ResponseType> => {
+    try {
+        const notificationsRef = collection(firestore, "notifications");
+        const q = query(notificationsRef, where("uid", "==", uid));
+        const querySnapshot = await getDocs(q);
+        
+        const batch = writeBatch(firestore);
+        let count = 0;
+        querySnapshot.forEach((document) => {
+            batch.delete(document.ref);
+            count++;
+        });
+        
+        if (count > 0) {
+            await batch.commit();
+        }
         return { success: true };
     } catch (error: any) {
         return { success: false, msg: error.message };

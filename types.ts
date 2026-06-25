@@ -80,6 +80,20 @@ export type TransactionType = {
     walletId?: string;
 };
 
+export type SubscriptionType = {
+    id?: string;
+    uid: string;
+    name: string;
+    amount: number;
+    category: string;
+    walletId: string;
+    frequency: "weekly" | "monthly" | "yearly";
+    nextBillingDate: Date | Timestamp | string;
+    autoDeduct: boolean;
+    createdAt?: Date | Timestamp | string;
+    lastNotified?: Date | Timestamp | string;
+};
+
 export type CategoryType = {
     label: string;
     value: string;

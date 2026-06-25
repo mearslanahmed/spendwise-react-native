@@ -3,7 +3,7 @@ import React from 'react'
 import Typo from './Typo'
 import { HeaderProps } from '@/types'
 
-const Header = ({title ="", leftIcon, style}: HeaderProps) => {
+const Header = ({title ="", leftIcon, rightIcon, style}: HeaderProps) => {
   return (
     <View style={[styles.container, style]}>
       {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
@@ -14,13 +14,14 @@ const Header = ({title ="", leftIcon, style}: HeaderProps) => {
                 fontWeight={600}
                 style={{
                     textAlign: 'center',
-                    width: leftIcon ? '82%' : '100%'
+                    flex: 1,
                 }}
             >
                 {title}
             </Typo>
         )
       }
+      {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
     </View>
   );
 };
@@ -35,6 +36,13 @@ const styles = StyleSheet.create({
     },
 
     leftIcon: {
-        alignSelf: 'flex-start'
+        position: 'absolute',
+        left: 0,
+        zIndex: 10,
+    },
+    rightIcon: {
+        position: 'absolute',
+        right: 0,
+        zIndex: 10,
     }
 })

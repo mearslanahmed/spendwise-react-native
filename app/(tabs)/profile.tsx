@@ -47,6 +47,13 @@ const Profile = () => {
     },
 
     {
+      title: "Manage Subscriptions",
+      icon: <Icons.Receipt size={26} color={colors.white} weight="fill" />,
+      routeName: "/(modals)/subscriptionsListModal",
+      bgColor: "#059669",
+    },
+
+    {
       title: "Privacy Policy",
       icon: <Icons.LockIcon size={26} color={colors.white} weight="fill" />,
       routeName: "/(modals)/privacyPolicyModal",
