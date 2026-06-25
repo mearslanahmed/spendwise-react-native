@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import React from 'react'
 import Typo from './Typo'
 import { WalletType } from '@/types'
@@ -11,6 +11,7 @@ import * as Icons from "phosphor-react-native";
 import Animated, { FadeInDown } from 'react-native-reanimated'
 
 import { useTheme } from '@/contexts/themeContext';
+import { walletPresets } from '@/constants/data';
 
 const WalletListItem = ({
     item,
@@ -34,6 +35,11 @@ const WalletListItem = ({
             }
         })
     }
+
+    const isPreset = typeof item?.image === 'string' && item.image.startsWith('preset_');
+    const preset = isPreset ? (walletPresets[item.image] || walletPresets.preset_bank) : null;
+    const PresetIcon = preset ? preset.icon : null;
+
   return (
     <Animated.View 
         entering ={FadeInDown.delay(index * 50)
@@ -41,13 +47,20 @@ const WalletListItem = ({
             .damping(14)}
     >
       <TouchableOpacity style={styles.container} onPress={openWallet}>
-        <View style={styles.imageContainer}>
-            <Image
-                style={{flex : 1}}
-                source={item?.image}
-                contentFit='cover'
-                transition={100}
-            />
+        <View style={[
+          styles.imageContainer, 
+          preset && { backgroundColor: preset.bgColor, borderWidth: 0 }
+        ]}>
+            {preset ? (
+              <PresetIcon size={verticalScale(20)} color={preset.color} weight="bold" />
+            ) : (
+              <Image
+                  style={{flex : 1, width: '100%', height: '100%'}}
+                  source={item?.image}
+                  contentFit='cover'
+                  transition={100}
+              />
+            )}
         </View>
         <View style={styles.nameContainer}>
             <Typo size={16}>{item?.name}</Typo>
@@ -77,6 +90,8 @@ const styles = StyleSheet.create({
     borderRadius: radius._12,
     borderCurve: "continuous",
     overflow: "hidden",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   nameContainer: {
     flex: 1,

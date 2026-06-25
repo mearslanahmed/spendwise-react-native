@@ -22,6 +22,7 @@ const TransactionList = ({
   emptyListMessage,
   ListHeaderComponent,
   onEndReached,
+  horizontalPadding = 0,
 }: TransactionListType) => {
     const router = useRouter();
   const handleClick = (item: TransactionType) => {
@@ -49,7 +50,7 @@ const TransactionList = ({
             <View>
               {ListHeaderComponent}
               {title && (
-                <Typo size={20} fontWeight={"500"} style={{ marginBottom: spacingY._15 }}>
+                <Typo size={20} fontWeight={"500"} style={{ marginBottom: spacingY._15, paddingHorizontal: horizontalPadding }}>
                   {title}
                 </Typo>
               )}
@@ -60,11 +61,13 @@ const TransactionList = ({
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}
           renderItem={({ item, index }) => (
-            <TransactionItem
-              item={item}
-              index={index}
-              handleClick={handleClick}
-            />
+            <View style={{ paddingHorizontal: horizontalPadding }}>
+              <TransactionItem
+                item={item}
+                index={index}
+                handleClick={handleClick}
+              />
+            </View>
           )}
         />
       </View>
@@ -72,7 +75,7 @@ const TransactionList = ({
         <Typo
           size={15}
           color={colors.neutral400}
-          style={{ textAlign: "center", marginTop: spacingY._15 }}
+          style={{ textAlign: "center", marginTop: spacingY._15, paddingHorizontal: horizontalPadding }}
         >
           {emptyListMessage}
         </Typo>

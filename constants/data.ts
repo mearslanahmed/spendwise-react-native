@@ -77,6 +77,12 @@ export const expenseCategories: ExpenseCategoriesType = {
     icon: Icons.DotsThreeOutlineIcon,
     bgColor: "#525252", // Neutral Dark Gray
   },
+  transfer: {
+    label: "Transfer",
+    value: "transfer",
+    icon: Icons.ArrowsLeftRightIcon,
+    bgColor: "#0891b2", // Cyan
+  },
 };
 
 export const incomeCategory: CategoryType = {
@@ -90,3 +96,71 @@ export const transactionTypes = [
   { label: "Expense", value: "expense" },
   { label: "Income", value: "income" },
 ];
+
+export const walletPresets: {
+  [key: string]: {
+    label: string;
+    value: string;
+    icon: any;
+    color: string;
+    bgColor: string;
+    gradient: string[];
+  }
+} = {
+  preset_cash: {
+    label: "Cash Wallet",
+    value: "preset_cash",
+    icon: Icons.CoinsIcon,
+    color: "#ffffff",
+    bgColor: "#10B981",
+    gradient: ["#10b981", "#047857"], // Emerald green
+  },
+  preset_bank: {
+    label: "Bank Card/Account",
+    value: "preset_bank",
+    icon: Icons.CreditCardIcon,
+    color: "#ffffff",
+    bgColor: "#2563EB",
+    gradient: ["#3b82f6", "#1e3a8a"], // Navy blue
+  },
+  preset_freelance: {
+    label: "Freelance Account",
+    value: "preset_freelance",
+    icon: Icons.BriefcaseIcon,
+    color: "#ffffff",
+    bgColor: "#8B5CF6",
+    gradient: ["#8b5cf6", "#4c1d95"], // Violet purple
+  },
+  preset_digital: {
+    label: "Digital Wallet",
+    value: "preset_digital",
+    icon: Icons.GlobeIcon,
+    color: "#ffffff",
+    bgColor: "#0EA5E9",
+    gradient: ["#0ea5e9", "#0369a1"], // Cyan blue
+  },
+  preset_savings: {
+    label: "Savings Vault",
+    value: "preset_savings",
+    icon: Icons.PiggyBankIcon,
+    color: "#ffffff",
+    bgColor: "#EAB308",
+    gradient: ["#f5af19", "#e15f00"], // Gold amber
+  },
+  preset_crypto: {
+    label: "Crypto Account",
+    value: "preset_crypto",
+    icon: Icons.ShieldIcon,
+    color: "#ffffff",
+    bgColor: "#D946EF",
+    gradient: ["#ec4899", "#701a75"], // Indigo magenta
+  },
+  preset_other: {
+    label: "Other Wallet",
+    value: "preset_other",
+    icon: Icons.DotsThreeIcon,
+    color: "#ffffff",
+    bgColor: "#6B7280",
+    gradient: ["#6b7280", "#374151"], // Slate grey
+  },
+};

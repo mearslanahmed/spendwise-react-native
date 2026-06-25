@@ -155,6 +155,11 @@ const TransactionModal = () => {
          image: oldTransaction?.image,
          uid: user?.uid || "",
         });
+      } else if (oldTransaction?.walletId) {
+        setTransaction((prev) => ({
+          ...prev,
+          walletId: oldTransaction.walletId,
+        }));
       }
   },[])
 

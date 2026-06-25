@@ -98,6 +98,7 @@ export type TransactionListType = {
     emptyListMessage?: string;
     ListHeaderComponent?: React.ReactElement | React.ComponentType<any> | null;
     onEndReached?: () => void;
+    horizontalPadding?: number;
 };
 
 export type TransactionItemsProps = {

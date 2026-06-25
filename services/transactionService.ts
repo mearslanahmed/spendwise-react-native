@@ -25,6 +25,86 @@ import { scale } from "@/utils/styling";
 import { colors } from "@/constants/theme";
 import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
+export const createTransfer = async (
+  sourceWalletId: string,
+  destWalletId: string,
+  amount: number,
+  uid: string,
+  note?: string
+): Promise<ResponseType> => {
+  try {
+    const normalizedAmount = Number(amount);
+    if (isNaN(normalizedAmount) || normalizedAmount <= 0) {
+      return { success: false, msg: "Please enter a valid amount" };
+    }
+    if (sourceWalletId === destWalletId) {
+      return { success: false, msg: "Source and destination wallet must be different" };
+    }
+
+    const batch = writeBatch(firestore);
+
+    // Validate & update source wallet (deduct)
+    const sourceRef = doc(firestore, "wallets", sourceWalletId);
+    const sourceSnap = await getDoc(sourceRef);
+    if (!sourceSnap.exists()) return { success: false, msg: "Source wallet not found" };
+    const sourceData = sourceSnap.data() as WalletType;
+    if ((sourceData.amount || 0) < normalizedAmount) {
+      return { success: false, msg: "Source wallet doesn't have enough balance" };
+    }
+    batch.update(sourceRef, {
+      amount: (sourceData.amount || 0) - normalizedAmount,
+      totalExpense: (sourceData.totalExpense || 0) + normalizedAmount,
+    });
+
+    // Validate & update destination wallet (add)
+    const destRef = doc(firestore, "wallets", destWalletId);
+    const destSnap = await getDoc(destRef);
+    if (!destSnap.exists()) return { success: false, msg: "Destination wallet not found" };
+    const destData = destSnap.data() as WalletType;
+    batch.update(destRef, {
+      amount: (destData.amount || 0) + normalizedAmount,
+      totalIncome: (destData.totalIncome || 0) + normalizedAmount,
+    });
+
+    // Shared reference so both legs are identifiable as a transfer pair
+    const transferRef = doc(collection(firestore, "transactions")).id;
+    const now = Timestamp.now();
+    const transferDescription = note ? `Transfer: ${note}` : "Wallet Transfer";
+
+    // Expense leg on source wallet
+    const expenseRef = doc(firestore, "transactions", transferRef + "_out");
+    batch.set(expenseRef, {
+      type: "expense",
+      category: "transfer",
+      amount: normalizedAmount,
+      walletId: sourceWalletId,
+      uid,
+      date: now,
+      description: transferDescription,
+      transferRef,
+    });
+
+    // Income leg on destination wallet
+    const incomeRef = doc(firestore, "transactions", transferRef + "_in");
+    batch.set(incomeRef, {
+      type: "income",
+      category: "transfer",
+      amount: normalizedAmount,
+      walletId: destWalletId,
+      uid,
+      date: now,
+      description: transferDescription,
+      transferRef,
+    });
+
+    await batch.commit();
+    return { success: true };
+  } catch (error: any) {
+    const msg = error instanceof Error || error instanceof FirebaseError ? error.message : "Transfer failed";
+    return { success: false, msg };
+  }
+};
+
 export const createOrUpdateTransaction = async (
   transactionData: Partial<TransactionType>
 ): Promise<ResponseType> => {
