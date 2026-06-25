@@ -253,7 +253,7 @@ const Register = () => {
           <Button 
             loading={isLoading} 
             onPress={handelSubmit}
-            style={!isAgreed && { opacity: 0.6 }}
+            style={!isAgreed ? { opacity: 0.6 } : undefined}
           >
             <Typo fontWeight={"700"} color={colors.black} size={21}>
               Sign Up
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 20,
     height: 20,
-    borderRadius: radius._5,
+    borderRadius: radius._6,
     borderWidth: 1.5,
     borderColor: colors.neutral500,
     justifyContent: "center",

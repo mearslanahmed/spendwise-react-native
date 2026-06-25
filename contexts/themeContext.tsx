@@ -12,7 +12,15 @@ type ThemeContextType = {
   theme: ThemeType;
   setTheme: (newTheme: ThemeType) => Promise<void>;
   isDark: boolean;
-  colors: typeof staticColors;
+  colors: typeof staticColors & {
+    background: string;
+    card: string;
+    text: string;
+    textLight: string;
+    textLighter: string;
+    border: string;
+    inputBg: string;
+  };
 };
 
 const ThemeContext = createContext<ThemeContextType | null>(null);

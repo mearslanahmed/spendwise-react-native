@@ -19,8 +19,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import ImageUpload from "@/components/ImageUpload";
 import { CreateOrUpdateWallet, deleteWallet } from "@/services/walletService";
-import { limit, orderBy, where } from "firebase/firestore";
-import useFetchData from "@/hooks/useFetchData";
+import { Timestamp } from "firebase/firestore";
+import { useData } from "@/contexts/dataContext";
 import TransactionList from "@/components/TransactionList";
 
 import { useTheme } from "@/contexts/themeContext";
@@ -32,17 +32,17 @@ const SearchModal = () => {
   const [search, setSearch] = useState("");
   const { colors: themeColors } = useTheme();
 
-  const constraints = user?.uid ? [
-    where("uid", "==", user?.uid),
-    orderBy("date", "desc"),
-    limit(30),
-  ] : [];
+  const { transactions: allUserTransactions, loading: dataLoading } = useData();
+  const transactionLoading = dataLoading.transactions;
 
-  const {
-    data: allTransactions,
-    error,
-    loading: transactionLoading,
-  } = useFetchData<TransactionType>("transactions", constraints, [user?.uid]);
+  const allTransactions = React.useMemo(() => {
+    const sorted = [...allUserTransactions].sort((a, b) => {
+      const aTime = (a.date as Timestamp)?.toDate().getTime() || new Date(a.date as string).getTime();
+      const bTime = (b.date as Timestamp)?.toDate().getTime() || new Date(b.date as string).getTime();
+      return bTime - aTime;
+    });
+    return sorted.slice(0, 30);
+  }, [allUserTransactions]);
 
   const filteredTransactions = allTransactions.filter((item) => {
     if (search.length > 1) {

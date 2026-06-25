@@ -300,7 +300,7 @@ const SettingsModal = () => {
                 containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
                 value={selectedCurrency}
                 onChange={handleCurrencyChange}
-                disabled={loading}
+                disable={loading}
               />
             </View>
 
@@ -328,7 +328,7 @@ const SettingsModal = () => {
                 containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
                 value={theme}
                 onChange={(item) => setTheme(item.value as 'dark' | 'light' | 'system')}
-                disabled={loading}
+                disable={loading}
               />
             </View>
           </View>

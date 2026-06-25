@@ -180,3 +180,11 @@ export type WalletType = {
     uid?: string;
     created?: Date;
 };
+
+export type BudgetType = {
+    id?: string;
+    uid: string;
+    category: string;
+    amount: number;
+    created?: any;
+};

@@ -19,7 +19,7 @@ import { ScrollView } from "react-native";
 import * as Icon from "phosphor-react-native";
 import Typo from "@/components/Typo";
 import Input from "@/components/Input";
-import { TransactionType, UserDataType, WalletType } from "@/types";
+import { BudgetType, TransactionType, UserDataType, WalletType } from "@/types";
 import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
 import Toast from 'react-native-toast-message';
@@ -31,8 +31,8 @@ import { CreateOrUpdateWallet, deleteWallet } from "@/services/walletService";
 import CustomAlert from "@/components/CustomAlert";
 import { Dropdown } from "react-native-element-dropdown";
 import { expenseCategories, transactionTypes } from "@/constants/data";
-import useFetchData from "@/hooks/useFetchData";
-import { orderBy, where } from "firebase/firestore";
+import { useData } from "@/contexts/dataContext";
+import { Timestamp } from "firebase/firestore";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
@@ -58,17 +58,16 @@ const TransactionModal = () => {
   const router = useRouter();
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const {
-    data: wallets,
-    error: walletsError,
-    loading: walletsLoading,
-  } = useFetchData<WalletType>("wallets", 
-    user?.uid ? [
-      where("uid", "==", user?.uid),
-      orderBy("created", "desc"),
-    ] : [], 
-    [user?.uid]
-  );
+  const { wallets: allWallets, budgets, transactions, loading: dataLoading } = useData();
+  const walletsLoading = dataLoading.wallets;
+
+  const wallets = React.useMemo(() => {
+    return [...allWallets].sort((a, b) => {
+      const aTime = a.created?.toDate ? a.created.toDate().getTime() : new Date(a.created || 0).getTime();
+      const bTime = b.created?.toDate ? b.created.toDate().getTime() : new Date(b.created || 0).getTime();
+      return bTime - aTime;
+    });
+  }, [allWallets]);
 
   type paramType = {
     id: string;
@@ -84,6 +83,59 @@ const TransactionModal = () => {
 
   const oldTransaction: paramType =
     useLocalSearchParams();
+
+  const startOfMonth = React.useMemo(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const monthTransactions = React.useMemo(() => {
+    const limitTime = startOfMonth.getTime();
+    return transactions.filter((tx) => {
+      const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+      return txTime >= limitTime;
+    });
+  }, [transactions, startOfMonth]);
+
+  const spentByCategory = React.useMemo(() => {
+    const totals: { [category: string]: number } = {};
+    monthTransactions.forEach((tx) => {
+      if (tx.id === oldTransaction?.id) return;
+      if (tx.type === "expense" && tx.category) {
+        totals[tx.category] = (totals[tx.category] || 0) + Number(tx.amount);
+      }
+    });
+    return totals;
+  }, [monthTransactions, oldTransaction?.id]);
+
+  const getBudgetWarning = () => {
+    if (transaction.type !== "expense" || !transaction.category || !transaction.amount) {
+      return null;
+    }
+
+    const activeBudget = budgets.find((b) => b.category === transaction.category);
+    if (!activeBudget) return null;
+
+    const currentSpent = spentByCategory[transaction.category] || 0;
+    const newSpent = currentSpent + transaction.amount;
+
+    if (newSpent > activeBudget.amount) {
+      const exceededBy = newSpent - activeBudget.amount;
+      const categoryLabel = expenseCategories[transaction.category]?.label || transaction.category;
+      return {
+        exceededBy,
+        limit: activeBudget.amount,
+        spent: currentSpent,
+        categoryLabel,
+      };
+    }
+
+    return null;
+  };
+
+  const warning = getBudgetWarning();
 
   const onDateChange = (event: any, date: any) => {
     const currentDate = date || transaction.date;
@@ -317,6 +369,21 @@ const TransactionModal = () => {
             />
           </View>
 
+          {/* Budget warning alert */}
+          {warning && (
+            <View style={[styles.warningBanner, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)', borderColor: colors.rose }]}>
+              <Icon.WarningIcon size={verticalScale(20)} color={colors.rose} weight="bold" />
+              <View style={{ flex: 1 }}>
+                <Typo color={colors.rose} size={14} fontWeight="600">
+                  Budget Warning
+                </Typo>
+                <Typo color={themeColors.text} size={13} style={{ marginTop: 2 }}>
+                  This will exceed your monthly budget for <Text style={{ fontWeight: "bold" }}>{warning.categoryLabel}</Text> by <Text style={{ fontWeight: "bold" }}>{user?.currency || "$"}{warning.exceededBy.toFixed(0)}</Text>! (Limit: {user?.currency || "$"}{warning.limit.toFixed(0)})
+                </Typo>
+              </View>
+            </View>
+          )}
+
           {/* transaction description */}
           <View style={styles.inputContainer}>
             <View style={styles.flexRow}>
@@ -521,5 +588,14 @@ const styles = StyleSheet.create({
   dropdownIcon: {
     height: verticalScale(30),
     tintColor: colors.neutral300,
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: scale(10),
+    borderWidth: 1,
+    padding: spacingY._12,
+    borderRadius: radius._15,
+    marginTop: spacingY._5,
   },
 });

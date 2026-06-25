@@ -313,34 +313,35 @@ export const fetchWeeklyStats = async (uid: string): Promise<ResponseType> => {
     const weeklyData = getLast7Days();
 
     const statsPromises = weeklyData.map(async (day) => {
-      const startOfDay = new Date(day.date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(day.date);
-      endOfDay.setHours(23, 59, 59, 999);
+      const [yearStr, monthStr, dayStr] = day.date.split("-");
+      const year = parseInt(yearStr);
+      const monthIndex = parseInt(monthStr) - 1;
+      const dayNum = parseInt(dayStr);
 
-      const incomeQuery = query(
+      const startOfDay = new Date(year, monthIndex, dayNum, 0, 0, 0, 0);
+      const endOfDay = new Date(year, monthIndex, dayNum, 23, 59, 59, 999);
+
+      const dayQuery = query(
         collection(db, "transactions"),
         where("uid", "==", uid),
-        where("type", "==", "income"),
         where("date", ">=", Timestamp.fromDate(startOfDay)),
         where("date", "<=", Timestamp.fromDate(endOfDay))
       );
 
-      const expenseQuery = query(
-        collection(db, "transactions"),
-        where("uid", "==", uid),
-        where("type", "==", "expense"),
-        where("date", ">=", Timestamp.fromDate(startOfDay)),
-        where("date", "<=", Timestamp.fromDate(endOfDay))
-      );
+      const querySnapshot = await getDocs(dayQuery);
+      let income = 0;
+      let expense = 0;
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.type === "income") {
+          income += Number(data.amount) || 0;
+        } else if (data.type === "expense") {
+          expense += Number(data.amount) || 0;
+        }
+      });
 
-      const [incomeSnap, expenseSnap] = await Promise.all([
-        getAggregateFromServer(incomeQuery, { total: sum("amount") }),
-        getAggregateFromServer(expenseQuery, { total: sum("amount") }),
-      ]);
-
-      day.income = incomeSnap.data().total || 0;
-      day.expense = expenseSnap.data().total || 0;
+      day.income = income;
+      day.expense = expense;
     });
 
     await Promise.all(statsPromises);
@@ -375,7 +376,6 @@ export const fetchMonthlyStats = async (uid: string): Promise<ResponseType> => {
     const monthlyData = getLast12Months();
 
     const statsPromises = monthlyData.map(async (month) => {
-      // month.fullDate is "YYYY-MM-DD"
       const [yearStr, monthStr] = month.fullDate.split("-");
       const year = parseInt(yearStr);
       const monthIndex = parseInt(monthStr) - 1;
@@ -383,29 +383,27 @@ export const fetchMonthlyStats = async (uid: string): Promise<ResponseType> => {
       const startOfMonth = new Date(year, monthIndex, 1);
       const endOfMonth = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
 
-      const incomeQuery = query(
+      const monthQuery = query(
         collection(db, "transactions"),
         where("uid", "==", uid),
-        where("type", "==", "income"),
         where("date", ">=", Timestamp.fromDate(startOfMonth)),
         where("date", "<=", Timestamp.fromDate(endOfMonth))
       );
 
-      const expenseQuery = query(
-        collection(db, "transactions"),
-        where("uid", "==", uid),
-        where("type", "==", "expense"),
-        where("date", ">=", Timestamp.fromDate(startOfMonth)),
-        where("date", "<=", Timestamp.fromDate(endOfMonth))
-      );
+      const querySnapshot = await getDocs(monthQuery);
+      let income = 0;
+      let expense = 0;
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.type === "income") {
+          income += Number(data.amount) || 0;
+        } else if (data.type === "expense") {
+          expense += Number(data.amount) || 0;
+        }
+      });
 
-      const [incomeSnap, expenseSnap] = await Promise.all([
-        getAggregateFromServer(incomeQuery, { total: sum("amount") }),
-        getAggregateFromServer(expenseQuery, { total: sum("amount") }),
-      ]);
-
-      month.income = incomeSnap.data().total || 0;
-      month.expense = expenseSnap.data().total || 0;
+      month.income = income;
+      month.expense = expense;
     });
 
     await Promise.all(statsPromises);
@@ -463,29 +461,27 @@ export const fetchYearlyStats = async (uid: string): Promise<ResponseType> => {
       const startOfYear = new Date(year, 0, 1);
       const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
 
-      const incomeQuery = query(
+      const yearQuery = query(
         collection(db, "transactions"),
         where("uid", "==", uid),
-        where("type", "==", "income"),
         where("date", ">=", Timestamp.fromDate(startOfYear)),
         where("date", "<=", Timestamp.fromDate(endOfYear))
       );
 
-      const expenseQuery = query(
-        collection(db, "transactions"),
-        where("uid", "==", uid),
-        where("type", "==", "expense"),
-        where("date", ">=", Timestamp.fromDate(startOfYear)),
-        where("date", "<=", Timestamp.fromDate(endOfYear))
-      );
+      const querySnapshot = await getDocs(yearQuery);
+      let income = 0;
+      let expense = 0;
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.type === "income") {
+          income += Number(data.amount) || 0;
+        } else if (data.type === "expense") {
+          expense += Number(data.amount) || 0;
+        }
+      });
 
-      const [incomeSnap, expenseSnap] = await Promise.all([
-        getAggregateFromServer(incomeQuery, { total: sum("amount") }),
-        getAggregateFromServer(expenseQuery, { total: sum("amount") }),
-      ]);
-
-      yearObj.income = incomeSnap.data().total || 0;
-      yearObj.expense = expenseSnap.data().total || 0;
+      yearObj.income = income;
+      yearObj.expense = expense;
     });
 
     await Promise.all(statsPromises);

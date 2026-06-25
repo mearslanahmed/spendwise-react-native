@@ -6,9 +6,8 @@ import { verticalScale } from "@/utils/styling";
 import Typo from "@/components/Typo";
 import * as Icons from "phosphor-react-native";
 import { useRouter } from "expo-router";
-import useFetchData from "@/hooks/useFetchData";
+import { useData } from "@/contexts/dataContext";
 import { WalletType } from "@/types";
-import { orderBy, where } from "firebase/firestore";
 import { useTheme } from "@/contexts/themeContext";
 import { useAuth } from "@/contexts/authContext";
 import Loading from "@/components/Loading";
@@ -19,13 +18,16 @@ const Wallet = () => {
   const {user} = useAuth();
   const { colors: themeColors } = useTheme();
 
-  const {data: wallets, error, loading} = useFetchData<WalletType>("wallets",
-    user?.uid ? [
-      where("uid", "==", user?.uid),
-      orderBy("created", "desc"),
-    ] : [],
-    [user?.uid]
-  );
+  const { wallets: allWallets, loading: dataLoading } = useData();
+  const loading = dataLoading.wallets;
+
+  const wallets = React.useMemo(() => {
+    return [...allWallets].sort((a, b) => {
+      const aTime = a.created?.toDate ? a.created.toDate().getTime() : new Date(a.created || 0).getTime();
+      const bTime = b.created?.toDate ? b.created.toDate().getTime() : new Date(b.created || 0).getTime();
+      return bTime - aTime;
+    });
+  }, [allWallets]);
 
   const getTotalBalance = () => 
     wallets.reduce((total, item) => {

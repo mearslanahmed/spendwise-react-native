@@ -5,23 +5,21 @@ import { scale, verticalScale } from '@/utils/styling'
 import { colors, spacingX, spacingY } from '@/constants/theme'
 import * as Icons from 'phosphor-react-native'
 import { WalletType } from '@/types'
-import { orderBy, where } from 'firebase/firestore'
+import { useData } from '@/contexts/dataContext'
 import { useAuth } from '@/contexts/authContext'
-import useFetchData from '@/hooks/useFetchData'
 
 const HomeCard = () => {
     const {user} = useAuth();
-    const {
-            data: wallets,
-            error,
-            loading: walletLoading
-        } = useFetchData<WalletType>("wallets",
-        user?.uid ? [
-          where("uid", "==", user?.uid),
-          orderBy("created", "desc"),
-        ] : [],
-        [user?.uid]
-      );
+    const { wallets: allWallets, loading: dataLoading } = useData();
+    const walletLoading = dataLoading.wallets;
+
+    const wallets = React.useMemo(() => {
+      return [...allWallets].sort((a, b) => {
+        const aTime = a.created?.toDate ? a.created.toDate().getTime() : new Date(a.created || 0).getTime();
+        const bTime = b.created?.toDate ? b.created.toDate().getTime() : new Date(b.created || 0).getTime();
+        return bTime - aTime;
+      });
+    }, [allWallets]);
 
       const getTotals = () => {
        return wallets.reduce((totals: any, item: WalletType) => {

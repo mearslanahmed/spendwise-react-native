@@ -4,8 +4,8 @@ import { Stack } from 'expo-router'
 import { AuthProvider } from '@/contexts/authContext'
 import Toast from 'react-native-toast-message'
 import { customToastConfig } from '@/config/toastConfig'
-
 import { ThemeProvider } from '@/contexts/themeContext'
+import { DataProvider } from '@/contexts/dataContext'
 
 const StackLayout = () => {
   return (
@@ -20,6 +20,7 @@ const StackLayout = () => {
       <Stack.Screen name="(modals)/termsOfServiceModal" options={{presentation: 'modal'}}/>
       <Stack.Screen name="(modals)/settingsModal" options={{presentation: 'modal'}}/>
       <Stack.Screen name="(modals)/changePasswordModal" options={{presentation: 'modal'}}/>
+      <Stack.Screen name="(modals)/budgetModal" options={{presentation: 'modal'}}/>
     </Stack>
   )
 }
@@ -28,8 +29,10 @@ export default function _layout() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <StackLayout/>
-        <Toast config={customToastConfig} position="top" topOffset={50} />
+        <DataProvider>
+          <StackLayout/>
+          <Toast config={customToastConfig} position="top" topOffset={50} />
+        </DataProvider>
       </ThemeProvider>
     </AuthProvider>
   )

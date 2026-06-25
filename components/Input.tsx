@@ -10,7 +10,7 @@ const Input = (props: InputProps) => {
   const [showPassword, setShowPassword] = useState(false)
   const isPasswordField = props.secureTextEntry
   const { secureTextEntry, ...restProps } = props
-  const { colors: themeColors } = useTheme();
+  const { colors: themeColors } = useTheme(); // Uses updated dynamic theme colors type
 
   return (
     <View
