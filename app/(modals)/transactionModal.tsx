@@ -37,9 +37,11 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { createOrUpdateTransaction, deleteTransaction } from "@/services/transactionService";
+import { useTheme } from "@/contexts/themeContext";
 
 const TransactionModal = () => {
   const { user } = useAuth();
+  const { colors: themeColors, isDark } = useTheme();
   const [transaction, setTransaction] = useState<TransactionType>({
     type: "expense",
     amount: 0,
@@ -175,23 +177,18 @@ const TransactionModal = () => {
               Type
             </Typo>
             <Dropdown
-              style={styles.dropdownContainer}
-              activeColor={colors.neutral700}
-              //   placeholderStyle={styles.dropdownPlaceholder}
-              selectedTextStyle={styles.dropdownSelectedText}
-              iconStyle={styles.dropdownIcon}
+              style={[styles.dropdownContainer, { borderColor: themeColors.border }]}
+              activeColor={themeColors.inputBg}
+              selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
+              iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
               data={transactionTypes}
               maxHeight={300}
               labelField="label"
               valueField="value"
-              itemTextStyle={styles.dropdownItemText}
-              itemContainerStyle={styles.dropdownItemContainer}
-              containerStyle={styles.dropdownListContainer}
-              //   placeholder={!isFocus ? 'Select item' : '...'}
-              //   searchPlaceholder="Search..."
+              itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
+              itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
+              containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
               value={transaction.type}
-              //   onFocus={() => setIsFocus(true)}
-              //   onBlur={() => setIsFocus(false)}
               onChange={(item) => {
                 setTransaction({ ...transaction, type: item.value });
               }}
@@ -205,11 +202,11 @@ const TransactionModal = () => {
               Wallet
             </Typo>
             <Dropdown
-              style={styles.dropdownContainer}
-              activeColor={colors.neutral700}
-              placeholderStyle={styles.dropdownPlaceholder}
-              selectedTextStyle={styles.dropdownSelectedText}
-              iconStyle={styles.dropdownIcon}
+              style={[styles.dropdownContainer, { borderColor: themeColors.border }]}
+              activeColor={themeColors.inputBg}
+              placeholderStyle={[styles.dropdownPlaceholder, { color: themeColors.textLighter }]}
+              selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
+              iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
               data={wallets.map((wallet) => ({
                 label: `${wallet?.name} (${user?.currency || "$"}${wallet.amount})`,
                 value: wallet.id,
@@ -217,14 +214,11 @@ const TransactionModal = () => {
               maxHeight={300}
               labelField="label"
               valueField="value"
-              itemTextStyle={styles.dropdownItemText}
-              itemContainerStyle={styles.dropdownItemContainer}
-              containerStyle={styles.dropdownListContainer}
+              itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
+              itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
+              containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
               placeholder={"Select Wallet"}
-              //   searchPlaceholder="Search..."
               value={transaction.walletId}
-              //   onFocus={() => setIsFocus(true)}
-              //   onBlur={() => setIsFocus(false)}
               onChange={(item) => {
                 setTransaction({ ...transaction, walletId: item.value || "" });
               }}
@@ -239,23 +233,20 @@ const TransactionModal = () => {
                 Expense Category
               </Typo>
               <Dropdown
-                style={styles.dropdownContainer}
-                activeColor={colors.neutral700}
-                placeholderStyle={styles.dropdownPlaceholder}
-                selectedTextStyle={styles.dropdownSelectedText}
-                iconStyle={styles.dropdownIcon}
+                style={[styles.dropdownContainer, { borderColor: themeColors.border }]}
+                activeColor={themeColors.inputBg}
+                placeholderStyle={[styles.dropdownPlaceholder, { color: themeColors.textLighter }]}
+                selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
+                iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
                 data={Object.values(expenseCategories)}
                 maxHeight={300}
                 labelField="label"
                 valueField="value"
-                itemTextStyle={styles.dropdownItemText}
-                itemContainerStyle={styles.dropdownItemContainer}
-                containerStyle={styles.dropdownListContainer}
+                itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
+                itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
+                containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
                 placeholder={"Expense Type"}
-                //   searchPlaceholder="Search..."
                 value={transaction.category}
-                //   onFocus={() => setIsFocus(true)}
-                //   onBlur={() => setIsFocus(false)}
                 onChange={(item) => {
                   setTransaction({
                     ...transaction,
@@ -274,7 +265,7 @@ const TransactionModal = () => {
             </Typo>
             {!showDatePicker && (
               <Pressable
-                style={styles.dateInput}
+                style={[styles.dateInput, { borderColor: themeColors.border }]}
                 onPress={() => setShowDatePicker(true)}
               >
                 <Typo size={14}>
@@ -286,16 +277,16 @@ const TransactionModal = () => {
             {showDatePicker && (
               <View style={Platform.OS === "ios" ? styles.iosDatePicker : {}}>
                 <DateTimePicker
-                  themeVariant="dark"
+                  themeVariant={isDark ? "dark" : "light"}
                   value={transaction.date as Date}
-                  textColor={colors.white}
+                  textColor={themeColors.text}
                   mode="date"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   onChange={onDateChange}
                 />
                 {Platform.OS === "ios" && (
                   <TouchableOpacity
-                    style={styles.datePickerButton}
+                    style={[styles.datePickerButton, { backgroundColor: themeColors.border }]}
                     onPress={() => setShowDatePicker(false)}
                   >
                     <Typo size={15} fontWeight={"500"}>
@@ -376,7 +367,7 @@ const TransactionModal = () => {
       </View>
 
       {/* footer */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: themeColors.border }]}>
         {oldTransaction?.id && !loading && (
           <Button
             onPress={showDeleteAlert}

@@ -4,16 +4,24 @@ import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { colors, spacingY } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
 import * as Icons from "phosphor-react-native";
+import { useTheme } from "@/contexts/themeContext";
 
-function CustomTabs({ state, descriptors, navigation }: BottomTabBarProps) {
+function CustomTabs(props: BottomTabBarProps) {
   "use no memo";
+  return <CustomTabsContent {...props} />;
+}
+
+function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps) {
+  "use no memo";
+
+  const { colors: themeColors } = useTheme();
 
   const tabbarIcons: any = { 
     home: (isFocused: boolean) => (
       <Icons.HouseIcon
         size={verticalScale(30)}
         weight={isFocused ? "fill" : "regular"}
-        color={isFocused ? colors.primary : colors.neutral400}
+        color={isFocused ? colors.primary : themeColors.textLighter}
       />
     ),
 
@@ -21,7 +29,7 @@ function CustomTabs({ state, descriptors, navigation }: BottomTabBarProps) {
       <Icons.ChartBarIcon
         size={verticalScale(30)}
         weight={isFocused ? "fill" : "regular"}
-        color={isFocused ? colors.primary : colors.neutral400}
+        color={isFocused ? colors.primary : themeColors.textLighter}
       />
     ),
 
@@ -29,7 +37,7 @@ function CustomTabs({ state, descriptors, navigation }: BottomTabBarProps) {
       <Icons.WalletIcon
         size={verticalScale(30)}
         weight={isFocused ? "fill" : "regular"}
-        color={isFocused ? colors.primary : colors.neutral400}
+        color={isFocused ? colors.primary : themeColors.textLighter}
       />
     ),
 
@@ -37,12 +45,12 @@ function CustomTabs({ state, descriptors, navigation }: BottomTabBarProps) {
       <Icons.UserIcon
         size={verticalScale(30)}
         weight={isFocused ? "fill" : "regular"}
-        color={isFocused ? colors.primary : colors.neutral400}
+        color={isFocused ? colors.primary : themeColors.textLighter}
       />
     ),
   };
   return (
-    <View style={styles.tabbar}>
+    <View style={[styles.tabbar, { backgroundColor: themeColors.card, borderTopColor: themeColors.border }]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label: any =

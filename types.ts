@@ -139,6 +139,7 @@ export type UserType = {
     image?: any;
     emailVerified?: boolean;
     currency?: string;
+    theme?: 'dark' | 'light' | 'system';
 } | null;
 
 export type UserDataType = {

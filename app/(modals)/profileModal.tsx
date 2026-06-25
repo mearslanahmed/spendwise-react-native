@@ -1,6 +1,6 @@
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useEffect, useState } from "react";
-import { colors, spacingX, spacingY } from "@/constants/theme";
+import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { scale, verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
 import Header from "@/components/Header";
@@ -18,11 +18,15 @@ import { useAuth } from "@/contexts/authContext";
 import { updateUser } from "@/services/userService";
 import { useRouter } from "expo-router";
 import * as ImagePicker from 'expo-image-picker';
+import { auth } from "@/config/firebase";
+import { useTheme } from "@/contexts/themeContext";
+
 
 
 const ProfileModal = () => {
     const {user, updateUserData} = useAuth();
-    const[userData, setUserData] = useState<UserDataType>({
+    const { colors: themeColors } = useTheme();
+    const [userData, setUserData] = useState<UserDataType>({
         name: "",
         image: null
     });
@@ -30,56 +34,57 @@ const ProfileModal = () => {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
+    const isPasswordUser = auth.currentUser?.providerData.some(
+        (p) => p.providerId === "password"
+    ) || !auth.currentUser?.providerData.length;
+
     useEffect(() => {
         setUserData({
-        name: user?.name || "",
-        image: user?.image || null,
+            name: user?.name || "",
+            image: user?.image || null,
         });
     }, [user]);
 
     const onPickImage = async () => {
-    // No permissions request is necessary for launching the image library.
-    // Manually request permissions for videos on iOS when `allowsEditing` is set to `false`
-    // and `videoExportPreset` is `'Passthrough'` (the default), ideally before launching the picker
-    // so the app users aren't surprised by a system dialog after picking a video.
-    // See "Invoke permissions for videos" sub section for more details.
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Permission required', text2: 'Permission to access the media library is required.' });
-        return;
-    }
+        if (status !== 'granted') {
+            Toast.show({ type: 'error', text1: 'Permission required', text2: 'Permission to access the media library is required.' });
+            return;
+        }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 4],
-      quality: 0.5,
-    });
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [4, 4],
+            quality: 0.5,
+        });
 
-    if (!result.canceled && result.assets?.length) {
-      const asset = result.assets[0];
-      setUserData({ ...userData, image: asset });
-    }
-  };
+        if (!result.canceled && result.assets?.length) {
+            const asset = result.assets[0];
+            setUserData({ ...userData, image: asset });
+        }
+    };
 
     const onSubmit = async () => {
-        // handle profile update logic here
-        let {name, image} = userData;
-        if(!name.trim()) {
+        let { name } = userData;
+        if (!name.trim()) {
             Toast.show({ type: 'error', text1: 'User', text2: "Please fill all the fields" });
             return;
         }
+
         setLoading(true);
+
         const res = await updateUser(user?.uid as string, userData);
         setLoading(false);
-        if(res.success) {
+        if (res.success) {
             updateUserData(user?.uid as string);
+            Toast.show({ type: 'success', text1: 'Success', text2: 'Profile updated successfully!' });
             router.back();
         } else {
             Toast.show({ type: 'error', text1: 'User', text2: res.msg });
         }
-    }
+    };
   return (
     <ModalWrapper>
       <View style={styles.container}>
@@ -90,7 +95,7 @@ const ProfileModal = () => {
         />
 
         {/* form */}
-        <ScrollView contentContainerStyle={styles.form}>
+        <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           <View style={styles.avatarContainer}>
             <Image
               style={styles.avatar}
@@ -117,14 +122,46 @@ const ProfileModal = () => {
                     setUserData({...userData, name: value})
                 }
             />
+          </View>
+
+          {/* Email Address (Read-only) */}
+          <View style={styles.inputContainer}>
+            <Typo color={colors.neutral200}>Email Address</Typo>
+            <Input
+                value={user?.email || ""}
+                editable={false}
+                containerStyle={{ backgroundColor: themeColors.inputBg, opacity: 0.6 }}
+            />
+          </View>
+
+          {isPasswordUser && (
+            <View style={styles.inputContainer}>
+              <Typo color={colors.neutral200}>Security</Typo>
+              <TouchableOpacity
+                style={[
+                  styles.passwordButton,
+                  {
+                    backgroundColor: themeColors.inputBg,
+                    borderColor: themeColors.border,
+                  }
+                ]}
+                onPress={() => router.push("/(modals)/changePasswordModal")}
+              >
+                <Icon.LockIcon size={20} color={themeColors.textLighter} />
+                <Typo size={15} color={themeColors.textLighter} style={{ flex: 1, marginLeft: scale(10) }}>
+                  Change Password
+                </Typo>
+                <Icon.CaretRightIcon size={20} color={themeColors.textLighter} />
+              </TouchableOpacity>
             </View>
+          )}
         </ScrollView>
       </View>
-        <View style={styles.footer}>
-            <Button onPress={onSubmit} loading={loading} style={{flex: 1}}>
-                <Typo color={colors.black} fontWeight={"700"}>Update</Typo>
-            </Button>
-        </View>
+      <View style={[styles.footer, { borderTopColor: themeColors.border }]}>
+        <Button onPress={onSubmit} loading={loading} style={{flex: 1}}>
+          <Typo color={colors.black} fontWeight={"700"}>Update</Typo>
+        </Button>
+      </View>
     </ModalWrapper>
   );
 };
@@ -152,6 +189,7 @@ const styles = StyleSheet.create({
   form: {
     gap: spacingY._30,
     marginTop: spacingY._15,
+    paddingBottom: spacingY._30,
   },
   avatarContainer: {
     position: "relative",
@@ -183,5 +221,17 @@ const styles = StyleSheet.create({
 
   inputContainer: {
     gap: spacingY._10,
+  },
+  passwordButton: {
+    flexDirection: 'row',
+    height: verticalScale(54),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.neutral300,
+    borderRadius: radius._17,
+    borderCurve: 'continuous',
+    paddingHorizontal: spacingX._15,
+    backgroundColor: colors.neutral800,
   },
 });

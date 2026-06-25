@@ -23,11 +23,14 @@ import { limit, orderBy, where } from "firebase/firestore";
 import useFetchData from "@/hooks/useFetchData";
 import TransactionList from "@/components/TransactionList";
 
+import { useTheme } from "@/contexts/themeContext";
+
 const SearchModal = () => {
   const { user, updateUserData } = useAuth();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const { colors: themeColors } = useTheme();
 
   const constraints = user?.uid ? [
     where("uid", "==", user?.uid),
@@ -42,21 +45,21 @@ const SearchModal = () => {
   } = useFetchData<TransactionType>("transactions", constraints, [user?.uid]);
 
   const filteredTransactions = allTransactions.filter((item) => {
-  if (search.length > 1) {
-    if (
-      item.category?.toLowerCase()?.includes(search?.toLowerCase()) ||
-      item.type?.toLowerCase()?.includes(search?.toLowerCase()) ||
-      item.description?.toLowerCase()?.includes(search?.toLowerCase())
-    ) {
-      return true;
+    if (search.length > 1) {
+      if (
+        item.category?.toLowerCase()?.includes(search?.toLowerCase()) ||
+        item.type?.toLowerCase()?.includes(search?.toLowerCase()) ||
+        item.description?.toLowerCase()?.includes(search?.toLowerCase())
+      ) {
+        return true;
+      }
+      return false;
     }
-    return false;
-  }
-  return true;
-});
+    return true;
+  });
 
   return (
-    <ModalWrapper style={{ backgroundColor: colors.neutral900 }}>
+    <ModalWrapper>
       <View style={styles.container}>
         <Header
           title="Search"
@@ -65,13 +68,12 @@ const SearchModal = () => {
         />
 
         {/* form */}
-        <ScrollView contentContainerStyle={styles.form}>
+        <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           <View style={styles.inputContainer}>
             <Input
               placeholder="shoes..."
               value={search}
-              placeholderTextColor={colors.neutral400}
-              containerStyle={{ backgroundColor: colors.neutral800 }}
+              placeholderTextColor={themeColors.textLighter}
               onChangeText={(value: string) => setSearch(value)}
             />
           </View>

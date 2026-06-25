@@ -13,6 +13,7 @@ import Animated from "react-native-reanimated";
 import { Timestamp } from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/authContext";
+import { useTheme } from "@/contexts/themeContext";
 
 const TransactionList = ({
   data,
@@ -92,6 +93,7 @@ const TransactionItem = ({
   handleClick,
 }: TransactionItemsProps) => {
   const { user } = useAuth();
+  const { colors: themeColors } = useTheme();
   let category = 
     item?.type == "income" ? incomeCategory : expenseCategories[item.category!];
   const IconComponent = category.icon;
@@ -105,7 +107,7 @@ const TransactionItem = ({
     <Animated.View
         entering={FadeInDown.delay(index * 70).springify().damping(14)}
     >
-      <TouchableOpacity style={styles.row} onPress={() => handleClick(item)}>
+      <TouchableOpacity style={[styles.row, { backgroundColor: themeColors.card }]} onPress={() => handleClick(item)}>
         <View style={[styles.icon, { backgroundColor: category.bgColor }]}>
           {IconComponent && (
             <IconComponent

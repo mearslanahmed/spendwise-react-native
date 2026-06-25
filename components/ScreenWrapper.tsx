@@ -1,20 +1,22 @@
 import { Dimensions, Platform, StatusBar, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import { ScreenWrapperProps } from '@/types'
-import { colors } from '@/constants/theme'
+
+import { useTheme } from '@/contexts/themeContext'
 
 const {height} = Dimensions.get('window')
 
 const ScreenWrapper = ({style, children}: ScreenWrapperProps) => {
+    const { colors, isDark } = useTheme();
     let paddingTop = Platform.OS == 'ios'? height * 0.06 : 30
   return (
     <View style={[{
       paddingTop,
       flex: 1,
-      backgroundColor: colors.neutral900,
+      backgroundColor: colors.background,
     }, style]}>
       
-      <StatusBar barStyle={'light-content'} backgroundColor={colors.neutral900} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       {children}
     </View>
   )

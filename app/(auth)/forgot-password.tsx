@@ -11,12 +11,14 @@ import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
 import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
+import { useTheme } from "@/contexts/themeContext";
 
 const ForgotPassword = () => {
   const emailRef = useRef("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { resetPassword } = useAuth();
+  const { colors: themeColors } = useTheme();
 
   const handleSubmit = async () => {
     const email = emailRef.current.trim();
@@ -88,7 +90,7 @@ const ForgotPassword = () => {
             icon={
               <Icons.At
                 size={verticalScale(26)}
-                color={colors.neutral300}
+                color={themeColors.textLighter}
                 weight="fill"
               />
             }

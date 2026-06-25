@@ -21,9 +21,11 @@ import Animated, {
 } from "react-native-reanimated";
 
 import * as IntentLauncher from "expo-intent-launcher";
+import { useTheme } from "@/contexts/themeContext";
 
 const VerifyEmail = () => {
   const { user, setUser } = useAuth();
+  const { colors: themeColors, isDark } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const router = useRouter();
@@ -270,7 +272,7 @@ const VerifyEmail = () => {
           <View style={styles.iconWrapper}>
             <Icons.EnvelopeOpen
               size={verticalScale(54)}
-              color={colors.primary}
+              color={isDark ? colors.primary : colors.green}
               weight="duotone"
             />
           </View>
@@ -278,7 +280,7 @@ const VerifyEmail = () => {
 
         {/* Content Container (Card border and box bg removed) */}
         <View style={styles.contentContainer}>
-          <Typo size={28} fontWeight="800" color={colors.white} style={styles.title}>
+          <Typo size={28} fontWeight="800" color={themeColors.text} style={styles.title}>
             Check your inbox!
           </Typo>
           
@@ -288,7 +290,7 @@ const VerifyEmail = () => {
 
           {/* Email Pill Badge */}
           <View style={styles.emailPill}>
-            <Icons.EnvelopeSimple size={18} color={colors.primary} weight="bold" />
+            <Icons.EnvelopeSimple size={18} color={isDark ? colors.primary : colors.green} weight="bold" />
             <Typo size={16} fontWeight="700" color={colors.primary} style={styles.emailText}>
               {user?.email || "your email address"}
             </Typo>
@@ -299,7 +301,7 @@ const VerifyEmail = () => {
           </Typo>
 
           {/* Real-time Checking Status Banner */}
-          <View style={styles.statusBanner}>
+          <View style={[styles.statusBanner, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
             <ActivityIndicator size="small" color={colors.primary} style={styles.spinner} />
             <Typo size={13} fontWeight="500" color={colors.neutral400}>
               Checking verification automatically...
@@ -326,9 +328,9 @@ const VerifyEmail = () => {
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator size="small" color={colors.neutral300} />
+              <ActivityIndicator size="small" color={themeColors.textLighter} />
             ) : (
-              <Typo fontWeight="600" color={colors.neutral300} size={15}>
+              <Typo fontWeight="600" color={themeColors.textLighter} size={15}>
                 Already clicked it? Check now
               </Typo>
             )}
@@ -341,7 +343,7 @@ const VerifyEmail = () => {
               disabled={cooldown > 0 || isLoading}
               style={[styles.actionBtn, cooldown > 0 && styles.disabledLink]}
             >
-              <Icons.PaperPlaneTilt size={16} color={cooldown > 0 ? colors.neutral600 : colors.primary} />
+              <Icons.PaperPlaneTilt size={16} color={cooldown > 0 ? colors.neutral600 : (isDark ? colors.primary : colors.green)} />
               <Typo
                 fontWeight="700"
                 size={14}

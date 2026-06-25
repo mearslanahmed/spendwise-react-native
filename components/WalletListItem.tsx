@@ -10,6 +10,8 @@ import { Image } from 'expo-image'
 import * as Icons from "phosphor-react-native";
 import Animated, { FadeInDown } from 'react-native-reanimated'
 
+import { useTheme } from '@/contexts/themeContext';
+
 const WalletListItem = ({
     item,
     index,
@@ -20,6 +22,7 @@ const WalletListItem = ({
     router: Router
 }) => {
     const { user } = useAuth();
+    const { colors: themeColors } = useTheme();
 
     const openWallet = () =>{
         router.push({
@@ -51,7 +54,7 @@ const WalletListItem = ({
             <Typo size={14} color={colors.neutral400}>{user?.currency || "$"}{item?.amount}</Typo>
         </View>
 
-        <Icons.CaretRightIcon size={verticalScale(20)} weight="bold" color={colors.white} />
+        <Icons.CaretRightIcon size={verticalScale(20)} weight="bold" color={themeColors.text} />
     </TouchableOpacity>
     </Animated.View>
   )

@@ -1,4 +1,4 @@
-import { ActivityIndicator, Linking, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
@@ -7,14 +7,18 @@ import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
 import Typo from "@/components/Typo";
 import { useAuth } from "@/contexts/authContext";
-import { doc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { auth, firestore } from "@/config/firebase";
 import Toast from 'react-native-toast-message';
 import { Dropdown } from "react-native-element-dropdown";
 import * as Icons from "phosphor-react-native";
 import CustomAlert from "@/components/CustomAlert";
-import { deleteUserAccountData } from "@/services/userService";
+import { deleteUserAccountData, resetUserAccountData } from "@/services/userService";
 import { deleteUser, signOut } from "firebase/auth";
+import { useRouter } from "expo-router";
+import { cacheDirectory, writeAsStringAsync, StorageAccessFramework } from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import { useTheme } from "@/contexts/themeContext";
 
 const currencies = [
   { label: "USD ($)", value: "$" },
@@ -26,12 +30,21 @@ const currencies = [
 ];
 
 const SettingsModal = () => {
+  const router = useRouter();
   const { user, updateUserData } = useAuth();
   const [loading, setLoading] = useState(false);
+  const { theme, setTheme, colors: themeColors } = useTheme();
+  
+  // Account Deletion state
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
 
+  // App Data Reset state
+  const [resetAlertVisible, setResetAlertVisible] = useState(false);
+  const [confirmResetVisible, setConfirmResetVisible] = useState(false);
+
   const selectedCurrency = user?.currency || "$";
+
 
   const handleCurrencyChange = async (item: { label: string; value: string }) => {
     if (!user?.uid) return;
@@ -65,6 +78,136 @@ const SettingsModal = () => {
           text2: "Could not open mail client. Please email support@spendwise.com.",
         });
       });
+  };
+
+  const handleExportCSV = async () => {
+    if (!user?.uid) return;
+    setLoading(true);
+    try {
+      // 1. Fetch user transactions from Firestore
+      const q = query(
+        collection(firestore, "transactions"),
+        where("uid", "==", user.uid)
+      );
+      const querySnapshot = await getDocs(q);
+      const transactionsData: any[] = [];
+      querySnapshot.forEach((doc) => {
+        transactionsData.push({ id: doc.id, ...doc.data() });
+      });
+
+      if (transactionsData.length === 0) {
+        Toast.show({
+          type: "info",
+          text1: "Export Report",
+          text2: "No transactions found to export.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Client-side sort by date descending
+      transactionsData.sort((a, b) => {
+        const secA = a.date?.seconds || 0;
+        const secB = b.date?.seconds || 0;
+        return secB - secA;
+      });
+
+      // 2. Format transactions into CSV format
+      const headers = "Date,Type,Category,Amount,Description\n";
+      const rows = transactionsData.map((t) => {
+        const date = t.date?.seconds 
+          ? new Date(t.date.seconds * 1000).toLocaleDateString("en-US") 
+          : "";
+        const cleanDesc = t.description ? t.description.replace(/"/g, '""') : "";
+        return `"${date}","${t.type}","${t.category}",${t.amount},"${cleanDesc}"`;
+      }).join("\n");
+
+      const csvContent = headers + rows;
+      const fileName = `SpendWise_Transactions_${new Date().toISOString().split('T')[0]}.csv`;
+
+      if (Platform.OS === 'android') {
+        // Use StorageAccessFramework to prompt directory picker
+        const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (permissions.granted) {
+          const directoryUri = permissions.directoryUri;
+          const fileUri = await StorageAccessFramework.createFileAsync(
+            directoryUri,
+            fileName,
+            'text/csv'
+          );
+          await writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
+          Toast.show({
+            type: "success",
+            text1: "Saved to Phone",
+            text2: "CSV report successfully saved to your chosen folder.",
+          });
+        } else {
+          Toast.show({
+            type: "info",
+            text1: "Permission Denied",
+            text2: "Could not save file without folder permissions.",
+          });
+        }
+      } else {
+        // iOS: use cache directory and share sheet (which contains "Save to Files")
+        const fileUri = `${cacheDirectory}${fileName}`;
+        await writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
+
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "text/csv",
+            dialogTitle: "Export SpendWise Transactions",
+            UTI: "public.comma-separated-values-text",
+          });
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Sharing Unavailable",
+            text2: "Sharing is not supported on this platform.",
+          });
+        }
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Export Failed",
+        text2: error.message || "Failed to generate CSV report.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetData = async () => {
+    if (!user?.uid) return;
+    setConfirmResetVisible(false);
+    setLoading(true);
+    try {
+      const res = await resetUserAccountData(user.uid);
+      if (res.success) {
+        await updateUserData(user.uid);
+        Toast.show({
+          type: "success",
+          text1: "Data Reset",
+          text2: "Your transactions and wallets have been cleared.",
+        });
+        router.back();
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Reset Failed",
+          text2: res.msg,
+        });
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error.message || "Failed to reset app data.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -130,65 +273,122 @@ const SettingsModal = () => {
         )}
 
         <View style={styles.content}>
-          {/* Currency Selection */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Icons.CurrencyCircleDollarIcon size={24} color={colors.neutral300} />
-              <Typo size={16} fontWeight="600" color={colors.neutral100}>
+          {/* Preferences Section */}
+          <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
+              <Icons.CurrencyCircleDollarIcon size={24} color={themeColors.textLighter} />
+              <Typo size={16} fontWeight="600" color={themeColors.text}>
                 Preferences
               </Typo>
             </View>
+            
             <View style={styles.settingRow}>
-              <Typo size={15} color={colors.neutral300} style={{ flex: 1 }}>
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
                 Preferred Currency
               </Typo>
               <Dropdown
-                style={styles.dropdownContainer}
-                activeColor={colors.neutral700}
-                selectedTextStyle={styles.dropdownSelectedText}
-                iconStyle={styles.dropdownIcon}
+                style={[styles.dropdownContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
+                activeColor={themeColors.card}
+                selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
+                iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
                 data={currencies}
                 maxHeight={250}
                 labelField="label"
                 valueField="value"
-                itemTextStyle={styles.dropdownItemText}
-                itemContainerStyle={styles.dropdownItemContainer}
-                containerStyle={styles.dropdownListContainer}
+                itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
+                itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
+                containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
                 value={selectedCurrency}
                 onChange={handleCurrencyChange}
+                disabled={loading}
+              />
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+
+            <View style={styles.settingRow}>
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+                Theme Mode
+              </Typo>
+              <Dropdown
+                style={[styles.dropdownContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
+                activeColor={themeColors.card}
+                selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
+                iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
+                data={[
+                  { label: "Light Mode", value: "light" },
+                  { label: "Dark Mode", value: "dark" },
+                  { label: "System Default", value: "system" },
+                ]}
+                maxHeight={200}
+                labelField="label"
+                valueField="value"
+                itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
+                itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
+                containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
+                value={theme}
+                onChange={(item) => setTheme(item.value as 'dark' | 'light' | 'system')}
                 disabled={loading}
               />
             </View>
           </View>
 
           {/* Support Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Icons.QuestionIcon size={24} color={colors.neutral300} />
-              <Typo size={16} fontWeight="600" color={colors.neutral100}>
-                Support
+          <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
+              <Icons.QuestionIcon size={24} color={themeColors.textLighter} />
+              <Typo size={16} fontWeight="600" color={themeColors.text}>
+                Support & Reports
               </Typo>
             </View>
+
             <TouchableOpacity
               style={styles.actionRow}
               onPress={handleContactSupport}
               disabled={loading}
             >
-              <Typo size={15} color={colors.neutral300} style={{ flex: 1 }}>
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
                 Contact Support
               </Typo>
-              <Icons.EnvelopeIcon size={20} color={colors.neutral300} />
+              <Icons.EnvelopeIcon size={20} color={themeColors.textLighter} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={handleExportCSV}
+              disabled={loading}
+            >
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+                Export Transactions to CSV
+              </Typo>
+              <Icons.ExportIcon size={20} color={themeColors.textLighter} />
             </TouchableOpacity>
           </View>
 
           {/* Danger Zone */}
-          <View style={[styles.section, styles.dangerSection]}>
-            <View style={styles.sectionHeader}>
+          <View style={[styles.section, styles.dangerSection, { backgroundColor: themeColors.card }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
               <Icons.WarningIcon size={24} color={colors.rose} />
               <Typo size={16} fontWeight="600" color={colors.rose}>
                 Danger Zone
               </Typo>
             </View>
+
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => setResetAlertVisible(true)}
+              disabled={loading}
+            >
+              <Typo size={15} color={colors.rose} style={{ flex: 1 }} fontWeight="500">
+                Reset App Data (Clear Records)
+              </Typo>
+              <Icons.ArrowClockwiseIcon size={20} color={colors.rose} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: "rgba(239, 68, 68, 0.2)" }]} />
+
             <TouchableOpacity
               style={styles.actionRow}
               onPress={() => setDeleteAlertVisible(true)}
@@ -203,7 +403,7 @@ const SettingsModal = () => {
         </View>
       </View>
 
-      {/* First confirmation */}
+      {/* Account Deletion Confirmation Alerts */}
       <CustomAlert
         visible={deleteAlertVisible}
         title="Delete Account?"
@@ -216,7 +416,6 @@ const SettingsModal = () => {
         confirmText="Continue"
       />
 
-      {/* Second confirmation */}
       <CustomAlert
         visible={confirmDeleteVisible}
         title="Final Confirmation"
@@ -224,6 +423,28 @@ const SettingsModal = () => {
         onCancel={() => setConfirmDeleteVisible(false)}
         onConfirm={handleDeleteAccount}
         confirmText="Permanently Delete"
+      />
+
+      {/* App Data Reset Confirmation Alerts */}
+      <CustomAlert
+        visible={resetAlertVisible}
+        title="Reset App Data?"
+        message="This will permanently delete all your wallets and transactions. Your login profile remains active. Continue?"
+        onCancel={() => setResetAlertVisible(false)}
+        onConfirm={() => {
+          setResetAlertVisible(false);
+          setConfirmResetVisible(true);
+        }}
+        confirmText="Continue"
+      />
+
+      <CustomAlert
+        visible={confirmResetVisible}
+        title="Final Confirmation"
+        message="This is your final warning. Clear all wallets and transactions from database? This cannot be undone."
+        onCancel={() => setConfirmResetVisible(false)}
+        onConfirm={handleResetData}
+        confirmText="Reset All Data"
       />
     </ModalWrapper>
   );
@@ -278,6 +499,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: spacingY._5,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.neutral700,
   },
   dropdownContainer: {
     height: verticalScale(40),

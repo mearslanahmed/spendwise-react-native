@@ -13,11 +13,13 @@ import useFetchData from '@/hooks/useFetchData'
 import { TransactionType } from '@/types'
 import { limit, orderBy, where } from 'firebase/firestore'
 import { useRouter } from 'expo-router'
+import { useTheme } from '@/contexts/themeContext'
 
 
 const Home = () => {
     const {user} = useAuth();
     const router = useRouter();
+    const { colors: themeColors } = useTheme();
 
     const [queryLimit, setQueryLimit] = React.useState(30);
 
@@ -51,10 +53,13 @@ const Home = () => {
             {user?.name}
           </Typo>
         </View>
-        <TouchableOpacity style={styles.searchIcon} onPress={() => router.push("/(modals)/searchModal")}>
+        <TouchableOpacity 
+          style={[styles.searchIcon, { backgroundColor: themeColors.inputBg }]} 
+          onPress={() => router.push("/(modals)/searchModal")}
+        >
           <Icons.MagnifyingGlassIcon
             size={verticalScale(22)}
-            color={colors.neutral200}
+            color={themeColors.textLighter}
             weight="bold"
           />
         </TouchableOpacity>

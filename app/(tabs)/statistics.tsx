@@ -14,11 +14,13 @@ import TransactionList from '@/components/TransactionList'
 import useFetchData from '@/hooks/useFetchData'
 import { TransactionType } from '@/types'
 import { limit, orderBy, Timestamp, where } from 'firebase/firestore'
+import { useTheme } from '@/contexts/themeContext'
 
 
 const Statistics = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const {user} = useAuth();
+  const { colors: themeColors, isDark } = useTheme();
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [queryLimit, setQueryLimit] = useState(30);
@@ -126,9 +128,9 @@ const Statistics = () => {
                 selectedIndex={activeIndex}
                 onTabPress={setActiveIndex}
                 tabsContainerStyle={styles.segmentStyle}
-                tabStyle={{ backgroundColor: colors.neutral800, borderColor: colors.neutral700 }}
-                activeTabStyle={{ backgroundColor: colors.neutral200 }}
-                tabTextStyle={{...styles.segmentFontStyle, color: colors.white}}
+                tabStyle={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border }}
+                activeTabStyle={{ backgroundColor: colors.primary }}
+                tabTextStyle={{...styles.segmentFontStyle, color: themeColors.textLight}}
                 activeTabTextStyle={{...styles.segmentFontStyle, color: colors.black}}
               />
 
@@ -146,9 +148,9 @@ const Statistics = () => {
                       yAxisThickness={0}
                       xAxisThickness={0}
                       yAxisLabelWidth={[1,2].includes(activeIndex) ? scale(38) : scale(35)}
-                      yAxisTextStyle={{ color: colors.neutral350}}
+                      yAxisTextStyle={{ color: themeColors.textLighter }}
                       xAxisLabelTextStyle={{
-                        color: colors.neutral350,
+                        color: themeColors.textLighter,
                         fontSize: verticalScale(12),
                       }}
                       noOfSections={3}
@@ -156,13 +158,13 @@ const Statistics = () => {
                       isAnimated={true}
                     />
                   ):(
-                    <View style={styles.noChart}/>
+                    <View style={[styles.noChart, { backgroundColor: themeColors.inputBg }]}/>
                   )
                 }
                 {
                   chartLoading && (
                     <View style={styles.chartLoadingContainer}>
-                      <Loading color={colors.white}/>
+                      <Loading color={colors.primary}/>
                     </View>
                   )
                 }

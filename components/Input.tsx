@@ -1,26 +1,36 @@
 import { StyleSheet, Text, TextInput, View, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import { InputProps } from '@/types'
-import { colors, radius, spacingX } from '@/constants/theme'
+import { colors as staticColors, radius, spacingX } from '@/constants/theme'
 import { verticalScale } from '@/utils/styling'
 import * as Icons from 'phosphor-react-native'
+import { useTheme } from '@/contexts/themeContext'
 
 const Input = (props: InputProps) => {
   const [showPassword, setShowPassword] = useState(false)
   const isPasswordField = props.secureTextEntry
   const { secureTextEntry, ...restProps } = props
+  const { colors: themeColors } = useTheme();
 
   return (
     <View
-        style={[styles.container, props.containerStyle && props.containerStyle]}
+        style={[
+          styles.container, 
+          {
+            backgroundColor: themeColors.inputBg,
+            borderColor: themeColors.border,
+          },
+          props.containerStyle && props.containerStyle
+        ]}
     >
         {props.icon && props.icon}
       <TextInput 
         style={[
             styles.input, 
+            { color: themeColors.text },
             props.inputStyle
         ]}
-        placeholderTextColor={colors.neutral400}
+        placeholderTextColor={themeColors.textLighter}
         ref={props.inputRef && props.inputRef}
         secureTextEntry={isPasswordField ? !showPassword : false}
         {...restProps}
@@ -28,9 +38,9 @@ const Input = (props: InputProps) => {
       {isPasswordField && (
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
           {showPassword ? (
-            <Icons.Eye size={verticalScale(20)} color={colors.neutral400} weight="fill" />
+            <Icons.Eye size={verticalScale(20)} color={themeColors.textLighter} weight="fill" />
           ) : (
-            <Icons.EyeSlash size={verticalScale(20)} color={colors.neutral400} weight="fill" />
+            <Icons.EyeSlash size={verticalScale(20)} color={themeColors.textLighter} weight="fill" />
           )}
         </TouchableOpacity>
       )}
@@ -47,7 +57,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: colors.neutral300,
+        borderColor: staticColors.neutral300,
         borderRadius: radius._17,
         borderCurve: 'continuous',
         paddingHorizontal: spacingX._15,
@@ -55,7 +65,7 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        color: colors.white,
+        color: staticColors.white,
         fontSize: verticalScale(14),
     },
 })

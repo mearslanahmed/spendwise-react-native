@@ -19,9 +19,11 @@ import ImageUpload from "@/components/ImageUpload";
 import { CreateOrUpdateWallet, deleteWallet } from "@/services/walletService";
 import Toast from 'react-native-toast-message';
 import CustomAlert from "@/components/CustomAlert";
+import { useTheme } from "@/contexts/themeContext";
 
 const WalletModal = () => {
   const { user } = useAuth();
+  const { colors: themeColors } = useTheme();
   const [wallet, setWallet] = useState<WalletType>({
     name: "",
     image: null,
@@ -121,7 +123,7 @@ const WalletModal = () => {
           </View>
         </ScrollView>
       </View>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: themeColors.border }]}>
         {oldWallet?.id && !loading && (
             <Button
                 onPress={showDeleteAlert}

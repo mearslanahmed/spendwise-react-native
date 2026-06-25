@@ -7,9 +7,11 @@ import React from "react";
 import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import { useTheme } from "@/contexts/themeContext";
 
 const Welcome = () => {
   const router = useRouter();
+  const { colors: themeColors, isDark } = useTheme();
   return (
     <ScreenWrapper>
       <View style={styles.container}>
@@ -27,7 +29,7 @@ const Welcome = () => {
           />
         </View>
         {/* footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { backgroundColor: themeColors.card, shadowColor: isDark ? 'white' : 'black' }]}>
           <Animated.View
             entering={FadeInDown.duration(1000).springify().damping(12)}
             style={{ alignItems: "center" }}

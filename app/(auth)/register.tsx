@@ -11,6 +11,7 @@ import Button from "@/components/Button";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/authContext";
 import Toast from 'react-native-toast-message';
+import { useTheme } from "@/contexts/themeContext";
 
 // Safely require native modules to prevent load crashes in Expo Go
 let GoogleSignin: any = null;
@@ -31,6 +32,7 @@ const Register = () => {
   
   const router = useRouter();
   const { register: registerUser, loginWithGoogle } = useAuth();
+  const { colors: themeColors } = useTheme();
 
   const handelSubmit = async () => {
     if (!nameRef.current || !emailRef.current || !passwordRef.current) {
@@ -147,7 +149,7 @@ const Register = () => {
             icon={
               <Icons.UserIcon
                 size={verticalScale(26)}
-                color={colors.neutral300}
+                color={themeColors.textLighter}
                 weight="fill"
               />
             }
@@ -160,7 +162,7 @@ const Register = () => {
             icon={
               <Icons.At
                 size={verticalScale(26)}
-                color={colors.neutral300}
+                color={themeColors.textLighter}
                 weight="fill"
               />
             }
@@ -177,21 +179,21 @@ const Register = () => {
             icon={
               <Icons.LockIcon
                 size={verticalScale(26)}
-                color={colors.neutral300}
+                color={themeColors.textLighter}
                 weight="fill"
               />
             }
           />
 
           {/* Password strength indicator checklist */}
-          <View style={styles.checklistContainer}>
+          <View style={[styles.checklistContainer, { borderColor: themeColors.border, backgroundColor: themeColors.inputBg }]}>
             <View style={styles.checkItem}>
               <Icons.CheckCircle
                 size={18}
                 color={password.length >= 8 ? colors.primary : colors.neutral600}
                 weight={password.length >= 8 ? "fill" : "regular"}
               />
-              <Typo size={13} color={password.length >= 8 ? colors.textLight : colors.neutral500}>
+              <Typo size={13} color={password.length >= 8 ? themeColors.textLight : themeColors.textLighter}>
                 At least 8 characters
               </Typo>
             </View>
@@ -201,7 +203,7 @@ const Register = () => {
                 color={/[a-zA-Z]/.test(password) ? colors.primary : colors.neutral600}
                 weight={/[a-zA-Z]/.test(password) ? "fill" : "regular"}
               />
-              <Typo size={13} color={/[a-zA-Z]/.test(password) ? colors.textLight : colors.neutral500}>
+              <Typo size={13} color={/[a-zA-Z]/.test(password) ? themeColors.textLight : themeColors.textLighter}>
                 Contains a letter (a-z, A-Z)
               </Typo>
             </View>
@@ -211,7 +213,7 @@ const Register = () => {
                 color={/[0-9]/.test(password) ? colors.primary : colors.neutral600}
                 weight={/[0-9]/.test(password) ? "fill" : "regular"}
               />
-              <Typo size={13} color={/[0-9]/.test(password) ? colors.textLight : colors.neutral500}>
+              <Typo size={13} color={/[0-9]/.test(password) ? themeColors.textLight : themeColors.textLighter}>
                 Contains a number (0-9)
               </Typo>
             </View>
@@ -219,7 +221,7 @@ const Register = () => {
 
           {/* Terms & Privacy checkbox */}
           <Pressable onPress={() => setIsAgreed(!isAgreed)} style={styles.checkboxContainer}>
-            <View style={[styles.checkbox, isAgreed && styles.checkboxActive]}>
+            <View style={[styles.checkbox, isAgreed && styles.checkboxActive, { borderColor: isAgreed ? colors.primary : themeColors.border }]}>
               {isAgreed && <Icons.Check size={12} color={colors.black} weight="bold" />}
             </View>
             <View style={styles.checkboxTextContainer}>
@@ -260,18 +262,21 @@ const Register = () => {
 
           {/* divider */}
           <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
             <Typo size={14} color={colors.neutral500} style={styles.dividerText}>
               Or continue with
             </Typo>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
           </View>
 
           {/* social login buttons */}
           <View style={styles.socialContainer}>
-            <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignIn}>
-              <Icons.GoogleLogo size={24} color={colors.white} weight="bold" />
-              <Typo size={16} fontWeight="600" color={colors.white}>
+            <TouchableOpacity 
+              style={[styles.socialButton, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]} 
+              onPress={handleGoogleSignIn}
+            >
+              <Icons.GoogleLogo size={24} color={themeColors.text} weight="bold" />
+              <Typo size={16} fontWeight="600" color={themeColors.text}>
                 Google
               </Typo>
             </TouchableOpacity>

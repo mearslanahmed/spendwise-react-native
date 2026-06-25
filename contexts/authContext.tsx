@@ -77,6 +77,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                 name,
                 email,
                 uid: response?.user?.uid,
+                theme: "dark",
             });
             return {success: true, msg: "Registration successful. Please verify your email."};
         }catch(error: any){
@@ -121,6 +122,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                     email: response.user.email,
                     uid: response.user.uid,
                     image: response.user.photoURL || null,
+                    theme: "dark",
                 });
             }
             return { success: true, msg: "Google login successful" };
@@ -143,6 +145,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                     image: data.image || null,
                     emailVerified: auth.currentUser?.emailVerified || false,
                     currency: data?.currency || "$",
+                    theme: data?.theme || "dark",
                 };
                 setUser({...userData});
             }

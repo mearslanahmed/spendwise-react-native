@@ -68,3 +68,34 @@ export const deleteUserAccountData = async (uid: string): Promise<ResponseType> 
     };
   }
 };
+
+export const resetUserAccountData = async (uid: string): Promise<ResponseType> => {
+  try {
+    const batch = writeBatch(firestore);
+
+    // 1. Delete all transactions of the user
+    const transactionsRef = collection(firestore, "transactions");
+    const transactionsQuery = query(transactionsRef, where("uid", "==", uid));
+    const transactionDocs = await getDocs(transactionsQuery);
+    transactionDocs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    // 2. Delete all wallets of the user
+    const walletsRef = collection(firestore, "wallets");
+    const walletsQuery = query(walletsRef, where("uid", "==", uid));
+    const walletDocs = await getDocs(walletsQuery);
+    walletDocs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    // Commit batch
+    await batch.commit();
+    return { success: true, msg: "App data reset successfully" };
+  } catch (error: any) {
+    return { 
+      success: false, 
+      msg: error instanceof Error ? error.message : String(error) || "Failed to reset account data" 
+    };
+  }
+};

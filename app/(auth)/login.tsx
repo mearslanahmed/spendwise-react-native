@@ -11,6 +11,7 @@ import Button from "@/components/Button";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/authContext";
 import Toast from 'react-native-toast-message';
+import { useTheme } from "@/contexts/themeContext";
 
 // Safely require native modules to prevent load crashes in Expo Go
 let GoogleSignin: any = null;
@@ -26,6 +27,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { login: loginUser, loginWithGoogle } = useAuth();
+  const { colors: themeColors } = useTheme();
 
   const handelSubmit = async () => {
     const email = emailRef.current.trim();
@@ -112,7 +114,7 @@ const Login = () => {
             autoCapitalize="none"
             onChangeText={(value) => (emailRef.current = value)}
             icon={
-              <Icons.At size={verticalScale(26)} color={colors.neutral300} weight="fill" />
+              <Icons.At size={verticalScale(26)} color={themeColors.textLighter} weight="fill" />
             }
           />
 
@@ -122,7 +124,7 @@ const Login = () => {
             autoCapitalize="none"
             onChangeText={(value) => (passwordRef.current = value)}
             icon={
-              <Icons.Lock size={verticalScale(26)} color={colors.neutral300} weight="fill" />
+              <Icons.Lock size={verticalScale(26)} color={themeColors.textLighter} weight="fill" />
             }
           />
           
@@ -140,22 +142,26 @@ const Login = () => {
 
           {/* divider */}
           <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
             <Typo size={14} color={colors.neutral500} style={styles.dividerText}>
               Or continue with
             </Typo>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
           </View>
 
           {/* social login buttons */}
           <View style={styles.socialContainer}>
             <TouchableOpacity 
-              style={[styles.socialButton, isLoading && { opacity: 0.6 }]} 
+              style={[
+                styles.socialButton, 
+                { backgroundColor: themeColors.inputBg, borderColor: themeColors.border },
+                isLoading && { opacity: 0.6 }
+              ]} 
               onPress={handleGoogleSignIn}
               disabled={isLoading}
             >
-              <Icons.GoogleLogo size={24} color={colors.white} weight="bold" />
-              <Typo size={16} fontWeight="600" color={colors.white}>
+              <Icons.GoogleLogo size={24} color={themeColors.text} weight="bold" />
+              <Typo size={16} fontWeight="600" color={themeColors.text}>
                 Google
               </Typo>
             </TouchableOpacity>
@@ -199,7 +205,6 @@ const styles = StyleSheet.create({
 
   forgotPassword: {
     fontWeight: "500",
-    color: colors.text,
   },
 
   dividerContainer: {

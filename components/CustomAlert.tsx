@@ -3,6 +3,7 @@ import { Modal, StyleSheet, View, TouchableOpacity, ActivityIndicator } from 're
 import { colors, spacingX, spacingY, radius } from '@/constants/theme';
 import { verticalScale } from '@/utils/styling';
 import Typo from './Typo';
+import { useTheme } from '@/contexts/themeContext';
 
 type CustomAlertProps = {
   visible: boolean;
@@ -25,20 +26,28 @@ const CustomAlert = ({
   confirmText = "Confirm",
   loading = false,
 }: CustomAlertProps) => {
+  const { colors: themeColors, isDark } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.alertBox}>
-          <Typo size={20} fontWeight="700" color={colors.white} style={styles.title}>
+        <View style={[styles.alertBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          <Typo size={20} fontWeight="700" color={themeColors.text} style={styles.title}>
             {title}
           </Typo>
-          <Typo size={15} color={colors.neutral300} style={styles.message}>
+          <Typo size={15} color={themeColors.textLight} style={styles.message}>
             {message}
           </Typo>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel} disabled={loading}>
-              <Typo size={16} fontWeight="600" color={colors.white}>
+            <TouchableOpacity 
+              style={[
+                styles.button, 
+                { backgroundColor: isDark ? colors.neutral600 : themeColors.border }
+              ]} 
+              onPress={onCancel} 
+              disabled={loading}
+            >
+              <Typo size={16} fontWeight="600" color={themeColors.text}>
                 {cancelText}
               </Typo>
             </TouchableOpacity>

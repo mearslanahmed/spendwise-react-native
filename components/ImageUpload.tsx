@@ -10,6 +10,8 @@ import { getProfilePath } from '@/services/imageService';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
+import { useTheme } from '@/contexts/themeContext';
+
 const ImageUpload = ({
     file = null,
     onSelect,
@@ -18,6 +20,7 @@ const ImageUpload = ({
     imageStyle,
     placeholder = ""
 }: ImageUploadProps ) => {
+    const { colors: themeColors } = useTheme();
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         
@@ -43,8 +46,13 @@ const ImageUpload = ({
         !file && (
             <TouchableOpacity
                 onPress={pickImage}
-                style={[styles.inputContainer, containerStyle && containerStyle]}>
-                <Icon.UploadSimpleIcon color={colors.neutral200} />
+                style={[
+                    styles.inputContainer, 
+                    { backgroundColor: themeColors.inputBg, borderColor: themeColors.border },
+                    containerStyle && containerStyle
+                ]}
+            >
+                <Icon.UploadSimpleIcon color={themeColors.textLighter} />
                 {placeholder && <Typo size={15}>{placeholder}</Typo>}
             </TouchableOpacity>
         )

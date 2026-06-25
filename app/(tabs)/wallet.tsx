@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 import useFetchData from "@/hooks/useFetchData";
 import { WalletType } from "@/types";
 import { orderBy, where } from "firebase/firestore";
+import { useTheme } from "@/contexts/themeContext";
 import { useAuth } from "@/contexts/authContext";
 import Loading from "@/components/Loading";
 import WalletListItem from "@/components/WalletListItem";
@@ -16,6 +17,7 @@ import WalletListItem from "@/components/WalletListItem";
 const Wallet = () => {
   const router = useRouter();
   const {user} = useAuth();
+  const { colors: themeColors } = useTheme();
 
   const {data: wallets, error, loading} = useFetchData<WalletType>("wallets",
     user?.uid ? [
@@ -32,9 +34,9 @@ const Wallet = () => {
     },0);
 
   return (
-    <ScreenWrapper style={{ backgroundColor: colors.black }}>
+    <ScreenWrapper style={{ backgroundColor: themeColors.background }}>
       <View style={styles.container}>
-        <View style={styles.balanceView}>
+        <View style={[styles.balanceView, { backgroundColor: themeColors.background }]}>
           <View style={{ alignItems: "center" }}>
             <Typo size={45} fontWeight={"500"}>
               {user?.currency || "$"}{getTotalBalance()?.toFixed(2)}
@@ -46,7 +48,7 @@ const Wallet = () => {
         </View>
 
         {/* wallets */}
-        <View style={styles.wallets}>
+        <View style={[styles.wallets, { backgroundColor: themeColors.card }]}>
           {/* header */}
           <View style={styles.flexRow}>
             <Typo size={20} fontWeight={"700"}>

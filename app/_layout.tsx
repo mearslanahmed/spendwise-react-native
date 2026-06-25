@@ -5,6 +5,8 @@ import { AuthProvider } from '@/contexts/authContext'
 import Toast from 'react-native-toast-message'
 import { customToastConfig } from '@/config/toastConfig'
 
+import { ThemeProvider } from '@/contexts/themeContext'
+
 const StackLayout = () => {
   return (
     <Stack screenOptions={{headerShown: false}}>
@@ -17,15 +19,20 @@ const StackLayout = () => {
       <Stack.Screen name="(modals)/privacyPolicyModal" options={{presentation: 'modal'}}/>
       <Stack.Screen name="(modals)/termsOfServiceModal" options={{presentation: 'modal'}}/>
       <Stack.Screen name="(modals)/settingsModal" options={{presentation: 'modal'}}/>
+      <Stack.Screen name="(modals)/changePasswordModal" options={{presentation: 'modal'}}/>
     </Stack>
   )
 }
 
 export default function _layout() {
-  return <AuthProvider>
-    <StackLayout/>
-    <Toast config={customToastConfig} position="top" topOffset={50} />
-  </AuthProvider>
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <StackLayout/>
+        <Toast config={customToastConfig} position="top" topOffset={50} />
+      </ThemeProvider>
+    </AuthProvider>
+  )
 }
 
 const styles = StyleSheet.create({})
