@@ -1,0 +1,240 @@
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, ScrollView } from 'react-native'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { useFocusEffect } from 'expo-router'
+import Markdown from 'react-native-markdown-display'
+import ScreenWrapper from '@/components/ScreenWrapper'
+import { colors, radius, spacingX, spacingY } from '@/constants/theme'
+import { verticalScale } from '@/utils/styling'
+import Typo from '@/components/Typo'
+import { useTheme } from '@/contexts/themeContext'
+import * as Icons from 'phosphor-react-native'
+import { useData } from '@/contexts/dataContext'
+import { getFinancialAdvice } from '@/services/aiService'
+import { useAuth } from '@/contexts/authContext'
+import { Message } from '@/types'
+import Header from '@/components/Header'
+
+const AiAdvisor = () => {
+    const { colors: themeColors, isDark } = useTheme();
+    const { wallets, transactions, subscriptions } = useData();
+    const { user } = useAuth();
+    
+    const [messages, setMessages] = useState<Message[]>([
+        { id: '1', text: "Hi there! I'm SpendWise AI. How can I help you manage your money today?", sender: 'ai' }
+    ]);
+    const [inputText, setInputText] = useState('');
+    const [loading, setLoading] = useState(false);
+    const flatListRef = useRef<FlatList>(null);
+
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+    useEffect(() => {
+        if (messages.length > 0) {
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [messages, loading]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const keyboardDidShowListener = Keyboard.addListener(
+                Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+                () => {
+                    setKeyboardVisible(true);
+                    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+                }
+            );
+            const keyboardDidHideListener = Keyboard.addListener(
+                Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+                () => {
+                    setKeyboardVisible(false);
+                }
+            );
+
+            return () => {
+            keyboardDidHideListener.remove();
+            keyboardDidShowListener.remove();
+            setKeyboardVisible(false);
+        };
+    }, []));
+
+    const clearChat = () => {
+        setMessages([
+            { id: Date.now().toString(), text: "Hi there! I'm SpendWise AI. How can I help you manage your money today?", sender: 'ai' }
+        ]);
+        setInputText('');
+    };
+
+    const handleSend = async () => {
+        if (!inputText.trim()) return;
+
+        const userMsg: Message = { id: Date.now().toString(), text: inputText.trim(), sender: 'user' };
+        setMessages(prev => [...prev, userMsg]);
+        setInputText('');
+        setLoading(true);
+
+        const aiResponse = await getFinancialAdvice(messages.concat(userMsg), wallets, transactions, subscriptions, user?.currency, user?.uid);
+        
+        const aiMsg: Message = { id: (Date.now() + 1).toString(), text: aiResponse, sender: 'ai' };
+        setMessages(prev => [...prev, aiMsg]);
+        setLoading(false);
+    };
+
+    const renderMessage = ({ item }: { item: Message }) => {
+        const isUser = item.sender === 'user';
+        return (
+            <View style={[styles.messageBubble, isUser ? [styles.userBubble, { backgroundColor: colors.primary }] : [styles.aiBubble, { backgroundColor: themeColors.card }]]}>
+                {isUser ? (
+                    <Typo size={15} color={colors.white}>
+                        {item.text}
+                    </Typo>
+                ) : (
+                    <Markdown style={{ body: { color: themeColors.text, fontSize: 15 } }}>
+                        {item.text}
+                    </Markdown>
+                )}
+            </View>
+        );
+    };
+
+    return (
+        <ScreenWrapper>
+            <KeyboardAvoidingView 
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            >
+                <View style={{ paddingHorizontal: spacingX._20, paddingTop: spacingY._15, paddingBottom: spacingY._5 }}>
+                    <Header 
+                        title="Smart Assistant" 
+                        rightIcon={
+                            messages.length > 1 ? (
+                                <TouchableOpacity onPress={clearChat} style={{ padding: 8, backgroundColor: 'rgba(244, 63, 94, 0.1)', borderRadius: radius._12 }}>
+                                    <Icons.Trash size={20} color={colors.rose} />
+                                </TouchableOpacity>
+                            ) : undefined
+                        }
+                    />
+                </View>
+
+                <FlatList
+                    ref={flatListRef}
+                    data={messages}
+                    keyExtractor={item => item.id}
+                    renderItem={renderMessage}
+                    contentContainerStyle={styles.messageList}
+                    showsVerticalScrollIndicator={false}
+                    ListFooterComponent={loading ? (
+                        <View style={[styles.messageBubble, styles.aiBubble, { backgroundColor: themeColors.card, marginTop: spacingY._10 }]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <ActivityIndicator size="small" color={colors.primary} />
+                                <Typo size={14} color={themeColors.textLighter}>SpendWise AI is typing...</Typo>
+                            </View>
+                        </View>
+                    ) : null}
+                />
+
+                <View style={[styles.inputContainer, { paddingBottom: isKeyboardVisible ? verticalScale(15) : verticalScale(88) }]}>
+                    <View style={{ flex: 1, gap: 10 }}>
+                        {!isKeyboardVisible && messages.length < 3 && (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 5 }}>
+                                {['Analyze my spending', 'What are my top expenses?', 'Add a $15 lunch expense'].map((prompt, i) => (
+                                    <TouchableOpacity 
+                                        key={i} 
+                                        style={[styles.quickPrompt, { backgroundColor: themeColors.card }]}
+                                        onPress={() => setInputText(prompt)}
+                                    >
+                                        <Typo size={13} color={themeColors.text}>{prompt}</Typo>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        )}
+                        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
+                            <TextInput
+                                style={[styles.input, { backgroundColor: themeColors.card, color: themeColors.text }]}
+                                placeholder="Ask about your finances..."
+                                placeholderTextColor={themeColors.textLighter}
+                                value={inputText}
+                                onChangeText={setInputText}
+                                multiline
+                            />
+                            <TouchableOpacity 
+                                style={[styles.sendBtn, { backgroundColor: inputText.trim() ? colors.primary : themeColors.card }]} 
+                                onPress={handleSend}
+                                disabled={!inputText.trim() || loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator size="small" color={colors.white} />
+                                ) : (
+                                    <Icons.PaperPlaneRight size={20} weight="fill" color={inputText.trim() ? colors.white : themeColors.textLighter} />
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </KeyboardAvoidingView>
+        </ScreenWrapper>
+    )
+}
+
+export default AiAdvisor
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    headerIcon: {
+        backgroundColor: 'rgba(99, 102, 241, 0.15)',
+        padding: 8,
+        borderRadius: radius._12,
+    },
+    messageList: {
+        paddingHorizontal: spacingX._20,
+        paddingVertical: spacingY._20,
+        gap: spacingY._15,
+    },
+    messageBubble: {
+        maxWidth: '85%',
+        padding: spacingY._15,
+        borderRadius: radius._15,
+    },
+    userBubble: {
+        alignSelf: 'flex-end',
+        borderBottomRightRadius: 0,
+    },
+    aiBubble: {
+        alignSelf: 'flex-start',
+        borderBottomLeftRadius: 0,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: spacingX._20,
+        paddingTop: spacingY._15,
+        gap: spacingX._10,
+        alignItems: 'flex-end',
+    },
+    input: {
+        flex: 1,
+        minHeight: verticalScale(50),
+        maxHeight: verticalScale(120),
+        borderRadius: radius._15,
+        paddingHorizontal: spacingX._15,
+        paddingVertical: spacingY._12,
+        fontSize: 15,
+    },
+    sendBtn: {
+        height: verticalScale(50),
+        width: verticalScale(50),
+        borderRadius: radius._15,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    quickPrompt: {
+        paddingHorizontal: spacingX._15,
+        paddingVertical: spacingY._7,
+        borderRadius: radius._20,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+    }
+})

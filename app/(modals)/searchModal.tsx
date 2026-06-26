@@ -68,7 +68,7 @@ const SearchModal = () => {
         />
 
         {/* form */}
-        <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.inputContainer}>
             <Input
               placeholder="shoes..."

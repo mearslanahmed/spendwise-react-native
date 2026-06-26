@@ -14,6 +14,7 @@ import { verticalScale, scale } from "@/utils/styling";
 import Header from "@/components/Header";
 import Typo from "@/components/Typo";
 import { useAuth } from "@/contexts/authContext";
+import { useTheme } from "@/contexts/themeContext";
 import Toast from 'react-native-toast-message';
 import CustomAlert from "@/components/CustomAlert";
 import { Image } from "expo-image";
@@ -28,6 +29,7 @@ import * as ImagePicker from "expo-image-picker";
 import { updateUser } from "@/services/userService";
 const Profile = () => {
   const { user, updateUserData } = useAuth();
+  const { colors: themeColors, isDark } = useTheme();
   const router = useRouter();
   const [logoutAlertVisible, setLogoutAlertVisible] = React.useState(false);
 
@@ -135,18 +137,18 @@ const Profile = () => {
               contentFit="cover"
               transition={100}
             />
-            <View style={styles.editIcon}>
-              <Icons.CameraIcon size={20} color={colors.black} weight="fill" />
+            <View style={[styles.editIcon, { backgroundColor: themeColors.card }]}>
+              <Icons.CameraIcon size={20} color={themeColors.text} weight="fill" />
             </View>
           </TouchableOpacity>
 
           {/* name & email */}
           <View style={styles.nameContainer}>
-            <Typo size={24} fontWeight={"600"} color={colors.neutral100}>
+            <Typo size={24} fontWeight={"600"} color={themeColors.text}>
               {user?.name || "User Name"}
             </Typo>
 
-            <Typo size={15} color={colors.neutral400}>
+            <Typo size={15} color={themeColors.textLighter}>
               {user?.email || "user@example.com"}
             </Typo>
           </View>
@@ -178,13 +180,13 @@ const Profile = () => {
                   >
                     {item.icon && item.icon}
                   </View>
-                  <Typo size={16} style={{ flex: 1 }} fontWeight={"500"}>
+                  <Typo size={16} style={{ flex: 1 }} color={themeColors.text} fontWeight={"500"}>
                     {item.title}
                   </Typo>
                   <Icons.CaretRightIcon
                     size={verticalScale(20)}
                     weight="bold"
-                    color={colors.white}
+                    color={themeColors.text}
                   />
                 </TouchableOpacity>
               </Animated.View>
@@ -244,7 +246,6 @@ const styles = StyleSheet.create({
     bottom: 5,
     right: 8,
     borderRadius: 50,
-    backgroundColor: colors.neutral100,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,

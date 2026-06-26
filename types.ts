@@ -216,3 +216,9 @@ export type NotificationType = {
     read: boolean;
     createdAt?: Date | Timestamp | string | any;
 };
+
+export type Message = {
+    id: string;
+    text: string;
+    sender: 'user' | 'ai';
+};

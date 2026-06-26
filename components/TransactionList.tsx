@@ -115,8 +115,8 @@ const TransactionItem = ({
   const { user } = useAuth();
   const { colors: themeColors } = useTheme();
   let category = 
-    item?.type == "income" ? incomeCategory : expenseCategories[item.category!];
-  const IconComponent = category.icon;
+    item?.type == "income" ? incomeCategory : (expenseCategories[item.category!] || expenseCategories['others']);
+  const IconComponent = category?.icon;
 
   const date = (item?.date as Timestamp)?.toDate()?.toLocaleDateString("en-US", {
     day: "2-digit",

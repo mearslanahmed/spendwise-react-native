@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { View, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, TouchableOpacity, StyleSheet, Platform, Keyboard } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { colors, radius } from "@/constants/theme";
 import { verticalScale, scale } from "@/utils/styling";
@@ -65,6 +65,24 @@ function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps
 
   const { colors: themeColors, isDark } = useTheme();
 
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+        Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+        () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+        Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+        () => setKeyboardVisible(false)
+    );
+
+    return () => {
+        keyboardDidHideListener.remove();
+        keyboardDidShowListener.remove();
+    };
+  }, []);
+
   const tabbarIcons: any = { 
     home: (isFocused: boolean) => (
       <Icons.HouseIcon
@@ -76,6 +94,14 @@ function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps
 
     statistics: (isFocused: boolean) => (
       <Icons.ChartBarIcon
+        size={verticalScale(24)}
+        weight={isFocused ? "fill" : "regular"}
+        color={isFocused ? colors.primary : themeColors.textLighter}
+      />
+    ),
+
+    aiAdvisor: (isFocused: boolean) => (
+      <Icons.Sparkle
         size={verticalScale(24)}
         weight={isFocused ? "fill" : "regular"}
         color={isFocused ? colors.primary : themeColors.textLighter}
@@ -139,6 +165,10 @@ function CustomTabsContent({ state, descriptors, navigation }: BottomTabBarProps
       })}
     </View>
   );
+
+  if (isKeyboardVisible) {
+    return null;
+  }
 
   if (Platform.OS === 'ios') {
     return (
