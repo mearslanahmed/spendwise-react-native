@@ -13,12 +13,12 @@ const TermsOfServiceModal = () => {
         <Header
           title="Terms of Service"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10 }}
+          style={{ marginBottom: spacingY._10, marginTop: 20 }}
         />
 
         <ScrollView contentContainerStyle={styles.content}>
           <Typo size={15} color={colors.neutral300}>
-            Last updated: January 28, 2026
+            Last updated: June 27, 2026
           </Typo>
 
           <View style={styles.section}>

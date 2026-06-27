@@ -13,12 +13,12 @@ const PrivacyPolicyModal = () => {
         <Header
           title="Privacy Policy"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10 }}
+          style={{ marginBottom: spacingY._10, marginTop: 20 }}
         />
 
         <ScrollView contentContainerStyle={styles.content}>
           <Typo size={15} color={colors.neutral300}>
-            Last updated: January 28, 2026
+            Last updated: June 27, 2026
           </Typo>
 
           <View style={styles.section}>
@@ -26,9 +26,10 @@ const PrivacyPolicyModal = () => {
               1. Information We Collect
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              We collect information you provide (such as name and email) and
-              data you create in the app, including wallets, transactions, and
-              uploaded images.
+              When you use SpendWise, we collect the following types of information:
+              {"\n"}- **Account Data**: Your email address and display name used during registration.
+              {"\n"}- **Financial Data**: Transactions, budgets, categories, and wallet balances that you input manually.
+              {"\n"}- **Media**: Receipt images that you choose to upload for the &quot;Magic Scan&quot; feature.
             </Typo>
           </View>
 
@@ -37,48 +38,37 @@ const PrivacyPolicyModal = () => {
               2. How We Use Your Information
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              We use your information to authenticate your account, sync your
-              data across devices, and provide core app features.
+              We use your data strictly to provide the core functionalities of the app. This includes authenticating your identity, securely syncing your financial data across your devices, and generating spending insights. We do not sell your personal data to third parties.
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              3. Data Storage
+              3. Third-Party Services & APIs
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              Your data is stored securely using industry-standard cloud database
-              services. We do not sell your personal data.
+              To provide advanced features, your data may be processed by the following secure third-party services:
+              {"\n"}- **Google Firebase**: Used for secure user authentication and database storage.
+              {"\n"}- **Cloudinary**: Used to securely host images you upload (such as receipts or profile pictures).
+              {"\n"}- **Google Gemini & Groq APIs**: If you use the &quot;Magic Scan&quot; feature, the receipt image you select is sent to these AI providers strictly for the purpose of extracting the text, amount, and merchant name. Your images are not used to train their AI models.
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              4. Images & Uploads
+              4. Data Retention and Deletion
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              Images you upload are used only to personalize your profile or
-              transactions and are stored securely.
+              Your data is retained as long as your account is active. You have the right to request the complete deletion of your account and all associated data at any time by contacting us, or by using the account deletion feature within the app (if available).
             </Typo>
           </View>
 
           <View style={styles.section}>
             <Typo size={18} fontWeight="700">
-              5. Your Choices
+              5. Contact Us
             </Typo>
             <Typo size={14} color={colors.neutral300}>
-              You can update your profile information at any time. To delete
-              your account or data, contact us using the details below.
-            </Typo>
-          </View>
-
-          <View style={styles.section}>
-            <Typo size={18} fontWeight="700">
-              6. Contact
-            </Typo>
-            <Typo size={14} color={colors.neutral300}>
-              If you have questions about this policy, contact us at:
-              privacy@spendwise.app
+              If you have any questions or concerns regarding this Privacy Policy or how your data is handled, please contact us at: privacy@spendwise.app
             </Typo>
           </View>
         </ScrollView>
