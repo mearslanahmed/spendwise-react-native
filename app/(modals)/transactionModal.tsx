@@ -1,13 +1,16 @@
 import {
+  ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Animated,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { scale, verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
@@ -40,6 +43,7 @@ import { createOrUpdateTransaction, deleteTransaction } from "@/services/transac
 import { useTheme } from "@/contexts/themeContext";
 import { addNotification } from "@/services/notificationService";
 import { scheduleLocalNotification } from "@/services/expoNotificationService";
+import { analyzeReceiptImage } from "@/services/aiService";
 
 const TransactionModal = () => {
   const { user } = useAuth();
@@ -57,7 +61,29 @@ const TransactionModal = () => {
 
   const [loading, setLoading] = useState(false);
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [analyzingReceipt, setAnalyzingReceipt] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0.3)).current;
   const router = useRouter();
+
+  useEffect(() => {
+    if (analyzingReceipt) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 0.3,
+            duration: 800,
+            useNativeDriver: true,
+          })
+        ])
+      ).start();
+    }
+  }, [analyzingReceipt, fadeAnim]);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const { wallets: allWallets, budgets, transactions, loading: dataLoading } = useData();
@@ -83,10 +109,52 @@ const TransactionModal = () => {
     image?: any;
     uid?: string;
     walletId: string;
+    scan?: string;
   }
 
   const oldTransaction: paramType =
     useLocalSearchParams();
+
+  const triggerScan = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+        Toast.show({ type: 'error', text1: 'Permission required', text2: 'Permission to access the camera is required.' });
+        return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 0.5,
+        base64: true,
+    });
+
+    if (!result.canceled && result.assets?.length) {
+        const file = result.assets[0];
+        setTransaction(prev => ({ ...prev, image: file }));
+        if (file.base64) {
+          setAnalyzingReceipt(true);
+          const aiData = await analyzeReceiptImage(file.base64);
+          setAnalyzingReceipt(false);
+          
+          if (aiData && aiData.error) {
+            Toast.show({ type: 'error', text1: 'Scan Failed', text2: aiData.error });
+          } else if (aiData && aiData.isReceipt === false) {
+            Toast.show({ type: 'error', text1: 'Not a Receipt', text2: 'This image does not appear to be a valid receipt or invoice.' });
+          } else if (aiData) {
+            setTransaction(prev => ({
+              ...prev,
+              amount: aiData.amount || prev.amount,
+              category: aiData.category || prev.category,
+              description: aiData.description || prev.description,
+              type: 'expense'
+            }));
+            Toast.show({ type: 'success', text1: 'Magic Scan', text2: 'Receipt details automatically filled!' });
+          } else {
+            Toast.show({ type: 'error', text1: 'Scan Failed', text2: 'Could not read receipt details.' });
+          }
+        }
+    }
+  };
 
   const startOfMonth = React.useMemo(() => {
     const d = new Date();
@@ -164,17 +232,31 @@ const TransactionModal = () => {
           ...prev,
           walletId: oldTransaction.walletId,
         }));
+      } else if (wallets.length === 1) {
+        setTransaction((prev) => ({
+          ...prev,
+          walletId: wallets[0].id,
+        }));
       }
-  },[])
+  },[wallets.length])
 
   const onSubmit = async () => {
     const { type, amount, description, category, date, walletId, image } =
       transaction;
 
-    if (!walletId || !date || !amount || (type == 'expense' && !category)) {
+    const missing: string[] = [];
+    if (!walletId) missing.push("wallet");
+    if (!date) missing.push("date");
+    if (!amount) missing.push("amount");
+    if (type === 'expense' && !category) missing.push("category");
+
+    if (missing.length > 0) {
+      setMissingFields(missing);
       Toast.show({ type: 'error', text1: 'Transaction', text2: "Please fill all the required fields" });
       return;
     }
+
+    setMissingFields([]);
 
     let transactionData: TransactionType = {
       type,
@@ -237,18 +319,41 @@ const TransactionModal = () => {
 
   return (
     <ModalWrapper>
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <Header
           title={oldTransaction?.id ? "Update Transaction" : "New Transaction"}
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10 }}
+          style={{ marginBottom: spacingY._20, marginTop: spacingY._10 }}
         />
 
         {/* form */}
         <ScrollView
           contentContainerStyle={styles.form}
           showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
+          {/* amount of transaction */}
+          <View style={styles.inputContainer}>
+            {/* Name Input */}
+            <Typo color={colors.neutral200} size={16}>
+              Amount
+            </Typo>
+            <Input
+              keyboardType="decimal-pad"
+              value={transaction.amount?.toString()}
+              containerStyle={missingFields.includes("amount") ? { borderColor: colors.rose, borderWidth: 1.5 } : {}}
+              onChangeText={(value: string) =>
+                setTransaction({
+                  ...transaction,
+                  amount: Number(value.replace(/[^0-9.]/g, "")),
+                })
+              }
+            />
+          </View>
+
           {/* transaction type */}
           <View style={styles.inputContainer}>
             {/* Name Input */}
@@ -269,7 +374,10 @@ const TransactionModal = () => {
               containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
               value={transaction.type}
               onChange={(item) => {
-                setTransaction({ ...transaction, type: item.value });
+                setTransaction({ ...transaction, type: item.value, category: item.value === 'income' ? "" : transaction.category });
+                if (item.value === 'income') {
+                   setMissingFields(prev => prev.filter(f => f !== 'category'));
+                }
               }}
             />
           </View>
@@ -281,7 +389,7 @@ const TransactionModal = () => {
               Wallet
             </Typo>
             <Dropdown
-              style={[styles.dropdownContainer, { borderColor: themeColors.border }]}
+              style={[styles.dropdownContainer, { borderColor: missingFields.includes("wallet") ? colors.rose : themeColors.border, borderWidth: missingFields.includes("wallet") ? 1.5 : 1 }]}
               activeColor={themeColors.inputBg}
               placeholderStyle={[styles.dropdownPlaceholder, { color: themeColors.textLighter }]}
               selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
@@ -300,6 +408,7 @@ const TransactionModal = () => {
               value={transaction.walletId}
               onChange={(item) => {
                 setTransaction({ ...transaction, walletId: item.value || "" });
+                setMissingFields(prev => prev.filter(f => f !== 'wallet'));
               }}
             />
           </View>
@@ -312,7 +421,7 @@ const TransactionModal = () => {
                 Expense Category
               </Typo>
               <Dropdown
-                style={[styles.dropdownContainer, { borderColor: themeColors.border }]}
+                style={[styles.dropdownContainer, { borderColor: missingFields.includes("category") ? colors.rose : themeColors.border, borderWidth: missingFields.includes("category") ? 1.5 : 1 }]}
                 activeColor={themeColors.inputBg}
                 placeholderStyle={[styles.dropdownPlaceholder, { color: themeColors.textLighter }]}
                 selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
@@ -331,6 +440,7 @@ const TransactionModal = () => {
                     ...transaction,
                     category: item.value || "",
                   });
+                  setMissingFields(prev => prev.filter(f => f !== 'category'));
                 }}
               />
             </View>
@@ -344,11 +454,11 @@ const TransactionModal = () => {
             </Typo>
             {!showDatePicker && (
               <Pressable
-                style={[styles.dateInput, { borderColor: themeColors.border }]}
+                style={[styles.dateInput, { borderColor: missingFields.includes("date") ? colors.rose : themeColors.border, borderWidth: missingFields.includes("date") ? 1.5 : 1 }]}
                 onPress={() => setShowDatePicker(true)}
               >
                 <Typo size={14}>
-                  {(transaction.date as Date).toDateString()}
+                  {(transaction.date as Date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                 </Typo>
               </Pressable>
             )}
@@ -377,24 +487,7 @@ const TransactionModal = () => {
             )}
           </View>
 
-          {/* amount of transaction */}
-          <View style={styles.inputContainer}>
-            {/* Name Input */}
-            <Typo color={colors.neutral200} size={16}>
-              Amount
-            </Typo>
-            <Input
-              //   placeholder="Salary, Cash, etc."
-              keyboardType="numeric"
-              value={transaction.amount?.toString()}
-              onChangeText={(value: string) =>
-                setTransaction({
-                  ...transaction,
-                  amount: Number(value.replace(/[^0-9]/g, "")),
-                })
-              }
-            />
-          </View>
+
 
           {/* Budget warning alert */}
           {warning && (
@@ -451,14 +544,61 @@ const TransactionModal = () => {
             <ImageUpload
               file={transaction.image}
               onClear={() => setTransaction({ ...transaction, image: null })}
-              onSelect={(file) =>
-                setTransaction({ ...transaction, image: file })
-              }
+              onSelect={(file) => {
+                setTransaction({ ...transaction, image: file });
+              }}
               placeholder="Upload Image"
             />
           </View>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
+
+      {analyzingReceipt && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', zIndex: 100 }]}>
+          <Animated.View style={{ opacity: fadeAnim, marginBottom: 15, alignItems: 'center' }}>
+            <Icon.SparkleIcon size={scale(55)} color={colors.primary} weight="fill" />
+            <Typo color={colors.white} size={18} fontWeight="700" style={{ marginTop: 15 }}>Analyzing Receipt...</Typo>
+          </Animated.View>
+        </View>
+      )}
+
+      {/* Floating Magic Scan Button */}
+      {!oldTransaction?.id && !analyzingReceipt && (
+        <View style={{
+          position: 'absolute',
+          bottom: verticalScale(100),
+          right: spacingX._20,
+          alignItems: 'center',
+          zIndex: 90,
+        }}>
+          <TouchableOpacity
+            onPress={triggerScan}
+            style={{
+              height: verticalScale(55),
+              width: verticalScale(55),
+              borderRadius: 100,
+              backgroundColor: colors.primary,
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.4,
+              shadowRadius: 5,
+              elevation: 5,
+            }}
+          >
+            <Icon.SparkleIcon size={verticalScale(28)} color={colors.white} weight="fill" />
+          </TouchableOpacity>
+          <Typo 
+            color={themeColors.text} 
+            size={12} 
+            fontWeight="700" 
+            style={{ marginTop: spacingY._5, textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: {width:0, height:1}, textShadowRadius: 2 }}
+          >
+            Scan Receipt
+          </Typo>
+        </View>
+      )}
 
       {/* footer */}
       <View style={[styles.footer, { borderTopColor: themeColors.border }]}>

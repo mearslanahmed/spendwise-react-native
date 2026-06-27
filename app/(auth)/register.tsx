@@ -1,5 +1,5 @@
-import { Alert, Pressable, StyleSheet, Text, View, TouchableOpacity, Platform } from "react-native";
-import React, { useRef, useState, useEffect } from "react";
+import { Pressable, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import React, { useRef, useState } from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { colors, spacingX, spacingY, radius } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";

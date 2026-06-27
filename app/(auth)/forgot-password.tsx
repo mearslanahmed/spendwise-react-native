@@ -1,4 +1,4 @@
-import { StyleSheet, View, Pressable } from "react-native";
+import { StyleSheet, View } from "react-native";
 import React, { useRef, useState } from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { colors, spacingX, spacingY } from "@/constants/theme";

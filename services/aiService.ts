@@ -51,7 +51,7 @@ ${subscriptions || 'No active subscriptions'}
 `;
 
     // Tool Declaration for Actionable AI
-    const tools = [{
+    const tools: any = [{
       functionDeclarations: [
         {
           name: "addTransaction",
@@ -137,7 +137,7 @@ ${subscriptions || 'No active subscriptions'}
 
         const res = await createOrUpdateTransaction(transactionData);
         if (res.success) {
-          return `✅ I've successfully added a ${currency}${args.amount} ${args.type} for **${args.category}** to your **${wallet.name}** wallet.`;
+          return `I've successfully added a ${currency}${args.amount} ${args.type} for **${args.category}** to your **${wallet.name}** wallet.`;
         } else {
           return `I tried to add the transaction, but an error occurred: ${res.msg}`;
         }
@@ -175,5 +175,107 @@ ${subscriptions || 'No active subscriptions'}
   } catch (error: any) {
     console.error("AI Service Error:", error);
     return "Our AI service is temporarily unavailable. Please try again later.";
+  }
+};
+
+export const analyzeReceiptImage = async (base64Image: string) => {
+  const prompt = `Analyze this image. First, determine if it is a receipt, invoice, or a piece of paper with clear financial transaction details (amount and merchant). If it is NOT a receipt (e.g. a picture of a laptop, a person, a random object), you MUST return {"isReceipt": false} and leave other fields empty/null.
+  If it IS a receipt, extract the total amount as a number, suggest an expense category, and extract the merchant name as a short description.
+  Return ONLY valid JSON matching this schema:
+  {
+    "isReceipt": boolean,
+    "amount": number (or null),
+    "category": string (must be one of: groceries, rent, utilities, transportation, entertainment, dining, health, insurance, savings, clothing, personal, others) (or null),
+    "description": string (the merchant name, e.g. Starbucks, Walmart) (or null)
+  }`;
+
+  try {
+    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
+    if (!apiKey) throw new Error("API Key is missing in .env");
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    // TEMPORARY TEST: Force Gemini to fail to test Meta Llama on Groq!
+    throw new Error("Simulating 503 High Demand to test Meta Llama");
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: [
+        prompt,
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType: 'image/jpeg',
+          }
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            isReceipt: { type: "BOOLEAN" },
+            amount: { type: "NUMBER" },
+            category: { type: "STRING" },
+            description: { type: "STRING" },
+          },
+          required: ["isReceipt"],
+        },
+      } as any
+    });
+
+    const responseText = response.text;
+    if (responseText) {
+      return JSON.parse(responseText as string);
+    }
+    throw new Error("Failed to parse receipt");
+  } catch (error: any) {
+    if (error.message === "Network request failed" || error.message?.includes("Network request failed")) {
+      return { error: "No internet connection. Please connect to Wi-Fi or cellular data and try again." };
+    }
+
+    console.log("Primary Gemini 3.5 API Error:", error.message || error);
+    
+    // Fallback to Groq
+    try {
+      const groqApiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
+      if (!groqApiKey) throw new Error("Groq API Key is missing");
+
+      console.log("Attempting fallback to Groq Llama 4 Scout...");
+      const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${groqApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
+              ]
+            }
+          ],
+          response_format: { type: "json_object" }
+        })
+      });
+
+      const groqData = await groqResponse.json();
+      
+      if (!groqResponse.ok || groqData.error) {
+        console.error("Groq API Error Detail:", JSON.stringify(groqData, null, 2));
+      }
+
+      if (groqData.choices && groqData.choices[0]?.message?.content) {
+        return JSON.parse(groqData.choices[0].message.content);
+      }
+      throw new Error("Failed to parse Groq response");
+    } catch (groqError: any) {
+      console.log("Fallback Error:", groqError.message || groqError);
+      return { error: "The AI is currently experiencing high demand. Please enter the details manually for now." };
+    }
   }
 };

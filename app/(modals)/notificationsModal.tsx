@@ -1,5 +1,5 @@
-import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
 import { colors, spacingX, spacingY, radius } from "@/constants/theme";
 import { scale, verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";

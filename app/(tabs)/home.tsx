@@ -271,7 +271,10 @@ const Home = () => {
         />
       </View>
 
-      <Button style={styles.floatingButton} onPress={()=> router.push("/(modals)/transactionModal")}>
+      <Button 
+        style={styles.floatingButton} 
+        onPress={()=> router.push("/(modals)/transactionModal")}
+      >
         <Icons.PlusIcon
           size={verticalScale(24)}
           color={colors.black}
