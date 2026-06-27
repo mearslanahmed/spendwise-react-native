@@ -352,7 +352,7 @@ const SettingsModal = () => {
         <Header
           title="Settings"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._15 }}
+          style={{ marginBottom: spacingY._15, marginTop: spacingY._10 }}
         />
 
         {loading && (

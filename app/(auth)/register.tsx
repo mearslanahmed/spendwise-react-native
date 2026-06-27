@@ -22,9 +22,11 @@ try {
 }
 
 const Register = () => {
+  const nameRef = useRef("");
   const emailRef = useRef("");
   const passwordRef = useRef("");
-  const nameRef = useRef("");
+  const emailNodeRef = useRef<any>(null);
+  const passwordNodeRef = useRef<any>(null);
   
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -146,6 +148,9 @@ const Register = () => {
           <Input
             placeholder="Enter your name"
             onChangeText={(value) => (nameRef.current = value)}
+            returnKeyType="next"
+            onSubmitEditing={() => emailNodeRef.current?.focus()}
+            blurOnSubmit={false}
             icon={
               <Icons.UserIcon
                 size={verticalScale(26)}
@@ -158,6 +163,10 @@ const Register = () => {
             placeholder="Enter your email"
             keyboardType="email-address"
             autoCapitalize="none"
+            inputRef={emailNodeRef}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordNodeRef.current?.focus()}
+            blurOnSubmit={false}
             onChangeText={(value) => (emailRef.current = value)}
             icon={
               <Icons.At
@@ -172,6 +181,8 @@ const Register = () => {
             placeholder="Enter your password"
             secureTextEntry
             autoCapitalize="none"
+            inputRef={passwordNodeRef}
+            returnKeyType="done"
             onChangeText={(value) => {
               passwordRef.current = value;
               setPassword(value);

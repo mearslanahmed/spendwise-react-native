@@ -91,7 +91,7 @@ const TransferModal = () => {
         <Header
           title="Transfer Funds"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10 }}
+          style={{ marginBottom: spacingY._15, marginTop: spacingY._10 }}
         />
 
         <View style={styles.form}>
@@ -151,7 +151,7 @@ const TransferModal = () => {
             <Input
               placeholder="0.00"
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={(val) => setAmount(val.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'))}
               keyboardType="decimal-pad"
               icon={<Typo size={16} fontWeight="600" color={themeColors.textLighter}>{user?.currency || "$"}</Typo>}
             />

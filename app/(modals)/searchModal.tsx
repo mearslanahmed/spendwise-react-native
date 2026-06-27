@@ -64,7 +64,7 @@ const SearchModal = () => {
         <Header
           title="Search"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10 }}
+          style={{ marginBottom: spacingY._15, marginTop: spacingY._10 }}
         />
 
         {/* form */}
@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "space-between",
     paddingHorizontal: spacingX._25,
-    paddingTop: spacingY._15,
   },
   form: {
     gap: spacingY._30,

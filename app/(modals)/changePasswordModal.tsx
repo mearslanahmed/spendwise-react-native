@@ -115,7 +115,7 @@ const ChangePasswordModal = () => {
         <Header
           title="Change Password"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._15 }}
+          style={{ marginBottom: spacingY._15, marginTop: spacingY._10 }}
         />
 
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">

@@ -72,7 +72,7 @@ const NotificationsModal = () => {
         <Header
           title="Notifications"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10 }}
+          style={{ marginBottom: spacingY._15, marginTop: spacingY._10 }}
           rightIcon={
             notifications.length > 0 ? (
               <TouchableOpacity onPress={() => setDeleteAllAlertVisible(true)} style={styles.headerActionBtn}>
@@ -162,7 +162,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: spacingX._25,
-    paddingTop: spacingY._15,
   },
   listContainer: {
     paddingBottom: verticalScale(40),

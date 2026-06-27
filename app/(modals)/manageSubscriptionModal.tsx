@@ -2,6 +2,7 @@ import { View, StyleSheet, ScrollView, Alert, Switch, Platform, TouchableOpacity
 import React, { useState } from 'react'
 import ModalWrapper from '@/components/ModalWrapper'
 import Header from '@/components/Header'
+import BackButton from '@/components/BackButton'
 import Typo from '@/components/Typo'
 import { colors, radius, spacingX, spacingY } from '@/constants/theme'
 import { useAuth } from '@/contexts/authContext'
@@ -84,7 +85,11 @@ const ManageSubscriptionModal = () => {
   return (
     <ModalWrapper>
       <View style={styles.container}>
-        <Header title={isEditing ? "Edit Subscription" : "Add Subscription"} />
+        <Header 
+          title={isEditing ? "Edit Subscription" : "Add Subscription"} 
+          leftIcon={<BackButton />}
+          style={{ marginBottom: spacingY._20, marginTop: spacingY._10 }} 
+        />
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.inputContainer}>
@@ -101,8 +106,8 @@ const ManageSubscriptionModal = () => {
             <Input 
               placeholder="0.00"
               value={amount}
-              onChangeText={setAmount}
-              keyboardType="numeric"
+              onChangeText={(val) => setAmount(val.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'))}
+              keyboardType="decimal-pad"
             />
           </View>
 

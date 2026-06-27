@@ -13,7 +13,7 @@ const PrivacyPolicyModal = () => {
         <Header
           title="Privacy Policy"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10, marginTop: 20 }}
+          style={{ marginBottom: spacingY._10, marginTop: spacingY._10 }}
         />
 
         <ScrollView contentContainerStyle={styles.content}>
@@ -27,9 +27,9 @@ const PrivacyPolicyModal = () => {
             </Typo>
             <Typo size={14} color={colors.neutral300}>
               When you use SpendWise, we collect the following types of information:
-              {"\n"}- **Account Data**: Your email address and display name used during registration.
-              {"\n"}- **Financial Data**: Transactions, budgets, categories, and wallet balances that you input manually.
-              {"\n"}- **Media**: Receipt images that you choose to upload for the &quot;Magic Scan&quot; feature.
+              {"\n"}- <Typo fontWeight="700">Account Data:</Typo> Your email address and display name used during registration.
+              {"\n"}- <Typo fontWeight="700">Financial Data:</Typo> Transactions, budgets, categories, and wallet balances that you input manually.
+              {"\n"}- <Typo fontWeight="700">Media:</Typo> Receipt images that you choose to upload for the &quot;Magic Scan&quot; feature.
             </Typo>
           </View>
 
@@ -48,9 +48,9 @@ const PrivacyPolicyModal = () => {
             </Typo>
             <Typo size={14} color={colors.neutral300}>
               To provide advanced features, your data may be processed by the following secure third-party services:
-              {"\n"}- **Google Firebase**: Used for secure user authentication and database storage.
-              {"\n"}- **Cloudinary**: Used to securely host images you upload (such as receipts or profile pictures).
-              {"\n"}- **Google Gemini & Groq APIs**: If you use the &quot;Magic Scan&quot; feature, the receipt image you select is sent to these AI providers strictly for the purpose of extracting the text, amount, and merchant name. Your images are not used to train their AI models.
+              {"\n"}- <Typo fontWeight="700">Google Firebase:</Typo> Used for secure user authentication and database storage.
+              {"\n"}- <Typo fontWeight="700">Cloudinary:</Typo> Used to securely host images you upload (such as receipts or profile pictures).
+              {"\n"}- <Typo fontWeight="700">Google Gemini & Groq APIs:</Typo> If you use the &quot;Magic Scan&quot; feature, the receipt image you select is sent to these AI providers strictly for the purpose of extracting the text, amount, and merchant name. Your images are not used to train their AI models.
             </Typo>
           </View>
 

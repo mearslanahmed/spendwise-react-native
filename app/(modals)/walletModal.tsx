@@ -169,7 +169,7 @@ const WalletModal = () => {
         <Header
           title={oldWallet?.id ? "Update Wallet" : "New Wallet"}
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10 }}
+          style={{ marginBottom: spacingY._15, marginTop: spacingY._10 }}
         />
 
         {/* form */}

@@ -13,7 +13,7 @@ const TermsOfServiceModal = () => {
         <Header
           title="Terms of Service"
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10, marginTop: 20 }}
+          style={{ marginBottom: spacingY._10, marginTop: spacingY._10 }}
         />
 
         <ScrollView contentContainerStyle={styles.content}>

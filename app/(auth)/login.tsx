@@ -24,6 +24,7 @@ try {
 const Login = () => {
   const emailRef = useRef("");
   const passwordRef = useRef("");
+  const passwordNodeRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { login: loginUser, loginWithGoogle } = useAuth();
@@ -113,6 +114,9 @@ const Login = () => {
             keyboardType="email-address"
             autoCapitalize="none"
             onChangeText={(value) => (emailRef.current = value)}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordNodeRef.current?.focus()}
+            blurOnSubmit={false}
             icon={
               <Icons.At size={verticalScale(26)} color={themeColors.textLighter} weight="fill" />
             }
@@ -122,6 +126,9 @@ const Login = () => {
             placeholder="Enter your password"
             secureTextEntry
             autoCapitalize="none"
+            inputRef={passwordNodeRef}
+            returnKeyType="done"
+            onSubmitEditing={handelSubmit}
             onChangeText={(value) => (passwordRef.current = value)}
             icon={
               <Icons.Lock size={verticalScale(26)} color={themeColors.textLighter} weight="fill" />

@@ -57,6 +57,7 @@ const SubscriptionsListModal = () => {
         <Header 
           title="My Subscriptions" 
           leftIcon={<BackButton />}
+          style={{ marginBottom: spacingY._20, marginTop: spacingY._10 }}
         />
         
         <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>

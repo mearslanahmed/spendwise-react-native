@@ -135,7 +135,7 @@ const BudgetModal = () => {
         <Header
           title={budget.id ? "Update Budget" : "New Budget"}
           leftIcon={<BackButton />}
-          style={{ marginBottom: spacingY._10 }}
+          style={{ marginBottom: spacingY._15, marginTop: spacingY._10 }}
         />
 
         <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
@@ -170,12 +170,11 @@ const BudgetModal = () => {
               Monthly Limit ({user?.currency || "$"})
             </Typo>
             <Input
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               placeholder="e.g. 500"
               value={budget.amount ? budget.amount.toString() : ""}
               onChangeText={(value: string) => {
-                const numericValue = Number(value.replace(/[^0-9]/g, ""));
-                setBudget({ ...budget, amount: numericValue });
+                setBudget({ ...budget, amount: value.replace(/[^0-9.]/g, "").replace(/(\..*?)\..*/g, '$1') as any });
               }}
             />
           </View>

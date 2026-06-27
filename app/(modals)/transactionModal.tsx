@@ -333,6 +333,7 @@ const TransactionModal = () => {
         <ScrollView
           contentContainerStyle={styles.form}
           showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* amount of transaction */}
@@ -343,12 +344,12 @@ const TransactionModal = () => {
             </Typo>
             <Input
               keyboardType="decimal-pad"
-              value={transaction.amount?.toString()}
+              value={transaction.amount ? transaction.amount.toString() : ""}
               containerStyle={missingFields.includes("amount") ? { borderColor: colors.rose, borderWidth: 1.5 } : {}}
               onChangeText={(value: string) =>
                 setTransaction({
                   ...transaction,
-                  amount: Number(value.replace(/[^0-9.]/g, "")),
+                  amount: value.replace(/[^0-9.]/g, "").replace(/(\..*?)\..*/g, '$1') as any,
                 })
               }
             />
