@@ -487,7 +487,7 @@ const Statistics = () => {
                   const categoryData = expenseCategories[budget.category];
                   const IconComponent = categoryData?.icon || Icons.QuestionIcon;
                   const spent = spentByCategory[budget.category] || 0;
-                  const limit = budget.amount;
+                  const limit = Number(budget.amount) || 0;
                   const percent = limit > 0 ? (spent / limit) * 100 : 0;
                   
                   let progressColor = colors.green;

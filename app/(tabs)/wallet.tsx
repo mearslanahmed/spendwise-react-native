@@ -266,10 +266,9 @@ const Wallet = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => router.push("/(modals)/walletModal")}
-                  style={styles.addButton}
+                  style={[styles.iconBtn, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
                 >
-                  <Icons.PlusIcon size={verticalScale(15)} color={colors.black} weight="bold" />
-                  <Typo size={13} fontWeight="700" color={colors.black}>Add Wallet</Typo>
+                  <Icons.PlusIcon size={verticalScale(18)} color={themeColors.textLight} weight="bold" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -307,7 +306,8 @@ const Wallet = () => {
                   decelerationRate="fast"
                   contentContainerStyle={{
                     paddingHorizontal: (screenWidth - cardWidth) / 2,
-                    paddingVertical: spacingY._10,
+                    paddingTop: spacingY._10,
+                    paddingBottom: spacingY._5,
                   }}
                   onScroll={onScroll}
                   scrollEventThrottle={16}
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: scale(6),
-    marginTop: spacingY._5,
+    marginTop: 0,
   },
   dot: {
     width: scale(6),
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: spacingX._20,
     gap: scale(10),
-    marginTop: spacingY._10,
+    marginTop: spacingY._5,
   },
   actionButtonPrimary: {
     flexDirection: "row",

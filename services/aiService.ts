@@ -10,28 +10,22 @@ export const getFinancialAdvice = async (
   currency: string = '$',
   userId?: string
 ) => {
-  try {
-    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
-    if (!apiKey) throw new Error("API Key is missing in .env");
+  // Format Wallet Balances
+  const walletBalances = walletsData.map(w => `${w.name}: ${currency}${w.amount}`).join(', ');
+  const totalBalance = walletsData.reduce((sum, w) => sum + (w.amount || 0), 0);
 
-    const ai = new GoogleGenAI({ apiKey });
+  // Format Recent Transactions (Last 20 max to save tokens)
+  const recentTxns = recentTransactions.slice(0, 20).map(t => 
+    `- ${t.type === 'expense' ? 'Spent' : 'Received'} ${currency}${t.amount} for ${t.category} on ${new Date((t.date as any)?.toDate ? (t.date as any).toDate() : t.date).toLocaleDateString()}`
+  ).join('\n');
 
-    // Format Wallet Balances
-    const walletBalances = walletsData.map(w => `${w.name}: ${currency}${w.amount}`).join(', ');
-    const totalBalance = walletsData.reduce((sum, w) => sum + (w.amount || 0), 0);
+  // Format Subscriptions
+  const subscriptions = activeSubscriptions.map(s => 
+    `- ${s.name}: ${currency}${s.amount} (${s.frequency})`
+  ).join('\n');
 
-    // Format Recent Transactions (Last 20 max to save tokens)
-    const recentTxns = recentTransactions.slice(0, 20).map(t => 
-      `- ${t.type === 'expense' ? 'Spent' : 'Received'} ${currency}${t.amount} for ${t.category} on ${new Date((t.date as any)?.toDate ? (t.date as any).toDate() : t.date).toLocaleDateString()}`
-    ).join('\n');
-
-    // Format Subscriptions
-    const subscriptions = activeSubscriptions.map(s => 
-      `- ${s.name}: ${currency}${s.amount} (${s.frequency})`
-    ).join('\n');
-
-    // System Prompt / Guardrails
-    const systemInstruction = `
+  // System Prompt / Guardrails
+  const systemInstruction = `
 You are SpendWise AI, an expert Financial Advisor exclusively dedicated to helping the user with their personal finances, budgeting, and the SpendWise app.
 
 CRITICAL RULES:
@@ -50,44 +44,50 @@ Active Subscriptions / Bills:
 ${subscriptions || 'No active subscriptions'}
 `;
 
-    // Tool Declaration for Actionable AI
-    const tools: any = [{
-      functionDeclarations: [
-        {
-          name: "addTransaction",
-          description: "Creates a new financial transaction (expense or income) in the user's wallet.",
-          parameters: {
-            type: "object",
-            properties: {
-              amount: { type: "number", description: "The amount of the transaction." },
-              type: { type: "string", enum: ["expense", "income"], description: "Whether the transaction is an expense or income." },
-              category: { 
-                type: "string", 
-                enum: ["groceries", "rent", "utilities", "transportation", "entertainment", "dining", "health", "insurance", "savings", "clothing", "personal", "others"], 
-                description: "Map the item to the closest category semantically (e.g., map 'tea' or 'lunch' to 'dining', 'bus' to 'transportation'). If it cannot be confidently mapped, or if it is an income transaction, select 'others'." 
-              },
-              walletName: { type: "string", description: "The exact name of the wallet to apply this transaction to based on the user's current wallets." },
-              description: { type: "string", description: "A brief description of the transaction." }
+  // Tool Declaration for Actionable AI
+  const tools: any = [{
+    functionDeclarations: [
+      {
+        name: "addTransaction",
+        description: "Creates a new financial transaction (expense or income) in the user's wallet.",
+        parameters: {
+          type: "object",
+          properties: {
+            amount: { type: "number", description: "The amount of the transaction." },
+            type: { type: "string", enum: ["expense", "income"], description: "Whether the transaction is an expense or income." },
+            category: { 
+              type: "string", 
+              enum: ["groceries", "rent", "utilities", "transportation", "entertainment", "dining", "health", "insurance", "savings", "clothing", "personal", "others"], 
+              description: "Map the item to the closest category semantically (e.g., map 'tea' or 'lunch' to 'dining', 'bus' to 'transportation'). If it cannot be confidently mapped, or if it is an income transaction, select 'others'." 
             },
-            required: ["amount", "type", "category", "walletName"]
-          }
-        },
-        {
-          name: "transferMoney",
-          description: "Transfers money from one wallet to another.",
-          parameters: {
-            type: "object",
-            properties: {
-              amount: { type: "number", description: "The amount to transfer." },
-              sourceWalletName: { type: "string", description: "The exact name of the wallet the money is coming from." },
-              destWalletName: { type: "string", description: "The exact name of the wallet the money is going to." },
-              description: { type: "string", description: "A brief note about the transfer." }
-            },
-            required: ["amount", "sourceWalletName", "destWalletName"]
-          }
+            walletName: { type: "string", description: "The exact name of the wallet to apply this transaction to based on the user's current wallets." },
+            description: { type: "string", description: "A brief description of the transaction." }
+          },
+          required: ["amount", "type", "category", "walletName"]
         }
-      ]
-    }];
+      },
+      {
+        name: "transferMoney",
+        description: "Transfers money from one wallet to another.",
+        parameters: {
+          type: "object",
+          properties: {
+            amount: { type: "number", description: "The amount to transfer." },
+            sourceWalletName: { type: "string", description: "The exact name of the wallet the money is coming from." },
+            destWalletName: { type: "string", description: "The exact name of the wallet the money is going to." },
+            description: { type: "string", description: "A brief note about the transfer." }
+          },
+          required: ["amount", "sourceWalletName", "destWalletName"]
+        }
+      }
+    ]
+  }];
+
+  try {
+    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
+    if (!apiKey) throw new Error("API Key is missing in .env");
+
+    const ai = new GoogleGenAI({ apiKey });
 
     // Map messages array to Gemini format
     let chatHistory = messages.map(msg => ({
@@ -173,8 +173,110 @@ ${subscriptions || 'No active subscriptions'}
     }
 
   } catch (error: any) {
-    console.error("AI Service Error:", error);
-    return "Our AI service is temporarily unavailable. Please try again later.";
+    console.log("Primary Gemini 3.5 API Error in Chat:", error.message || error);
+
+    // Fallback to Groq
+    try {
+      const groqApiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
+      if (!groqApiKey) throw new Error("Groq API Key is missing");
+
+      console.log("Attempting fallback to Groq Llama 4 Scout for Chat...");
+      
+      // Convert messages to OpenAI format for Groq
+      const groqMessages = [
+        { role: "system", content: systemInstruction },
+        ...messages.map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        }))
+      ];
+
+      // Convert Gemini tools to OpenAI format for Groq
+      const groqTools = [
+        {
+          type: "function",
+          function: tools[0].functionDeclarations[0] // addTransaction
+        },
+        {
+          type: "function",
+          function: tools[0].functionDeclarations[1] // transferMoney
+        }
+      ];
+
+      const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${groqApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: groqMessages,
+          tools: groqTools,
+          tool_choice: "auto"
+        })
+      });
+
+      const groqData = await groqResponse.json();
+      
+      if (!groqResponse.ok || groqData.error) {
+        console.error("Groq API Error Detail:", JSON.stringify(groqData, null, 2));
+      }
+
+      const responseMessage = groqData.choices?.[0]?.message;
+
+      if (!responseMessage) throw new Error("Failed to parse Groq response");
+
+      // Handle Groq Tool (Function Call) execution
+      if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+        const call = responseMessage.tool_calls[0].function;
+        const args = JSON.parse(call.arguments);
+        
+        if (call.name === 'addTransaction') {
+          if (!userId) return "I need you to be fully logged in before I can create transactions for you.";
+
+          const wallet = walletsData.find(w => w.name.toLowerCase() === args.walletName?.toLowerCase());
+          if (!wallet) return `I couldn't find a wallet named "${args.walletName}". Please specify one of your existing wallets (e.g., ${walletsData.map(w=>w.name).join(', ')}).`;
+
+          const transactionData: Partial<TransactionType> = {
+            amount: args.amount,
+            type: args.type,
+            category: args.category,
+            walletId: wallet.id,
+            description: args.description || '',
+            date: new Date(),
+            uid: userId
+          };
+
+          const res = await createOrUpdateTransaction(transactionData);
+          if (res.success) return `I've successfully added a ${currency}${args.amount} ${args.type} for **${args.category}** to your **${wallet.name}** wallet.`;
+          return `I tried to add the transaction, but an error occurred: ${res.msg}`;
+          
+        } else if (call.name === 'transferMoney') {
+          if (!userId) return "I need you to be fully logged in before I can transfer money.";
+
+          const sourceWallet = walletsData.find(w => w.name.toLowerCase() === args.sourceWalletName?.toLowerCase());
+          const destWallet = walletsData.find(w => w.name.toLowerCase() === args.destWalletName?.toLowerCase());
+
+          if (!sourceWallet) return `I couldn't find a source wallet named "${args.sourceWalletName}".`;
+          if (!destWallet) return `I couldn't find a destination wallet named "${args.destWalletName}".`;
+
+          const res = await createTransfer(sourceWallet.id!, destWallet.id!, args.amount, userId, args.description);
+          if (res.success) return `🔄 I've successfully transferred ${currency}${args.amount} from **${sourceWallet.name}** to **${destWallet.name}**.`;
+          return `I tried to transfer the money, but an error occurred: ${res.msg}`;
+        }
+      }
+
+      if (responseMessage.content) {
+        return responseMessage.content;
+      } else {
+        throw new Error("No response generated from Groq fallback AI.");
+      }
+
+    } catch (fallbackError: any) {
+      console.error("Fallback AI Service Error:", fallbackError.message || fallbackError);
+      return "Our AI service is temporarily experiencing high demand. Please try again later.";
+    }
   }
 };
 

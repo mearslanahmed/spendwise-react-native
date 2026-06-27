@@ -73,23 +73,26 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
                 key={sub.id} 
                 style={[
                   styles.billCard, 
-                  { backgroundColor: themeColors.card, borderColor: themeColors.border }
+                  { 
+                    backgroundColor: themeColors.card, 
+                    borderColor: isDark ? themeColors.border : "rgba(0,0,0,0.03)",
+                    shadowColor: isDark ? "transparent" : "#000",
+                  }
                 ]}
                 onPress={() => router.push("/(modals)/subscriptionsListModal" as any)}
               >
-                <View style={styles.cardHeader}>
-                  <View style={[styles.iconContainer, { backgroundColor: cat?.bgColor || colors.neutral500 }]}>
-                    <IconComponent size={verticalScale(16)} weight="fill" color={colors.white} />
-                  </View>
-                  <Typo size={14} fontWeight="700">{user?.currency || "$"}{sub.amount.toFixed(0)}</Typo>
+                <View style={[styles.iconContainer, { backgroundColor: cat?.bgColor || colors.neutral500 }]}>
+                  <IconComponent size={verticalScale(18)} weight="fill" color={colors.white} />
                 </View>
                 
                 <View style={styles.cardBody}>
-                  <Typo size={14} fontWeight="600" textProps={{ numberOfLines: 1 }}>{sub.name}</Typo>
-                  <Typo size={12} color={themeColors.textLighter} style={{ marginTop: 2 }}>
+                  <Typo size={14} fontWeight="700" textProps={{ numberOfLines: 1 }} color={themeColors.text}>{sub.name}</Typo>
+                  <Typo size={12} color={themeColors.textLighter} fontWeight="500" style={{ marginTop: 2 }}>
                     {getDaysUntil(sub.nextBillingDate)}
                   </Typo>
                 </View>
+
+                <Typo size={15} fontWeight="800" color={themeColors.text}>{user?.currency || "$"}{sub.amount.toFixed(0)}</Typo>
               </TouchableOpacity>
             );
           })}
@@ -103,7 +106,7 @@ export default UpcomingBills;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacingY._15,
+    marginBottom: spacingY._5,
   },
   header: {
     flexDirection: 'row',
@@ -117,26 +120,28 @@ const styles = StyleSheet.create({
     gap: spacingX._12,
   },
   billCard: {
-    width: scale(130),
-    padding: spacingX._12,
-    borderRadius: radius._17,
-    borderWidth: 1,
-  },
-  cardHeader: {
+    width: scale(160),
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacingY._10,
+    padding: spacingX._7,
+    paddingRight: spacingX._12,
+    borderRadius: radius._20,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   iconContainer: {
-    width: verticalScale(30),
-    height: verticalScale(30),
-    borderRadius: radius._10,
+    width: verticalScale(38),
+    height: verticalScale(38),
+    borderRadius: radius._12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cardBody: {
-    marginTop: spacingY._5,
+    flex: 1,
+    paddingHorizontal: spacingX._10,
   },
   emptyState: {
     marginHorizontal: spacingX._20,

@@ -264,7 +264,7 @@ const VerifyEmail = () => {
 
   return (
     <ScreenWrapper>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: themeColors.background }]}>
         {/* Animated Icon Header */}
         <View style={styles.iconContainer}>
           <Animated.View style={[styles.pulseRing, animatedRing2]} />
@@ -284,7 +284,7 @@ const VerifyEmail = () => {
             Check your inbox!
           </Typo>
           
-          <Typo size={16} color={colors.neutral400} style={styles.description}>
+          <Typo size={16} color={themeColors.textLighter} style={styles.description}>
             We sent a secure activation link to:
           </Typo>
 
@@ -296,14 +296,14 @@ const VerifyEmail = () => {
             </Typo>
           </View>
 
-          <Typo size={15} color={colors.neutral400} style={styles.hint}>
+          <Typo size={15} color={themeColors.textLighter} style={styles.hint}>
             {"Tap that link to confirm it's really you. If you don't see it in a minute, check your spam folder."}
           </Typo>
 
           {/* Real-time Checking Status Banner */}
           <View style={[styles.statusBanner, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
             <ActivityIndicator size="small" color={colors.primary} style={styles.spinner} />
-            <Typo size={13} fontWeight="500" color={colors.neutral400}>
+            <Typo size={13} fontWeight="500" color={themeColors.textLighter}>
               Checking verification automatically...
             </Typo>
           </View>

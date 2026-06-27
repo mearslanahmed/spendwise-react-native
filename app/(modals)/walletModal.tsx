@@ -220,7 +220,7 @@ const WalletModal = () => {
                     end={{ x: 1, y: 1 }}
                   />
                   <Typo size={14} color="rgba(255, 255, 255, 0.9)" fontWeight="600" style={{ letterSpacing: 3 }}>
-                    ***   ***   ***   8899
+                    ***   ***   ***   ****
                   </Typo>
                 </View>
 

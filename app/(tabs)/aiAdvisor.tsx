@@ -27,6 +27,7 @@ const AiAdvisor = () => {
     const flatListRef = useRef<FlatList>(null);
 
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
 
     useEffect(() => {
         if (messages.length > 0) {
@@ -102,8 +103,9 @@ const AiAdvisor = () => {
         <ScreenWrapper>
             <KeyboardAvoidingView 
                 style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                behavior="padding"
+                enabled={Platform.OS === 'ios' ? true : isKeyboardVisible}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
             >
                 <View style={{ paddingHorizontal: spacingX._20, paddingTop: spacingY._15, paddingBottom: spacingY._5 }}>
                     <Header 
@@ -119,6 +121,7 @@ const AiAdvisor = () => {
                 </View>
 
                 <FlatList
+                    style={{ flex: 1 }}
                     ref={flatListRef}
                     data={messages}
                     keyExtractor={item => item.id}
@@ -135,7 +138,7 @@ const AiAdvisor = () => {
                     ) : null}
                 />
 
-                <View style={[styles.inputContainer, { paddingBottom: isKeyboardVisible ? verticalScale(15) : verticalScale(88) }]}>
+                <View style={[styles.inputContainer, { paddingBottom: isKeyboardVisible ? verticalScale(15) : verticalScale(105) }]}>
                     <View style={{ flex: 1, gap: 10 }}>
                         {!isKeyboardVisible && messages.length < 3 && (
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 5 }}>

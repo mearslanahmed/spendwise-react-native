@@ -1,5 +1,6 @@
-import { View, StyleSheet, ScrollView, Alert, Switch, Platform, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import { View, StyleSheet, ScrollView, Switch, Platform, TouchableOpacity, TextInput } from 'react-native'
+import React, { useState, useRef } from 'react'
+import Toast from 'react-native-toast-message'
 import ModalWrapper from '@/components/ModalWrapper'
 import Header from '@/components/Header'
 import BackButton from '@/components/BackButton'
@@ -41,6 +42,8 @@ const ManageSubscriptionModal = () => {
   const [date, setDate] = useState(params.nextBillingDate ? new Date(params.nextBillingDate as string) : new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  const amountRef = useRef<any>(null);
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowPicker(Platform.OS === 'ios');
@@ -48,11 +51,22 @@ const ManageSubscriptionModal = () => {
   };
 
   const handleSave = async () => {
-    if (!name || !amount || !walletId) {
-      Alert.alert("Missing Fields", "Please fill in the name, amount, and select a wallet.");
+    const missing: string[] = [];
+    if (!name) missing.push("name");
+    if (!amount) missing.push("amount");
+    if (!walletId) missing.push("wallet");
+
+    if (missing.length > 0) {
+      setMissingFields(missing);
+      Toast.show({
+        type: "error",
+        text1: "Missing Fields",
+        text2: "Please fill all the required fields.",
+      });
       return;
     }
     
+    setMissingFields([]);
     setLoading(true);
     
     const subData = {
@@ -76,9 +90,18 @@ const ManageSubscriptionModal = () => {
     setLoading(false);
 
     if (res.success) {
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: isEditing ? "Subscription updated" : "Subscription added",
+      });
       router.back();
     } else {
-      Alert.alert("Error", res.msg);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: res.msg,
+      });
     }
   };
 
@@ -98,16 +121,21 @@ const ManageSubscriptionModal = () => {
               placeholder="e.g. Netflix, Gym"
               value={name}
               onChangeText={setName}
+              returnKeyType="next"
+              onSubmitEditing={() => amountRef.current?.focus()}
+              containerStyle={missingFields.includes("name") ? { borderColor: colors.rose, borderWidth: 1.5 } : {}}
             />
           </View>
           
           <View style={styles.inputContainer}>
             <Typo size={14} color={themeColors.textLight} fontWeight="500">Amount</Typo>
             <Input 
+              inputRef={amountRef}
               placeholder="0.00"
               value={amount}
               onChangeText={(val) => setAmount(val.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'))}
               keyboardType="decimal-pad"
+              containerStyle={missingFields.includes("amount") ? { borderColor: colors.rose, borderWidth: 1.5 } : {}}
             />
           </View>
 
@@ -159,25 +187,45 @@ const ManageSubscriptionModal = () => {
           {/* Wallet Selector (Simplified fallback if Dropdown unavailable) */}
           <View style={styles.inputContainer}>
             <Typo size={14} color={themeColors.textLight} fontWeight="500">Deduct From Wallet</Typo>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginTop: 10 }}>
-              {wallets.map(w => (
-                <TouchableOpacity 
-                  key={w.id} 
-                  style={[
-                    styles.walletPill, 
-                    { 
-                      backgroundColor: walletId === w.id ? colors.primary : themeColors.inputBg,
-                      borderColor: walletId === w.id ? colors.primary : themeColors.border 
-                    }
-                  ]}
-                  onPress={() => setWalletId(w.id!)}
-                >
-                  <Typo size={14} fontWeight="600" color={walletId === w.id ? colors.white : themeColors.text}>
-                    {w.name}
-                  </Typo>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {wallets.length === 0 ? (
+              <TouchableOpacity 
+                style={{
+                  backgroundColor: themeColors.inputBg,
+                  borderColor: missingFields.includes("wallet") ? colors.rose : themeColors.border,
+                  borderWidth: missingFields.includes("wallet") ? 1.5 : 1,
+                  borderRadius: radius._12,
+                  padding: spacingY._15,
+                  alignItems: 'center',
+                  marginTop: 10,
+                }}
+                onPress={() => router.push("/(modals)/walletModal")}
+              >
+                <Typo size={15} color={colors.primary} fontWeight="600">
+                  + Create a Wallet First
+                </Typo>
+              </TouchableOpacity>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginTop: 10 }}>
+                {wallets.map(w => (
+                  <TouchableOpacity 
+                    key={w.id} 
+                    style={[
+                      styles.walletPill, 
+                      { 
+                        backgroundColor: walletId === w.id ? colors.primary : themeColors.inputBg,
+                        borderColor: walletId === w.id ? colors.primary : (missingFields.includes("wallet") ? colors.rose : themeColors.border),
+                        borderWidth: missingFields.includes("wallet") && walletId !== w.id ? 1.5 : 1
+                      }
+                    ]}
+                    onPress={() => setWalletId(w.id!)}
+                  >
+                    <Typo size={14} fontWeight="600" color={walletId === w.id ? colors.white : themeColors.text}>
+                      {w.name}
+                    </Typo>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
           
           <View style={styles.inputContainer}>

@@ -80,7 +80,7 @@ const BudgetModal = () => {
 
     const data: BudgetType = {
       category,
-      amount,
+      amount: Number(amount),
       uid: user?.uid || "",
     };
 

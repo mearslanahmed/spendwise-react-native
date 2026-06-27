@@ -77,6 +77,17 @@ const TransactionList = ({
           contentContainerStyle={{ paddingBottom: verticalScale(120) }}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            !loading ? (
+              <Typo
+                size={15}
+                color={colors.neutral400}
+                style={{ textAlign: "center", marginTop: spacingY._15, paddingHorizontal: horizontalPadding }}
+              >
+                {emptyListMessage}
+              </Typo>
+            ) : null
+          }
           renderItem={({ item, index }: any) => (
             <View style={{ paddingHorizontal: horizontalPadding }}>
               <TransactionItem
@@ -88,15 +99,6 @@ const TransactionList = ({
           )}
         />
       </View>
-      {!loading && data.length === 0 && (
-        <Typo
-          size={15}
-          color={colors.neutral400}
-          style={{ textAlign: "center", marginTop: spacingY._15, paddingHorizontal: horizontalPadding }}
-        >
-          {emptyListMessage}
-        </Typo>
-      )}
 
       {loading && (
         <View style={{ top: verticalScale(100) }}>
