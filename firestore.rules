@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users collection - each user can only read/write their own document
+    match /users/{uid} {
+      allow read, write: if request.auth.uid == uid;
+    }
+    
+    // Transactions collection - users can read/write their own transactions
+    match /transactions/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    }
+    
+    // Wallets collection - users can read/write their own wallets
+    match /wallets/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    }
+
+    // Budgets collection - users can read/write their own budgets
+    match /budgets/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    }
+    
+    // Notifications collection - users can read/write their own notifications
+    match /notifications/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    }
+
+    // Subscriptions collection - users can read/write their own subscriptions
+    match /subscriptions/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    }
+  }
+}

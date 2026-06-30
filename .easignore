@@ -1,0 +1,82 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# IDE
+.vscode/
+
+# Native (generated only if you prebuild)
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# macOS / OS files
+.DS_Store
+Thumbs.db
+*.pem
+
+# local env files
+# Commented out so EAS can use the .env keys to build the app
+# .env
+# .env*.local
+# .env.development.local
+# .env.test.local
+# .env.production.local
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Example app (if any)
+app-example
+
+# Generated native folders (Expo will create these after prebuild)
+ios/
+android/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.pem
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Bundle artifacts
+*.jsbundle
+
+# CocoaPods
+ios/Pods/
+
+# Firebase config files
+*.firebase.ts
+google-services.json
