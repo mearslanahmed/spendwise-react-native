@@ -9,16 +9,17 @@ import { useData } from '@/contexts/dataContext'
 import Button from '@/components/Button'
 import { useTheme } from '@/contexts/themeContext'
 import * as Icons from 'phosphor-react-native'
-import { scale, verticalScale } from '@/utils/styling'
+import { verticalScale } from '@/utils/styling'
 import { expenseCategories } from '@/constants/data'
 import { useRouter } from 'expo-router'
 import { deleteSubscription } from '@/services/subscriptionService'
 import { useAuth } from '@/contexts/authContext'
+import { resolveDate } from '@/utils/dateHelper'
 import CustomAlert from '@/components/CustomAlert'
 
 const SubscriptionsListModal = () => {
   const { subscriptions } = useData();
-  const { colors: themeColors, isDark } = useTheme();
+  const { colors: themeColors } = useTheme();
   const router = useRouter();
   const { user } = useAuth();
   
@@ -39,8 +40,8 @@ const SubscriptionsListModal = () => {
     }
   };
 
-  const getDaysUntil = (dateStr: any) => {
-    const target = dateStr?.toDate ? dateStr.toDate() : new Date(dateStr);
+  const getDaysUntil = (dateStr: string | any) => {
+    const target = resolveDate(dateStr);
     const now = new Date();
     const diffTime = target.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -113,7 +114,7 @@ const SubscriptionsListModal = () => {
                             walletId: sub.walletId,
                             frequency: sub.frequency,
                             autoDeduct: sub.autoDeduct ? "true" : "false",
-                            nextBillingDate: (sub.nextBillingDate as any)?.toDate ? (sub.nextBillingDate as any).toDate().toISOString() : sub.nextBillingDate
+                            nextBillingDate: resolveDate(sub.nextBillingDate).toISOString()
                           }
                         })}
                       >

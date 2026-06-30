@@ -1,7 +1,7 @@
-import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import React, { useRef, useState } from "react";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
-import { scale, verticalScale } from "@/utils/styling";
+import { scale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
 import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
@@ -10,15 +10,13 @@ import Input from "@/components/Input";
 import Button from "@/components/Button";
 import * as Icons from "phosphor-react-native";
 import Toast from 'react-native-toast-message';
-import { useAuth } from "@/contexts/authContext";
 import { auth } from "@/config/firebase";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { useTheme } from "@/contexts/themeContext";
 
 const ChangePasswordModal = () => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const { colors: themeColors, isDark } = useTheme();
+  const { colors: themeColors } = useTheme();
   
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -127,6 +125,7 @@ const ChangePasswordModal = () => {
                 placeholder="Enter current password"
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
+                autoFocus={true}
                 secureTextEntry={!showCurrent}
                 icon={
                   <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)}>
@@ -214,12 +213,22 @@ const ChangePasswordModal = () => {
                   </TouchableOpacity>
                 }
               />
+              {confirmPassword.length > 0 && confirmPassword !== newPassword && (
+                <Typo size={13} color={colors.rose} style={{ marginTop: 5 }}>
+                  Passwords do not match
+                </Typo>
+              )}
             </View>
           </View>
         </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: themeColors.border }]}>
-          <Button onPress={handleSubmit} loading={loading} style={{ flex: 1 }}>
+          <Button 
+            onPress={handleSubmit} 
+            loading={loading} 
+            style={{ flex: 1, opacity: (confirmPassword !== newPassword && confirmPassword.length > 0) ? 0.5 : 1 }}
+            disabled={confirmPassword !== newPassword && confirmPassword.length > 0}
+          >
             <Typo color={colors.black} fontWeight={"700"}>Update Password</Typo>
           </Button>
         </View>

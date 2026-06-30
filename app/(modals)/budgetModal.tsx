@@ -55,7 +55,7 @@ const BudgetModal = () => {
         uid: user?.uid || "",
       });
     }
-  }, [oldBudget.id, oldBudget.category, oldBudget.amount, existingBudgets]);
+  }, [oldBudget.id, oldBudget.category, oldBudget.amount, existingBudgets, user?.uid]);
 
   const handleCategoryChange = (categoryValue: string) => {
     const match = existingBudgets.find((b) => b.category === categoryValue);
@@ -68,6 +68,12 @@ const BudgetModal = () => {
   };
 
   const onSubmit = async () => {
+    if (loading) return;
+    if (!user?.uid) {
+      Toast.show({ type: "error", text1: "Error", text2: "You must be logged in to do this." });
+      return;
+    }
+
     const { category, amount } = budget;
     if (!category || amount === undefined || amount <= 0) {
       Toast.show({
@@ -81,33 +87,43 @@ const BudgetModal = () => {
     const data: BudgetType = {
       category,
       amount: Number(amount),
-      uid: user?.uid || "",
+      uid: user.uid,
     };
 
     if (budget.id) data.id = budget.id;
 
     setLoading(true);
-    const res = await createOrUpdateBudget(data);
+    
+    // Fast fail for offline mode
+    const timeoutPromise = new Promise<{success: boolean, msg: string, offline?: boolean}>((resolve) => 
+      setTimeout(() => resolve({ success: true, msg: "Saved offline. Connect to internet to sync.", offline: true }), 3000)
+    );
+    
+    const res = await Promise.race([ createOrUpdateBudget(data) as Promise<any>, timeoutPromise ]);
     setLoading(false);
 
-    if (res.success) {
-      Toast.show({
-        type: "success",
-        text1: "Budget",
-        text2: budget.id ? "Budget updated successfully" : "Budget created successfully",
-      });
+    if (res?.success) {
+      if (res.offline) {
+        Toast.show({ type: 'info', text1: 'Offline Mode', text2: res.msg });
+      } else {
+        Toast.show({
+          type: "success",
+          text1: "Budget",
+          text2: budget.id ? "Budget updated successfully" : "Budget created successfully",
+        });
+      }
       router.back();
     } else {
       Toast.show({
         type: "error",
         text1: "Budget",
-        text2: res.msg || "Failed to save budget",
+        text2: res?.msg || "Failed to create budget",
       });
     }
   };
 
   const onDelete = async () => {
-    if (!budget.id) return;
+    if (!budget.id || loading) return;
     setDeleteAlertVisible(false);
     setLoading(true);
     const res = await deleteBudget(budget.id);

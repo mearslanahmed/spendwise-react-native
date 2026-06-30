@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Switch, Platform, TouchableOpacity, TextInput } from 'react-native'
+import { View, StyleSheet, ScrollView, Switch, Platform, TouchableOpacity } from 'react-native'
 import React, { useState, useRef } from 'react'
 import Toast from 'react-native-toast-message'
 import ModalWrapper from '@/components/ModalWrapper'
@@ -51,6 +51,12 @@ const ManageSubscriptionModal = () => {
   };
 
   const handleSave = async () => {
+    if (loading) return;
+    if (!user?.uid) {
+      Toast.show({ type: "error", text1: "Error", text2: "You must be logged in to do this." });
+      return;
+    }
+
     const missing: string[] = [];
     if (!name) missing.push("name");
     if (!amount) missing.push("amount");

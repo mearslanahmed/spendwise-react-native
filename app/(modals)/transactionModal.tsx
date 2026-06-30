@@ -1,6 +1,4 @@
 import {
-  ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,6 +7,7 @@ import {
   TouchableOpacity,
   View,
   Animated,
+  ScrollView,
 } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
@@ -16,29 +15,26 @@ import { scale, verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
 import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
-import { Image } from "expo-image";
-import { getProfileImage } from "@/services/imageService";
-import { ScrollView } from "react-native";
+
 import * as Icon from "phosphor-react-native";
 import Typo from "@/components/Typo";
 import Input from "@/components/Input";
-import { BudgetType, TransactionType, UserDataType, WalletType } from "@/types";
+import { TransactionType } from "@/types";
 import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
 import Toast from 'react-native-toast-message';
-import { updateUser } from "@/services/userService";
+
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import ImageUpload from "@/components/ImageUpload";
-import { CreateOrUpdateWallet, deleteWallet } from "@/services/walletService";
+import { resolveTime } from "@/utils/dateHelper";
+
 import CustomAlert from "@/components/CustomAlert";
 import { Dropdown } from "react-native-element-dropdown";
 import { expenseCategories, transactionTypes } from "@/constants/data";
 import { useData } from "@/contexts/dataContext";
-import { Timestamp } from "firebase/firestore";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { createOrUpdateTransaction, deleteTransaction } from "@/services/transactionService";
 import { useTheme } from "@/contexts/themeContext";
 import { addNotification } from "@/services/notificationService";
@@ -86,15 +82,15 @@ const TransactionModal = () => {
   }, [analyzingReceipt, fadeAnim]);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const { wallets: allWallets, budgets, transactions, loading: dataLoading } = useData();
-  const walletsLoading = dataLoading.wallets;
+  const { wallets: allWallets, budgets, transactions } = useData();
+
 
   const wallets = React.useMemo(() => {
     return [...allWallets].sort((a, b) => {
       const aCreated = a.created as any;
       const bCreated = b.created as any;
-      const aTime = aCreated?.toDate ? aCreated.toDate().getTime() : new Date(aCreated || 0).getTime();
-      const bTime = bCreated?.toDate ? bCreated.toDate().getTime() : new Date(bCreated || 0).getTime();
+      const aTime = resolveTime(aCreated);
+      const bTime = resolveTime(bCreated);
       return bTime - aTime;
     });
   }, [allWallets]);
@@ -166,7 +162,7 @@ const TransactionModal = () => {
   const monthTransactions = React.useMemo(() => {
     const limitTime = startOfMonth.getTime();
     return transactions.filter((tx) => {
-      const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+      const txTime = resolveTime(tx.date);
       return txTime >= limitTime;
     });
   }, [transactions, startOfMonth]);
@@ -238,9 +234,15 @@ const TransactionModal = () => {
           walletId: wallets[0].id,
         }));
       }
-  },[wallets.length])
+  },[wallets.length, wallets, oldTransaction.amount, oldTransaction?.category, oldTransaction?.date, oldTransaction.description, oldTransaction?.id, oldTransaction?.image, oldTransaction?.type, oldTransaction.walletId, user?.uid])
 
   const onSubmit = async () => {
+    if (loading) return;
+    if (!user?.uid) {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'You must be logged in to do this.' });
+      return;
+    }
+
     const { type, amount, description, category, date, walletId, image } =
       transaction;
 
@@ -266,13 +268,18 @@ const TransactionModal = () => {
       date,
       walletId,
       image: image ? image : null,
-      uid: user?.uid || "",
+      uid: user.uid,
     };
 
     if(oldTransaction?.id) transactionData.id = oldTransaction?.id;
     setLoading(true);
-    const res = await createOrUpdateTransaction(transactionData) as any;
-
+    
+    // Fast fail for offline mode
+    const timeoutPromise = new Promise<{success: boolean, msg: string, offline?: boolean}>((resolve) => 
+      setTimeout(() => resolve({ success: true, msg: "Saved offline. Connect to internet to sync.", offline: true }), 3000)
+    );
+    
+    const res = await Promise.race([ createOrUpdateTransaction(transactionData) as Promise<any>, timeoutPromise ]);
     setLoading(false);
     if (res?.success) {
       if (!oldTransaction?.id && transaction.type === 'expense' && warning && user?.uid) {
@@ -292,6 +299,9 @@ const TransactionModal = () => {
         if (user.pushNotificationsEnabled) {
           await scheduleLocalNotification(title, message);
         }
+      }
+      if (res.offline) {
+        Toast.show({ type: 'info', text1: 'Offline Mode', text2: res.msg });
       }
       router.back();
     }
@@ -605,6 +615,7 @@ const TransactionModal = () => {
       <View style={[styles.footer, { borderTopColor: themeColors.border }]}>
         {oldTransaction?.id && !loading && (
           <Button
+            testID="delete-transaction-btn"
             onPress={showDeleteAlert}
             style={{
               backgroundColor: colors.rose,

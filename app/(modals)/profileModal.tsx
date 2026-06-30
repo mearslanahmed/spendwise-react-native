@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View, ScrollView } from "react-native";
 import React, { useEffect, useState } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { scale, verticalScale } from "@/utils/styling";
@@ -8,7 +8,7 @@ import Toast from 'react-native-toast-message';
 import BackButton from "@/components/BackButton";
 import { Image } from "expo-image";
 import { getProfileImage } from "@/services/imageService";
-import { ScrollView } from "react-native";
+
 import * as Icon from "phosphor-react-native";
 import Typo from "@/components/Typo";
 import Input from "@/components/Input";
@@ -36,7 +36,10 @@ const ProfileModal = () => {
 
     const isPasswordUser = auth.currentUser?.providerData.some(
         (p) => p.providerId === "password"
-    ) || !auth.currentUser?.providerData.length;
+    );
+    const isGoogleUser = auth.currentUser?.providerData.some(
+        (p) => p.providerId === "google.com"
+    );
 
     useEffect(() => {
         setUserData({
@@ -134,7 +137,7 @@ const ProfileModal = () => {
             />
           </View>
 
-          {isPasswordUser && (
+          {isPasswordUser && !isGoogleUser && (
             <View style={styles.inputContainer}>
               <Typo color={colors.neutral200}>Security</Typo>
               <TouchableOpacity

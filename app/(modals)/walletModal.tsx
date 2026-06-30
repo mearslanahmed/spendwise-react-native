@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text, TouchableOpacity, View, Pressable } from "react-native";
+import { StyleSheet, TouchableOpacity, View, ScrollView, Pressable } from "react-native";
 import React, { useEffect, useState } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { scale, verticalScale } from "@/utils/styling";
@@ -6,12 +6,11 @@ import ModalWrapper from "@/components/ModalWrapper";
 import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
 import { Image } from "expo-image";
-import { getProfileImage } from "@/services/imageService";
-import { ScrollView } from "react-native";
+
 import * as Icon from "phosphor-react-native";
 import Typo from "@/components/Typo";
 import Input from "@/components/Input";
-import { UserDataType, WalletType } from "@/types";
+import { WalletType } from "@/types";
 import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -59,6 +58,7 @@ const PresetCardItem = ({
       animatedStyle
     ]}>
       <Pressable
+        testID={`preset-${preset.value}`}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
@@ -118,12 +118,14 @@ const WalletModal = () => {
             image: oldWallet?.image,
           });
         }
-    },[])
+    },[oldWallet?.id, oldWallet?.name, oldWallet?.image])
 
 
   const onSubmit = async () => {
+    if (loading) return;
     // handle profile update logic here
     let { name, image } = wallet;
+    console.log("Submit Wallet:", { name, image });
     if (!wallet.name || !wallet.image) {
       Toast.show({ type: 'error', text1: 'Wallet', text2: "Please fill all the fields" });
       return;
@@ -137,17 +139,28 @@ const WalletModal = () => {
 
     if(oldWallet?.id) data.id = oldWallet?.id;
     setLoading(true);
-    const res = await CreateOrUpdateWallet(data);
+    
+    let timeoutId: NodeJS.Timeout;
+    const timeoutPromise = new Promise<{success: boolean, msg: string, offline?: boolean}>((resolve) => {
+      timeoutId = setTimeout(() => resolve({ success: true, msg: "Saved offline. Connect to internet to sync.", offline: true }), 3000);
+    });
+    
+    const res = await Promise.race([ CreateOrUpdateWallet(data) as Promise<any>, timeoutPromise ]);
+    clearTimeout(timeoutId!);
     setLoading(false);
-    if (res.success) {
+    
+    if(res?.success){
+      if (res.offline) {
+        Toast.show({ type: 'info', text1: 'Offline Mode', text2: res.msg });
+      }
       router.back();
-    } else {
-      Toast.show({ type: 'error', text1: 'Wallet', text2: res.msg });
+    }else{
+      Toast.show({ type: 'error', text1: 'Wallet', text2: res?.msg || "Failed to create wallet" });
     }
   };
 
   const onDelete = async () => {
-    if(!oldWallet?.id) return;
+    if(!oldWallet?.id || loading) return;
     setDeleteAlertVisible(false);
     setLoading(true);
     const res = await deleteWallet(oldWallet?.id);

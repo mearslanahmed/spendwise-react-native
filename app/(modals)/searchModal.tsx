@@ -1,34 +1,17 @@
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import React, { useEffect, useState } from "react";
-import { colors, spacingX, spacingY } from "@/constants/theme";
-import { scale, verticalScale } from "@/utils/styling";
+import { StyleSheet, View, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { spacingX, spacingY } from "@/constants/theme";
 import ModalWrapper from "@/components/ModalWrapper";
 import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
-import { Image } from "expo-image";
-import { getProfileImage } from "@/services/imageService";
-import { ScrollView } from "react-native";
-import * as Icon from "phosphor-react-native";
-import Typo from "@/components/Typo";
 import Input from "@/components/Input";
-import { TransactionType, UserDataType, WalletType } from "@/types";
-import Button from "@/components/Button";
-import { useAuth } from "@/contexts/authContext";
-import { updateUser } from "@/services/userService";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import ImageUpload from "@/components/ImageUpload";
-import { CreateOrUpdateWallet, deleteWallet } from "@/services/walletService";
-import { Timestamp } from "firebase/firestore";
 import { useData } from "@/contexts/dataContext";
 import TransactionList from "@/components/TransactionList";
 
 import { useTheme } from "@/contexts/themeContext";
+import { resolveTime } from "@/utils/dateHelper";
 
 const SearchModal = () => {
-  const { user, updateUserData } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const { colors: themeColors } = useTheme();
 
@@ -37,8 +20,8 @@ const SearchModal = () => {
 
   const allTransactions = React.useMemo(() => {
     const sorted = [...allUserTransactions].sort((a, b) => {
-      const aTime = (a.date as Timestamp)?.toDate().getTime() || new Date(a.date as string).getTime();
-      const bTime = (b.date as Timestamp)?.toDate().getTime() || new Date(b.date as string).getTime();
+      const aTime = resolveTime(a.date);
+      const bTime = resolveTime(b.date);
       return bTime - aTime;
     });
     return sorted.slice(0, 30);

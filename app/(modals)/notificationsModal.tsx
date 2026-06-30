@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import { colors, spacingX, spacingY, radius } from "@/constants/theme";
-import { scale, verticalScale } from "@/utils/styling";
+import { verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
 import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
@@ -11,19 +11,28 @@ import { useAuth } from "@/contexts/authContext";
 import { useData } from "@/contexts/dataContext";
 import { useTheme } from "@/contexts/themeContext";
 import { deleteAllNotifications, deleteNotification, markAllAsRead } from "@/services/notificationService";
-import { Timestamp } from "firebase/firestore";
 import CustomAlert from "@/components/CustomAlert";
+import { resolveDate } from "@/utils/dateHelper";
 
 const NotificationsModal = () => {
   const { user } = useAuth();
   const { notifications } = useData();
-  const { colors: themeColors, isDark } = useTheme();
+  const { colors: themeColors } = useTheme();
 
   // Optionally keep the automatic mark as read, but let's give users a manual button too
   const handleMarkAllAsRead = async () => {
     if (user?.uid) {
       await markAllAsRead(user.uid);
     }
+  };
+
+  const formatDate = (date: any) => {
+    return resolveDate(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
@@ -58,12 +67,6 @@ const NotificationsModal = () => {
       default:
         return <Icon.InfoIcon size={24} color={themeColors.textLighter} weight="fill" />;
     }
-  };
-
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return "";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   return (

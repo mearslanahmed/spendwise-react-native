@@ -1,5 +1,5 @@
 import { ActivityIndicator, Linking, Platform, StyleSheet, TouchableOpacity, View, Switch } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
@@ -14,9 +14,9 @@ import { Dropdown } from "react-native-element-dropdown";
 import * as Icons from "phosphor-react-native";
 import CustomAlert from "@/components/CustomAlert";
 import { deleteUserAccountData, resetUserAccountData } from "@/services/userService";
-import { deleteUser, signOut } from "firebase/auth";
+import { deleteUser } from "firebase/auth";
 import { useRouter } from "expo-router";
-import { cacheDirectory, writeAsStringAsync, StorageAccessFramework } from "expo-file-system/legacy";
+import { cacheDirectory, writeAsStringAsync } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { useTheme } from "@/contexts/themeContext";
 import { registerForPushNotificationsAsync, scheduleDailyReminder, cancelAllScheduledNotifications } from "@/services/expoNotificationService";
@@ -46,19 +46,31 @@ const SettingsModal = () => {
   const [confirmResetVisible, setConfirmResetVisible] = useState(false);
 
   const selectedCurrency = user?.currency || "$";
-  const pushEnabled = user?.pushNotificationsEnabled || false;
-  
-  // By default, 8:00 PM if none is set
-  const initialReminderDate = new Date();
-  if (user?.reminderTime) {
-    const [hours, minutes] = user.reminderTime.split(":");
-    initialReminderDate.setHours(Number(hours), Number(minutes), 0, 0);
-  } else {
-    initialReminderDate.setHours(20, 0, 0, 0);
-  }
-  
-  const [reminderDate, setReminderDate] = useState(initialReminderDate);
+  const [localPushEnabled, setLocalPushEnabled] = useState(user?.pushNotificationsEnabled || false);
+
+  // Sync toggle with the live user profile — handles the case where user data loads
+  // after the modal has already rendered (e.g., first app open, slow network)
+  useEffect(() => {
+    setLocalPushEnabled(user?.pushNotificationsEnabled || false);
+  }, [user?.pushNotificationsEnabled]);
+
+  // Compute the reminder time date from the stored string, only when it changes.
+  // Avoids creating a new Date object on every render which caused picker flicker.
+  const reminderDate = React.useMemo(() => {
+    const d = new Date();
+    if (user?.reminderTime) {
+      const [hours, minutes] = user.reminderTime.split(":");
+      d.setHours(Number(hours), Number(minutes), 0, 0);
+    } else {
+      d.setHours(20, 0, 0, 0); // Default: 8:00 PM
+    }
+    return d;
+  }, [user?.reminderTime]);
+
+  // Local state for the picker — initialized from the memoized value
+  const [localReminderDate, setLocalReminderDate] = useState(reminderDate);
   const [showTimePicker, setShowTimePicker] = useState(false);
+
 
   const handleTogglePushNotifications = async (value: boolean) => {
     if (!user?.uid) return;
@@ -75,11 +87,21 @@ const SettingsModal = () => {
           setLoading(false);
           return;
         }
-        await scheduleDailyReminder(reminderDate.getHours(), reminderDate.getMinutes());
+        await scheduleDailyReminder(localReminderDate.getHours(), localReminderDate.getMinutes());
+        
+        // Fire a test notification so they know it works immediately
+        import("@/services/expoNotificationService").then(({ scheduleLocalNotification }) => {
+            scheduleLocalNotification(
+                "Notifications Enabled! 🔔",
+                `Awesome! We will remind you every day at ${localReminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`
+            );
+        });
+
       } else {
         await cancelAllScheduledNotifications();
       }
       
+      setLocalPushEnabled(value);
       const userRef = doc(firestore, "users", user.uid);
       await updateDoc(userRef, { pushNotificationsEnabled: value });
       await updateUserData(user.uid);
@@ -105,7 +127,7 @@ const SettingsModal = () => {
     }
     
     if (event.type === "set" && date && user?.uid) {
-      setReminderDate(date);
+      setLocalReminderDate(date);
       const timeString = `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
       
       setLoading(true);
@@ -114,7 +136,7 @@ const SettingsModal = () => {
         await updateDoc(userRef, { reminderTime: timeString });
         await updateUserData(user.uid);
         
-        if (pushEnabled) {
+        if (localPushEnabled) {
           await scheduleDailyReminder(date.getHours(), date.getMinutes());
         }
         
@@ -123,7 +145,7 @@ const SettingsModal = () => {
           text1: "Reminder Time Updated",
           text2: `Your daily reminder is set for ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
         });
-      } catch (error: any) {
+      } catch {
         Toast.show({
           type: "error",
           text1: "Error",
@@ -159,17 +181,18 @@ const SettingsModal = () => {
   };
 
   const handleContactSupport = () => {
-    Linking.openURL("mailto:support@spendwise.com?subject=SpendWise%20Support%20Request")
+    Linking.openURL("mailto:spendwiseoffical@gmail.com?subject=SpendWise%20Support%20Request")
       .catch(() => {
         Toast.show({
           type: "error",
           text1: "Error",
-          text2: "Could not open mail client. Please email support@spendwise.com.",
+          text2: "Could not open mail client. Please email spendwiseoffical@gmail.com.",
         });
       });
   };
 
   const handleExportCSV = async () => {
+    if (loading) return;
     if (!user?.uid) return;
     setLoading(true);
     try {
@@ -214,47 +237,22 @@ const SettingsModal = () => {
       const csvContent = headers + rows;
       const fileName = `SpendWise_Transactions_${new Date().toISOString().split('T')[0]}.csv`;
 
-      if (Platform.OS === 'android') {
-        // Use StorageAccessFramework to prompt directory picker
-        const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
-        if (permissions.granted) {
-          const directoryUri = permissions.directoryUri;
-          const fileUri = await StorageAccessFramework.createFileAsync(
-            directoryUri,
-            fileName,
-            'text/csv'
-          );
-          await writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
-          Toast.show({
-            type: "success",
-            text1: "Saved to Phone",
-            text2: "CSV report successfully saved to your chosen folder.",
-          });
-        } else {
-          Toast.show({
-            type: "info",
-            text1: "Permission Denied",
-            text2: "Could not save file without folder permissions.",
-          });
-        }
-      } else {
-        // iOS: use cache directory and share sheet (which contains "Save to Files")
-        const fileUri = `${cacheDirectory}${fileName}`;
-        await writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
+      // Use cache directory and share sheet (works cross-platform and handles permissions automatically)
+      const fileUri = `${cacheDirectory}${fileName}`;
+      await writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
 
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(fileUri, {
-            mimeType: "text/csv",
-            dialogTitle: "Export SpendWise Transactions",
-            UTI: "public.comma-separated-values-text",
-          });
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Sharing Unavailable",
-            text2: "Sharing is not supported on this platform.",
-          });
-        }
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: "text/csv",
+          dialogTitle: "Export SpendWise Transactions",
+          UTI: "public.comma-separated-values-text",
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Sharing Unavailable",
+          text2: "Sharing is not supported on this device.",
+        });
       }
     } catch (error: any) {
       Toast.show({
@@ -428,7 +426,7 @@ const SettingsModal = () => {
                 Push Notifications
               </Typo>
               <Switch
-                value={pushEnabled}
+                value={localPushEnabled}
                 onValueChange={handleTogglePushNotifications}
                 disabled={loading}
                 trackColor={{ false: themeColors.border, true: colors.primary }}
@@ -436,7 +434,7 @@ const SettingsModal = () => {
               />
             </View>
 
-            {pushEnabled && (
+            {localPushEnabled && (
               <>
                 <View style={[styles.divider, { backgroundColor: themeColors.border, marginLeft: spacingX._20 }]} />
                 <TouchableOpacity
@@ -448,13 +446,13 @@ const SettingsModal = () => {
                     Daily Reminder Time
                   </Typo>
                   <Typo size={15} color={colors.primary} fontWeight="600">
-                    {reminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {localReminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Typo>
                 </TouchableOpacity>
 
                 {showTimePicker && (
                   <DateTimePicker
-                    value={reminderDate}
+                    value={localReminderDate}
                     mode="time"
                     display="default"
                     onChange={handleTimeChange}
@@ -462,6 +460,7 @@ const SettingsModal = () => {
                 )}
               </>
             )}
+
           </View>
 
           {/* Support Section */}

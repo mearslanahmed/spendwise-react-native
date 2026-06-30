@@ -1,4 +1,4 @@
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import React from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { scale, verticalScale } from "@/utils/styling";
@@ -17,6 +17,7 @@ import { useTheme } from "@/contexts/themeContext";
 import { walletPresets } from "@/constants/data";
 import { createTransfer } from "@/services/transactionService";
 import { Dropdown } from "react-native-element-dropdown";
+import { resolveTime } from "@/utils/dateHelper";
 
 const TransferModal = () => {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ const TransferModal = () => {
 
   const params = useLocalSearchParams<{ sourceWalletId?: string }>();
 
-  const [sourceWalletId, setSourceWalletId] = React.useState(params.sourceWalletId || "");
+  const [sourceWalletId] = React.useState(params.sourceWalletId || "");
   const [destWalletId, setDestWalletId] = React.useState("");
   const [amount, setAmount] = React.useState("");
   const [note, setNote] = React.useState("");
@@ -36,8 +37,8 @@ const TransferModal = () => {
     return [...allWallets].sort((a, b) => {
       const aCreated = a.created as any;
       const bCreated = b.created as any;
-      const aTime = aCreated?.toDate ? aCreated.toDate().getTime() : new Date(aCreated || 0).getTime();
-      const bTime = bCreated?.toDate ? bCreated.toDate().getTime() : new Date(bCreated || 0).getTime();
+      const aTime = resolveTime(aCreated);
+      const bTime = resolveTime(bCreated);
       return bTime - aTime;
     });
   }, [allWallets]);
