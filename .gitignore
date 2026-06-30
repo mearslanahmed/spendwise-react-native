@@ -78,10 +78,9 @@ ios/Pods/
 
 # Firebase config files
 *.firebase.ts
-/config/firebase.ts
 google-services.json
+.firebase/
 
-/constants/index.ts
-
-babel.config.js
-eslint.config.js
+# Temporary files
+scratch.js
+dummy.txt
