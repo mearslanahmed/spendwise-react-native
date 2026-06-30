@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TextInput, View, TouchableOpacity } from 'react-native'
+import { StyleSheet, TextInput, View, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import { InputProps } from '@/types'
 import { colors as staticColors, radius, spacingX } from '@/constants/theme'
@@ -36,7 +36,7 @@ const Input = (props: InputProps) => {
         {...restProps}
       />
       {isPasswordField && (
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+        <TouchableOpacity testID="toggle-password-button" onPress={() => setShowPassword(!showPassword)}>
           {showPassword ? (
             <Icons.Eye size={verticalScale(20)} color={themeColors.textLighter} weight="fill" />
           ) : (

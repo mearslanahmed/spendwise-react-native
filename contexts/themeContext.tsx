@@ -28,7 +28,7 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, updateUserData } = useAuth();
   const systemScheme = useColorScheme();
-  const [localTheme, setLocalTheme] = useState<ThemeType>('system');
+  const [localTheme, setLocalTheme] = useState<ThemeType>('light');
 
   // Load local theme preference from AsyncStorage on startup
   useEffect(() => {

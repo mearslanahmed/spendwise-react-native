@@ -1,4 +1,4 @@
-import { ImageBackground, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
+import { ImageBackground, StyleSheet, View, TouchableOpacity } from 'react-native'
 import React from 'react'
 import Typo from './Typo'
 import { scale, verticalScale } from '@/utils/styling'
@@ -7,6 +7,8 @@ import * as Icons from 'phosphor-react-native'
 import { WalletType } from '@/types'
 import { useData } from '@/contexts/dataContext'
 import { useAuth } from '@/contexts/authContext'
+
+import { resolveTime } from "@/utils/dateHelper";
 
 const HomeCard = () => {
     const {user} = useAuth();
@@ -18,8 +20,8 @@ const HomeCard = () => {
       return [...allWallets].sort((a, b) => {
         const aCreated = a.created as any;
         const bCreated = b.created as any;
-        const aTime = aCreated?.toDate ? aCreated.toDate().getTime() : new Date(aCreated || 0).getTime();
-        const bTime = bCreated?.toDate ? bCreated.toDate().getTime() : new Date(bCreated || 0).getTime();
+        const aTime = resolveTime(aCreated);
+        const bTime = resolveTime(bCreated);
         return bTime - aTime;
       });
     }, [allWallets]);
@@ -45,7 +47,7 @@ const HomeCard = () => {
                     <Typo size={17} color={colors.neutral800} fontWeight={"500"}>
                         Total Balance
                     </Typo>
-                    <TouchableOpacity onPress={() => setIsBalanceHidden(!isBalanceHidden)}>
+                    <TouchableOpacity testID="hide-balance-button" onPress={() => setIsBalanceHidden(!isBalanceHidden)}>
                         {isBalanceHidden 
                             ? <Icons.EyeSlashIcon size={verticalScale(20)} color={colors.neutral800} weight="bold" />
                             : <Icons.EyeIcon size={verticalScale(20)} color={colors.neutral800} weight="bold" />

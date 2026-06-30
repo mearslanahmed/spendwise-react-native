@@ -8,43 +8,75 @@ import {
   GoogleAuthProvider, 
   signInWithCredential 
 } from "firebase/auth";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { auth, firestore } from "@/config/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { useRouter } from "expo-router";
+import { useRouter, useRootNavigationState } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
     const [user, setUser] = useState<UserType>(null);
     const router = useRouter();
+    // Track the previously-navigated UID so we only redirect when auth truly changes.
+    // Using a ref (not state) so it doesn't trigger re-renders.
+    const lastNavigatedUid = useRef<string | null | undefined>(undefined); // undefined = never navigated
+    // useRootNavigationState gives us the navigator's key once it has mounted.
+    const navigationState = useRootNavigationState();
 
     useEffect(() => {
+        // Wait until the Expo Router navigator has fully mounted before allowing navigation.
+        // This prevents "Cannot navigate before navigator mounts" crashes on cold start.
+        if (!navigationState?.key) return;
+
         const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+            const newUid = firebaseUser?.uid ?? null;
+
             if(firebaseUser){
                 const email = firebaseUser.email ?? undefined;
                 const name = firebaseUser.displayName ?? null;
-                setUser({
-                    uid: firebaseUser?.uid,
-                    email,
-                    name,
-                    emailVerified: firebaseUser.emailVerified,
-                });
-                updateUserData(firebaseUser.uid);
                 
-                if (firebaseUser.emailVerified) {
-                    router.replace("/(tabs)/home");
-                } else {
-                    router.replace("/(auth)/verify-email");
-                }
+                // Fetch cached user to preserve theme and avoid ThemeContext flash
+                AsyncStorage.getItem(`@user_profile_${newUid}`).then(cachedStr => {
+                    let cachedUser = {};
+                    if (cachedStr) {
+                        try { cachedUser = JSON.parse(cachedStr); } catch(e){}
+                    }
+                    
+                    setUser({
+                        ...cachedUser, // Preserves theme, currency, etc.
+                        uid: firebaseUser?.uid,
+                        email,
+                        name,
+                        emailVerified: firebaseUser.emailVerified,
+                    });
+
+                    // Kick off silent cloud refresh
+                    updateUserData(firebaseUser.uid);
+                    
+                    // Only navigate when the user identity actually changed.
+                    if (lastNavigatedUid.current !== newUid) {
+                        lastNavigatedUid.current = newUid;
+                        if (firebaseUser.emailVerified) {
+                            router.replace("/(tabs)/home");
+                        } else {
+                            router.replace("/(auth)/verify-email");
+                        }
+                    }
+                });
             }else{
                 // no user
                 setUser(null);
-                router.replace("/(auth)/welcome");
+                if (lastNavigatedUid.current !== null) {
+                    lastNavigatedUid.current = null;
+                    router.replace("/(auth)/welcome");
+                }
             }
         });
         return () => unsub();
-    },[]);
+    },[navigationState?.key]);
+
 
     const login = async (email: string, password: string) => {
         try{
@@ -133,6 +165,13 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
 
     const updateUserData = async (uid: string) => {
         try{
+            // 1. Instantly load from local storage cache if available
+            const cachedUser = await AsyncStorage.getItem(`@user_profile_${uid}`);
+            if (cachedUser) {
+                setUser(JSON.parse(cachedUser));
+            }
+
+            // 2. Silently fetch from cloud to get fresh data
             const docRef = doc(firestore, "users", uid);
             const docSnap = await getDoc(docRef);
 
@@ -146,11 +185,17 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                     emailVerified: auth.currentUser?.emailVerified || false,
                     currency: data?.currency || "$",
                     theme: data?.theme || "dark",
+                    pushNotificationsEnabled: data?.pushNotificationsEnabled || false,
+                    reminderTime: data?.reminderTime || null,
                 };
                 setUser({...userData});
+                await AsyncStorage.setItem(`@user_profile_${uid}`, JSON.stringify(userData));
             }
         }catch(error: any){
-            // console.log("Error updating user data:", error);
+            // Log the error so it's visible in development/crash reporting.
+            // We do NOT re-throw here: if the Firestore fetch fails (e.g. offline),
+            // the user will still see data from the AsyncStorage cache loaded above.
+            console.error("updateUserData: failed to fetch fresh profile from Firestore:", error?.message || error);
         }
     };
 

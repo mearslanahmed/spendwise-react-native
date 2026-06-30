@@ -17,7 +17,7 @@ const TabItem = ({ route, isFocused, options, onPress, onLongPress, iconRender, 
   useEffect(() => {
     scaleValue.value = withSpring(isFocused ? 1.15 : 1, { damping: 10, stiffness: 100 });
     dotOpacity.value = withTiming(isFocused ? 1 : 0, { duration: 250 });
-  }, [isFocused]);
+  }, [isFocused, scaleValue, dotOpacity]);
 
   const animatedIconStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scaleValue.value }],

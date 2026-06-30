@@ -9,6 +9,7 @@ import * as Icons from "phosphor-react-native";
 import { expenseCategories } from '@/constants/data';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/authContext';
+import { resolveDate } from '@/utils/dateHelper';
 
 type UpcomingBillsProps = {
   subscriptions: SubscriptionType[];
@@ -23,13 +24,13 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
   
   // Sort subscriptions by closest billing date
   const sortedSubs = [...subscriptions].sort((a, b) => {
-    const aDate = (a.nextBillingDate as any)?.toDate ? (a.nextBillingDate as any).toDate() : new Date(a.nextBillingDate as string);
-    const bDate = (b.nextBillingDate as any)?.toDate ? (b.nextBillingDate as any).toDate() : new Date(b.nextBillingDate as string);
+    const aDate = resolveDate(a.nextBillingDate);
+    const bDate = resolveDate(b.nextBillingDate);
     return aDate.getTime() - bDate.getTime();
   });
 
   const getDaysUntil = (dateStr: string | any) => {
-    const target = dateStr?.toDate ? dateStr.toDate() : new Date(dateStr);
+    const target = resolveDate(dateStr);
     const diffTime = target.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     

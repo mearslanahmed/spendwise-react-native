@@ -30,7 +30,7 @@ const SegmentedPill = ({ tabs, activeIndex, onChange, style }: SegmentedPillProp
         speed: 12,
       }).start();
     }
-  }, [activeIndex, tabWidth]);
+  }, [activeIndex, tabWidth, translateX]);
 
   const onLayout = (e: LayoutChangeEvent) => {
     setContainerWidth(e.nativeEvent.layout.width);

@@ -4,6 +4,8 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { firestore } from "@/config/firebase";
 import { TransactionType, BudgetType, WalletType, NotificationType, SubscriptionType } from "@/types";
 import { checkAndProcessSubscriptions } from "@/services/subscriptionService";
+import { resolveTime } from "@/utils/dateHelper";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface DataContextType {
   transactions: TransactionType[];
@@ -70,11 +72,54 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    setLoading({ transactions: true, budgets: true, wallets: true, notifications: true, subscriptions: true });
     setError({ transactions: null, budgets: null, wallets: null, notifications: null, subscriptions: null });
 
-    // Process auto-deduction before setting up listeners
-    checkAndProcessSubscriptions(user.uid);
+    // Run subscription auto-deduction in the background.
+    // A 1-hour cooldown prevents duplicate deductions if the app is opened multiple times
+    // in quick succession (e.g. background → foreground).
+    const SUBSCRIPTION_COOLDOWN_KEY = `@sub_check_${user.uid}`;
+    const COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+    (async () => {
+      try {
+        const lastChecked = await AsyncStorage.getItem(SUBSCRIPTION_COOLDOWN_KEY);
+        const now = Date.now();
+        if (!lastChecked || now - parseInt(lastChecked, 10) > COOLDOWN_MS) {
+          await AsyncStorage.setItem(SUBSCRIPTION_COOLDOWN_KEY, String(now));
+          await checkAndProcessSubscriptions(user.uid as string);
+        }
+      } catch (e) {
+        console.error("Subscription check failed:", e);
+      }
+    })();
+
+    // Preload all cached data. Only set loading state to true for entities that are NOT cached,
+    // to prevent UI flicker when data is already available locally.
+    const loadCacheAndSetLoading = async () => {
+      let loadingState = { transactions: true, budgets: true, wallets: true, notifications: true, subscriptions: true };
+      try {
+        const cachedTx = await AsyncStorage.getItem(`@cache_tx_${user.uid}`);
+        if (cachedTx) { setTransactions(JSON.parse(cachedTx)); loadingState.transactions = false; }
+
+        const cachedBudgets = await AsyncStorage.getItem(`@cache_budgets_${user.uid}`);
+        if (cachedBudgets) { setBudgets(JSON.parse(cachedBudgets)); loadingState.budgets = false; }
+
+        const cachedWallets = await AsyncStorage.getItem(`@cache_wallets_${user.uid}`);
+        if (cachedWallets) { setWallets(JSON.parse(cachedWallets)); loadingState.wallets = false; }
+
+        const cachedNotifs = await AsyncStorage.getItem(`@cache_notifs_${user.uid}`);
+        if (cachedNotifs) { setNotifications(JSON.parse(cachedNotifs)); loadingState.notifications = false; }
+
+        const cachedSubs = await AsyncStorage.getItem(`@cache_subs_${user.uid}`);
+        if (cachedSubs) { setSubscriptions(JSON.parse(cachedSubs)); loadingState.subscriptions = false; }
+        
+        setLoading(loadingState);
+      } catch (e) {
+        console.error("Failed to load local cache", e);
+        setLoading(loadingState);
+      }
+    };
+    loadCacheAndSetLoading();
+
 
     // Transactions listener
     const txQuery = query(
@@ -90,6 +135,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })) as TransactionType[];
         setTransactions(data);
         setLoading((prev) => ({ ...prev, transactions: false }));
+        AsyncStorage.setItem(`@cache_tx_${user.uid}`, JSON.stringify(data));
       },
       (err) => {
         console.error("DataContext Transactions error:", err);
@@ -112,6 +158,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })) as BudgetType[];
         setBudgets(data);
         setLoading((prev) => ({ ...prev, budgets: false }));
+        AsyncStorage.setItem(`@cache_budgets_${user.uid}`, JSON.stringify(data));
       },
       (err) => {
         console.error("DataContext Budgets error:", err);
@@ -134,6 +181,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })) as WalletType[];
         setWallets(data);
         setLoading((prev) => ({ ...prev, wallets: false }));
+        AsyncStorage.setItem(`@cache_wallets_${user.uid}`, JSON.stringify(data));
       },
       (err) => {
         console.error("DataContext Wallets error:", err);
@@ -157,13 +205,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Sort by createdAt descending (newest first)
         data.sort((a, b) => {
-            const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-            const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+            const dateA = resolveTime(a.createdAt);
+            const dateB = resolveTime(b.createdAt);
             return dateB - dateA;
         });
 
         setNotifications(data);
         setLoading((prev) => ({ ...prev, notifications: false }));
+        AsyncStorage.setItem(`@cache_notifs_${user.uid}`, JSON.stringify(data));
       },
       (err) => {
         console.error("DataContext Notifications error:", err);
@@ -186,6 +235,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })) as SubscriptionType[];
         setSubscriptions(data);
         setLoading((prev) => ({ ...prev, subscriptions: false }));
+        AsyncStorage.setItem(`@cache_subs_${user.uid}`, JSON.stringify(data));
       },
       (err) => {
         console.error("DataContext Subscriptions error:", err);
@@ -201,7 +251,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsubNotification();
       unsubSubscription();
     };
-  }, [user]);
+  }, [user?.uid]);
 
   return (
     <DataContext.Provider value={{ transactions, budgets, wallets, notifications, subscriptions, loading, error }}>

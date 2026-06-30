@@ -1,16 +1,16 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import React from 'react'
 import { CustomButtonProps } from '@/types'
 import { colors, radius } from '@/constants/theme'
 import { verticalScale } from '@/utils/styling'
-import { Background } from '@react-navigation/elements'
 import Loading from './Loading'
 
 const Button = ({
     style,
     onPress,
     loading = false,
-    children
+    children,
+    ...props
 }: CustomButtonProps) => {
     if(loading){
         return (
@@ -21,7 +21,7 @@ const Button = ({
     }
 
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.button, style]}>
+    <TouchableOpacity onPress={onPress} style={[styles.button, style]} {...props}>
       {children}
     </TouchableOpacity>
   )

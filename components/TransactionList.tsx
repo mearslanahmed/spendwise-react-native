@@ -1,16 +1,14 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { TransactionItemsProps, TransactionListType, TransactionType } from "@/types";
 import { verticalScale } from "@/utils/styling";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import Typo from "./Typo";
 import { FlashList } from "@shopify/flash-list";
-import index from "@/app";
 import Loading from "./Loading";
 import { expenseCategories, incomeCategory } from "@/constants/data";
-import { FadeInDown } from "react-native-reanimated";
-import Animated from "react-native-reanimated";
-import { Timestamp } from "firebase/firestore";
+import { resolveDate } from "@/utils/dateHelper";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/authContext";
 import { useTheme } from "@/contexts/themeContext";
@@ -26,7 +24,7 @@ const TransactionList = ({
   horizontalPadding = 0,
 }: TransactionListType) => {
     const router = useRouter();
-  const handleClick = (item: TransactionType) => {
+  const handleClick = React.useCallback((item: TransactionType) => {
     router.push({
         pathname: '/(modals)/transactionModal',
         params: {
@@ -34,14 +32,14 @@ const TransactionList = ({
             type: item?.type,
             amount: item?.amount?.toString(),
             category: item?.category,
-            date: (item.date as Timestamp)?.toDate().toISOString(),
+            date: resolveDate(item.date).toISOString(),
             description: item?.description,
             image: item?.image,
             uid: item?.uid,
             walletId: item?.walletId,
         }
     })
-  };
+  }, [router]);
   return (
     <View style={styles.container}>
       <View style={styles.list}>
@@ -109,7 +107,7 @@ const TransactionList = ({
   );
 };
 
-const TransactionItem = ({
+const TransactionItem = React.memo(({
   item,
   index,
   handleClick,
@@ -117,10 +115,10 @@ const TransactionItem = ({
   const { user } = useAuth();
   const { colors: themeColors } = useTheme();
   let category = 
-    item?.type == "income" ? incomeCategory : (expenseCategories[item.category!] || expenseCategories['others']);
+    item?.type === "income" ? incomeCategory : (expenseCategories[item.category!] || expenseCategories['others']);
   const IconComponent = category?.icon;
 
-  const date = (item?.date as Timestamp)?.toDate()?.toLocaleDateString("en-US", {
+  const date = resolveDate(item?.date)?.toLocaleDateString("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -151,8 +149,8 @@ const TransactionItem = ({
         </View>
 
         <View style={styles.amountDate}>
-          <Typo fontWeight={"500"} color={item?.type == 'income' ? colors.primary : colors.rose}>
-              {`${item?.type == "income" ? `+ ${user?.currency || "$"}` : `- ${user?.currency || "$"}`}${item?.amount}`}
+          <Typo fontWeight={"500"} color={item?.type === 'income' ? colors.primary : colors.rose}>
+              {`${item?.type === "income" ? `+ ${user?.currency || "$"}` : `- ${user?.currency || "$"}`}${item?.amount}`}
             
           </Typo>
           <Typo size={13} color={colors.neutral400}>
@@ -162,7 +160,7 @@ const TransactionItem = ({
       </TouchableOpacity>
     </Animated.View>
   );
-};
+});
 
 export default TransactionList;
 

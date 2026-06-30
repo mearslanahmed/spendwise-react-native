@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TextStyle, View } from "react-native";
+import { Text, TextStyle } from "react-native";
 import React from "react";
 import { colors as staticColors } from "@/constants/theme";
 import { TypoProps } from "@/types";
@@ -50,5 +50,3 @@ const Typo = ({
 };
 
 export default Typo;
-
-const styles = StyleSheet.create({});

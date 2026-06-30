@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View, Modal, TouchableWithoutFeedback } from 'react-native'
+import { StyleSheet, TouchableOpacity, View, Modal } from 'react-native'
 import React, { useState } from 'react'
 import { ImageUploadProps } from '@/types'
 import * as Icon from "phosphor-react-native";
@@ -6,7 +6,7 @@ import { colors, radius } from '@/constants/theme';
 import Typo from './Typo';
 import { scale, verticalScale } from '@/utils/styling';
 import { Image } from 'expo-image';
-import { getProfilePath } from '@/services/imageService';
+import { getProfileImage } from '@/services/imageService';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
@@ -95,7 +95,7 @@ const ImageUpload = ({
             <View style={[styles.image, imageStyle && imageStyle]}>
                 <Image
                     style={{flex: 1}}
-                    source={getProfilePath(file)}
+                    source={getProfileImage(file)}
                     contentFit="cover"
                     transition={100}
                 />
