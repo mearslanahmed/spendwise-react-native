@@ -99,30 +99,7 @@ EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_preset
 npx expo start
 ```
 
----
 
-## Building for Production
-
-### Android (APK / AAB)
-To generate a standalone APK for Android, ensure the Android SDK is configured, then run:
-```bash
-cd android
-./gradlew assembleRelease
-```
-*(The final .apk will be output to android/app/build/outputs/apk/release/)*
-
-To build for the Google Play Store (AAB):
-```bash
-./gradlew bundleRelease
-```
-
-### iOS (IPA)
-To build for iOS, a macOS machine with Xcode installed is required:
-```bash
-npx expo run:ios --configuration Release
-```
-
-*(Alternatively, build both platforms entirely in the cloud using Expo EAS: `eas build --profile production`)*
 
 ---
 
