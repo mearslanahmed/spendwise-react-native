@@ -126,9 +126,12 @@ npx expo run:ios --configuration Release
 
 ---
 
-## Official Website
+## Official Website & Backend Repository
 The official Next.js marketing and backend website for SpendWise is available at: 
 **[https://spendwiseapp.tech](https://spendwiseapp.tech)**
+
+You can view the source code for the Next.js backend and website in its dedicated repository:
+**[GitHub: spendwise-web](https://github.com/mearslanahmed/spendwise-web)**
 
 ## Developer & Contact
 
