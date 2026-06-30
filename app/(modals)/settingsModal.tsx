@@ -487,6 +487,19 @@ const SettingsModal = () => {
 
             <TouchableOpacity
               style={styles.actionRow}
+              onPress={() => Linking.openURL("https://spendwiseapp.tech")}
+              disabled={loading}
+            >
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+                Visit Official Website
+              </Typo>
+              <Icons.GlobeIcon size={20} color={themeColors.textLighter} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+
+            <TouchableOpacity
+              style={styles.actionRow}
               onPress={handleExportCSV}
               disabled={loading}
             >

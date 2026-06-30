@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import { TransactionType, SubscriptionType, WalletType, Message } from '@/types';
 import { createOrUpdateTransaction, createTransfer } from '@/services/transactionService';
 import { resolveDate } from '@/utils/dateHelper';
@@ -59,7 +58,7 @@ ${subscriptions || 'No active subscriptions'}
             category: { 
               type: "string", 
               enum: ["groceries", "rent", "utilities", "transportation", "entertainment", "dining", "health", "insurance", "savings", "clothing", "personal", "others"], 
-              description: "Map the item to the closest category semantically (e.g., map 'tea' or 'lunch' to 'dining', 'bus' to 'transportation'). If it cannot be confidently mapped, or if it is an income transaction, select 'others'." 
+              description: "Map the item to the closest category semantically." 
             },
             walletName: { type: "string", description: "The exact name of the wallet to apply this transaction to based on the user's current wallets." },
             description: { type: "string", description: "A brief description of the transaction." }
@@ -85,46 +84,76 @@ ${subscriptions || 'No active subscriptions'}
   }];
 
   try {
-    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
-    if (!apiKey) throw new Error("API Key is missing in .env");
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (!apiUrl) throw new Error("API URL is missing in .env");
 
-    const ai = new GoogleGenAI({ apiKey });
-
-    // Map messages array to Gemini format
     let chatHistory = messages.map(msg => ({
       role: msg.sender === 'user' ? 'user' : 'model',
       parts: [{ text: msg.text }]
     }));
 
-    // Ensure the first message is from the 'user' to prevent 400 Bad Request
     while (chatHistory.length > 0 && chatHistory[0].role !== 'user') {
       chatHistory.shift();
     }
 
-    // Send to Gemini using the new unified Google GenAI SDK as requested
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: chatHistory,
-      config: {
-        systemInstruction: systemInstruction,
-        tools: tools,
-      }
+    const res = await fetch(`${apiUrl}/ai-chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: chatHistory,
+        systemInstruction,
+        tools
+      })
     });
 
-    // Handle Tool (Function Call) execution
+    if (!res.ok) {
+      throw new Error("Failed to fetch from backend");
+    }
+
+    const data = await res.json();
+
+    if (data.groqFallback) {
+      // Handle Groq Fallback
+      const responseMessage = data.data.choices?.[0]?.message;
+      if (!responseMessage) throw new Error("Failed to parse Groq response");
+
+      if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+        const call = responseMessage.tool_calls[0].function;
+        const args = JSON.parse(call.arguments);
+        
+        return await executeFunctionCall(call.name, args, walletsData, currency, userId);
+      }
+
+      return responseMessage.content || "No response generated.";
+    }
+
+    // Handle Gemini response
+    const response = data;
+    
     if (response.functionCalls && response.functionCalls.length > 0) {
       const call = response.functionCalls[0];
-      if (call.name === 'addTransaction') {
-        const args = call.args as any;
-        if (!userId) {
-          return "I need you to be fully logged in before I can create transactions for you.";
-        }
+      const args = call.args as any;
+      return await executeFunctionCall(call.name, args, walletsData, currency, userId);
+    }
 
-        // Find wallet ID by name
+    if (response.text) {
+      return response.text;
+    } else {
+      throw new Error("No response generated from AI.");
+    }
+
+  } catch (error: any) {
+    console.warn("AI Service Error:", error.message || error);
+    return "Our AI service is temporarily experiencing high demand or is misconfigured. Please try again later.";
+  }
+};
+
+const executeFunctionCall = async (name: string, args: any, walletsData: WalletType[], currency: string, userId?: string) => {
+    if (name === 'addTransaction') {
+        if (!userId) return "I need you to be fully logged in before I can create transactions for you.";
+
         const wallet = walletsData.find(w => w.name.toLowerCase() === args.walletName?.toLowerCase());
-        if (!wallet) {
-          return `I couldn't find a wallet named "${args.walletName}". Please specify one of your existing wallets (e.g., ${walletsData.map(w=>w.name).join(', ')}).`;
-        }
+        if (!wallet) return `I couldn't find a wallet named "${args.walletName}". Please specify one of your existing wallets (e.g., ${walletsData.map(w=>w.name).join(', ')}).`;
 
         const transactionData: Partial<TransactionType> = {
           amount: args.amount,
@@ -137,154 +166,25 @@ ${subscriptions || 'No active subscriptions'}
         };
 
         const res = await createOrUpdateTransaction(transactionData);
-        if (res.success) {
-          return `I've successfully added a ${currency}${args.amount} ${args.type} for **${args.category}** to your **${wallet.name}** wallet.`;
-        } else {
-          return `I tried to add the transaction, but an error occurred: ${res.msg}`;
-        }
-      } else if (call.name === 'transferMoney') {
-        const args = call.args as any;
-        if (!userId) {
-          return "I need you to be fully logged in before I can transfer money.";
-        }
+        if (res.success) return `I've successfully added a ${currency}${args.amount} ${args.type} for **${args.category}** to your **${wallet.name}** wallet.`;
+        return `I tried to add the transaction, but an error occurred: ${res.msg}`;
+        
+    } else if (name === 'transferMoney') {
+        if (!userId) return "I need you to be fully logged in before I can transfer money.";
 
         const sourceWallet = walletsData.find(w => w.name.toLowerCase() === args.sourceWalletName?.toLowerCase());
         const destWallet = walletsData.find(w => w.name.toLowerCase() === args.destWalletName?.toLowerCase());
 
-        if (!sourceWallet) {
-          return `I couldn't find a source wallet named "${args.sourceWalletName}".`;
-        }
-        if (!destWallet) {
-          return `I couldn't find a destination wallet named "${args.destWalletName}".`;
-        }
+        if (!sourceWallet) return `I couldn't find a source wallet named "${args.sourceWalletName}".`;
+        if (!destWallet) return `I couldn't find a destination wallet named "${args.destWalletName}".`;
 
         const res = await createTransfer(sourceWallet.id!, destWallet.id!, args.amount, userId, args.description);
-        if (res.success) {
-          return `🔄 I've successfully transferred ${currency}${args.amount} from **${sourceWallet.name}** to **${destWallet.name}**.`;
-        } else {
-          return `I tried to transfer the money, but an error occurred: ${res.msg}`;
-        }
-      }
+        if (res.success) return `🔄 I've successfully transferred ${currency}${args.amount} from **${sourceWallet.name}** to **${destWallet.name}**.`;
+        return `I tried to transfer the money, but an error occurred: ${res.msg}`;
     }
+    return "Function not recognized.";
+}
 
-    if (response.text) {
-      return response.text;
-    } else {
-      throw new Error("No response generated from AI.");
-    }
-
-  } catch (error: any) {
-    console.error("Primary Gemini 3.5 API Error in Chat:", error.message || error);
-
-    // Fallback to Groq
-    try {
-      const groqApiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
-      if (!groqApiKey) {
-        if (!process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
-           return "AI configuration is missing. Please set up your API keys to use this feature.";
-        }
-        throw new Error("Groq API Key is missing");
-      }
-
-      console.error("Attempting fallback to Groq Llama 4 Scout for Chat...");
-      
-      // Convert messages to OpenAI format for Groq
-      const groqMessages = [
-        { role: "system", content: systemInstruction },
-        ...messages.map(msg => ({
-          role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.text
-        }))
-      ];
-
-      // Convert Gemini tools to OpenAI format for Groq
-      const groqTools = [
-        {
-          type: "function",
-          function: tools[0].functionDeclarations[0] // addTransaction
-        },
-        {
-          type: "function",
-          function: tools[0].functionDeclarations[1] // transferMoney
-        }
-      ];
-
-      const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${groqApiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          messages: groqMessages,
-          tools: groqTools,
-          tool_choice: "auto"
-        })
-      });
-
-      const groqData = await groqResponse.json();
-      
-      if (!groqResponse.ok || groqData.error) {
-        console.error("Groq API Error Detail:", JSON.stringify(groqData, null, 2));
-      }
-
-      const responseMessage = groqData.choices?.[0]?.message;
-
-      if (!responseMessage) throw new Error("Failed to parse Groq response");
-
-      // Handle Groq Tool (Function Call) execution
-      if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-        const call = responseMessage.tool_calls[0].function;
-        const args = JSON.parse(call.arguments);
-        
-        if (call.name === 'addTransaction') {
-          if (!userId) return "I need you to be fully logged in before I can create transactions for you.";
-
-          const wallet = walletsData.find(w => w.name.toLowerCase() === args.walletName?.toLowerCase());
-          if (!wallet) return `I couldn't find a wallet named "${args.walletName}". Please specify one of your existing wallets (e.g., ${walletsData.map(w=>w.name).join(', ')}).`;
-
-          const transactionData: Partial<TransactionType> = {
-            amount: args.amount,
-            type: args.type,
-            category: args.category,
-            walletId: wallet.id,
-            description: args.description || '',
-            date: new Date(),
-            uid: userId
-          };
-
-          const res = await createOrUpdateTransaction(transactionData);
-          if (res.success) return `I've successfully added a ${currency}${args.amount} ${args.type} for **${args.category}** to your **${wallet.name}** wallet.`;
-          return `I tried to add the transaction, but an error occurred: ${res.msg}`;
-          
-        } else if (call.name === 'transferMoney') {
-          if (!userId) return "I need you to be fully logged in before I can transfer money.";
-
-          const sourceWallet = walletsData.find(w => w.name.toLowerCase() === args.sourceWalletName?.toLowerCase());
-          const destWallet = walletsData.find(w => w.name.toLowerCase() === args.destWalletName?.toLowerCase());
-
-          if (!sourceWallet) return `I couldn't find a source wallet named "${args.sourceWalletName}".`;
-          if (!destWallet) return `I couldn't find a destination wallet named "${args.destWalletName}".`;
-
-          const res = await createTransfer(sourceWallet.id!, destWallet.id!, args.amount, userId, args.description);
-          if (res.success) return `🔄 I've successfully transferred ${currency}${args.amount} from **${sourceWallet.name}** to **${destWallet.name}**.`;
-          return `I tried to transfer the money, but an error occurred: ${res.msg}`;
-        }
-      }
-
-      if (responseMessage.content) {
-        return responseMessage.content;
-      } else {
-        throw new Error("No response generated from Groq fallback AI.");
-      }
-
-    } catch (fallbackError: any) {
-      console.error("Fallback AI Service Error:", fallbackError.message || fallbackError);
-      return "Our AI service is temporarily experiencing high demand. Please try again later.";
-    }
-  }
-};
 
 export const analyzeReceiptImage = async (base64Image: string) => {
   const prompt = `Analyze this image. First, determine if it is a receipt, invoice, or a piece of paper with clear financial transaction details (amount and merchant). If it is NOT a receipt (e.g. a picture of a laptop, a person, a random object), you MUST return {"isReceipt": false} and leave other fields empty/null.
@@ -298,94 +198,30 @@ export const analyzeReceiptImage = async (base64Image: string) => {
   }`;
 
   try {
-    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
-    if (!apiKey) throw new Error("API Key is missing in .env");
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (!apiUrl) throw new Error("API URL is missing in .env");
 
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: [
+    const res = await fetch(`${apiUrl}/ai-receipt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         prompt,
-        {
-          inlineData: {
-            data: base64Image,
-            mimeType: 'image/jpeg',
-          }
-        }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            isReceipt: { type: "BOOLEAN" },
-            amount: { type: "NUMBER" },
-            category: { type: "STRING" },
-            description: { type: "STRING" },
-          },
-          required: ["isReceipt"],
-        },
-      } as any
+        base64Image
+      })
     });
 
-    const responseText = response.text;
-    if (responseText) {
-      return JSON.parse(responseText as string);
+    const data = await res.json();
+    
+    if (data.error) {
+        throw new Error(data.error);
     }
-    throw new Error("Failed to parse receipt");
+    
+    return data;
   } catch (error: any) {
     if (error.message === "Network request failed" || error.message?.includes("Network request failed")) {
       return { error: "No internet connection. Please connect to Wi-Fi or cellular data and try again." };
     }
-
-    console.error("Primary Gemini 3.5 API Error:", error.message || error);
-    
-    // Fallback to Groq
-    try {
-      const groqApiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
-      if (!groqApiKey) {
-         if (!process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
-            return { error: "AI configuration is missing. Please set up your API keys." };
-         }
-         throw new Error("Groq API Key is missing");
-      }
-
-      console.error("Attempting fallback to Groq Llama 4 Scout...");
-      const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${groqApiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: prompt },
-                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
-              ]
-            }
-          ],
-          response_format: { type: "json_object" }
-        })
-      });
-
-      const groqData = await groqResponse.json();
-      
-      if (!groqResponse.ok || groqData.error) {
-        console.error("Groq API Error Detail:", JSON.stringify(groqData, null, 2));
-      }
-
-      if (groqData.choices && groqData.choices[0]?.message?.content) {
-        return JSON.parse(groqData.choices[0].message.content);
-      }
-      throw new Error("Failed to parse Groq response");
-    } catch (groqError: any) {
-      console.error("Fallback Error:", groqError.message || groqError);
-      return { error: "The AI is currently experiencing high demand. Please enter the details manually for now." };
-    }
+    console.error("Receipt Scanner Error:", error.message || error);
+    return { error: "The AI is currently experiencing high demand. Please enter the details manually for now." };
   }
 };

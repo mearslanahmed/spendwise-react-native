@@ -24,6 +24,23 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
             else if (fileType === 'webp') mimeType = "image/webp";
             else if (fileType === 'gif') mimeType = "image/gif";
 
+            // 1. Fetch Signature from Vercel Backend
+            const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+            if (!apiUrl) {
+                return { success: false, msg: "Backend API URL is not configured." };
+            }
+
+            const signatureRes = await axios.post(`${apiUrl}/generate-signature`, {
+                folder: folderName
+            });
+
+            const { signature, timestamp } = signatureRes.data;
+
+            const apiKey = process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY;
+            if (!apiKey) {
+                return { success: false, msg: "Missing EXPO_PUBLIC_CLOUDINARY_API_KEY in .env" };
+            }
+
             const formData = new FormData();
             formData.append("file",
             {
@@ -32,8 +49,11 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
                 name: file?.uri?.split('/')?.pop() || `file.${fileType || 'jpg'}`
             } as any);
 
-            formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+            // 2. Append Signature and necessary fields for signed upload (NO PRESET)
             formData.append("folder", folderName);
+            formData.append("api_key", apiKey);
+            formData.append("timestamp", timestamp.toString());
+            formData.append("signature", signature);
 
             const response = await axios.post(CLOUDINARY_API_URL, formData,{
                 headers: {
@@ -46,7 +66,13 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
 
         return{success: true, msg: "Image uploaded successfully"};
     }catch(error: any){
-        const msg = error instanceof Error ? error.message : "Failed to upload image";
+        console.log("IMAGE UPLOAD ERROR DETAILS:", error?.response?.data || error.message || error);
+        let msg = "Failed to upload image. Please check your internet connection and try again.";
+        
+        if (error?.response?.status === 401 || error?.response?.status === 400 || error.message?.includes('401') || error.message?.includes('500')) {
+            msg = "We're having trouble connecting to our secure image server. Please try again later.";
+        }
+
         return {success: false, msg};
     }
 }

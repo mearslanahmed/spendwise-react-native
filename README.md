@@ -1,209 +1,145 @@
-# SpendWise
+<div align="center">
+  <img src="assets/images/icon.png" alt="SpendWise Logo" width="120" />
+  
+  # SpendWise
+  **The definitive AI-powered personal finance tracker.**
+  
+  [![Website](https://img.shields.io/badge/Official_Website-spendwiseapp.tech-a3e635?style=for-the-badge)](https://spendwiseapp.tech)
+  [![React Native](https://img.shields.io/badge/React_Native-0.76.5-0ea5e9?style=for-the-badge&logo=react)](https://reactnative.dev/)
+  [![Expo](https://img.shields.io/badge/Expo-54.0.32-white?style=for-the-badge&logo=expo&logoColor=black)](https://expo.dev/)
+  [![Firebase](https://img.shields.io/badge/Firebase-12.6.0-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 
-SpendWise is a personal finance app for tracking income, expenses, and wallets in one place. It provides charts, transaction history, and profile management across Android & iOS.
-
-## Features
-
-- **User Authentication**: Secure email-based sign-up and login with Firebase Authentication
-- **Multi-Wallet Support**: Create and manage multiple wallets for different purposes (e.g., personal, savings, investments)
-- **Transaction Management**: Track income and expenses with detailed transaction history
-- **Statistics & Analytics**: Visualize spending patterns and financial insights with charts
-- **Profile Management**: Manage user profile with avatar upload capability
-- **Search Functionality**: Easily find transactions using the search modal (by category or description)
-- **Responsive Design**: Works seamlessly on Android & iOS
+  <p align="center">
+    SpendWise is a next-generation personal finance application built for Android and iOS. It combines robust expense tracking with cutting-edge Artificial Intelligence to automatically scan receipts and provide personalized financial advice.
+  </p>
+</div>
 
 ---
 
+## Features
+
+- **AI Receipt Scanner:** Simply snap a photo of a receipt. The AI (powered by Google Gemini and Groq) instantly extracts the merchant, total amount, and categorizes the transaction automatically.
+- **AI Financial Advisor:** Chat with a dedicated AI assistant directly in the app to get personalized budgeting advice and insights into spending habits.
+- **Advanced Analytics:** Interactive charts to visualize cash flow and spending trends over time.
+- **Multi-Wallet Architecture:** Segregate funds into different wallets (Checking, Savings, Crypto, Cash) and track transfers between them.
+- **Budget Tracking:** Create robust monthly budgets and easily view the remaining allowance per category.
+- **Subscription Management:** Keep track of active subscriptions to ensure no surprise charges.
+- **Dynamic Theming:** Seamless support for Light and Dark modes, heavily optimized for a gorgeous dark-mode experience.
+- **Push Notifications:** Configurable daily reminders to keep tracking habits consistent.
+- **CSV Export:** Instantly generate and share spreadsheet reports of financial history.
+- **Enterprise-Grade Security:** Fully secured by Firebase Authentication and strict Firestore security rules.
+
 ## Screenshots
 
-| Splash Screen | Registration | Home |
+| Dashboard | AI Receipt Scanner | Analytics |
 | :---: | :---: | :---: |
-| <img src="screenshots/01_splash_screen.png" width="250"> | <img src="screenshots/02_registration_screen.png" width="250"> | <img src="screenshots/07_home_screen.png" width="250"> |
+| <img src="screenshots/05_home.jpg" width="250"> | <img src="screenshots/18_analyzing_recipt.jpg" width="250"> | <img src="screenshots/06_analytics.jpg" width="250"> |
 
-| Profile | Wallets | New Transaction |
+| AI Financial Chat | Wallets | Settings |
 | :---: | :---: | :---: |
-| <img src="screenshots/04_profile_screen.png" width="250"> | <img src="screenshots/08_wallets_screen.png" width="250"> | <img src="screenshots/10_new_transaction_screen.png" width="250"> |
-
-| Update Transaction | Analytics | Search |
-| :---: | :---: | :---: |
-| <img src="screenshots/11_update_transaction_screen.png" width="250"> | <img src="screenshots/13_analytics_screen.png" width="250"> | <img src="screenshots/12_search_screen.png" width="250"> |
+| <img src="screenshots/07_ai.jpg" width="250"> | <img src="screenshots/09_wallet.jpg" width="250"> | <img src="screenshots/15_settings.jpg" width="250"> |
 
 ---
 
 ## Tech Stack
 
-### Frontend
-- **React Native 0.76.5** - Cross-platform mobile development
-- **Expo 54.0.32** - Managed React Native framework
-- **TypeScript** - Type-safe development
-- **Expo Router 6.0** - File-based routing system
-- **React Navigation 7.1** - Bottom tab navigation
+### Frontend & Mobile
+- **React Native (0.76.5)** with **Expo (54.0)** for cross-platform compilation.
+- **Expo Router (6.0)** for modern, file-based navigation.
+- **TypeScript** for strict type-safety across the entire codebase.
+- **React Native Gifted Charts** for data visualization.
 
-### UI & Styling
-- **React Native Screens** - Native stack navigation support
-- **Expo Linear Gradient** - Gradient support
-- **Phosphor Icons** - Icon library
-- **React Native Gifted Charts** - Data visualization
-- **React Native Element Dropdown** - Dropdown components
+### Backend & Cloud
+- **Firebase Authentication:** Handles secure user onboarding (Email/Password and Google SSO).
+- **Cloud Firestore:** Real-time NoSQL database for syncing transactions across devices instantly.
+- **Cloudinary:** Blazing-fast CDN for storing user avatars and highly compressed receipt images.
 
-### Backend & Storage
-- **Firebase 12.6.0** - Backend services
-  - **Firebase Authentication** - User authentication and session management
-  - **Firestore** - Real-time database for storing user data, wallets, and transactions
-- **Cloudinary** - Cloud image storage and management
-  - Image uploads for profile avatars, Wallet Image, Receipt Image
-  - Automatic image optimization and CDN delivery
+### Artificial Intelligence
+- **Google Gemini API:** Primary intelligence engine for processing images and chat logic.
+- **Groq API:** Ultra-low latency fallback system for text generation.
 
-### Utilities
-- **Axios 1.13** - HTTP client for API requests
-- **Async Storage** - Local data persistence
-- **React Native Date Time Picker** - Date/time selection
-
-```
+---
 
 ## Getting Started
 
 ### Prerequisites
-
-- **Node.js** (v18 or higher)
-- **npm** or **yarn**
-- **Java Development Kit (JDK 21)** for Android development
-- **Android SDK** with API level 24 or higher
-- **Git**
+- Node.js (v18 or higher)
+- Java Development Kit (JDK 21)
+- Android Studio (for local compilation) or an Expo Go client.
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/mearslanahmed/SpendWise.git
 cd SpendWise
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
-Create a `.env` file in the root directory with your Firebase configuration if not already included.
-
-### Running the App
-
-#### Development Mode (Web)
-```bash
-npm start
-# Then press 'w' to open in web browser
-```
-
-#### Android
-```bash
-# For running on Android device/emulator
-npm run android
-# or
-npx expo run:android
-```
-
-#### iOS
-```bash
-# For running on iOS simulator/device
-npm run ios
-# or
-npx expo run:ios
-```
-
-## Available Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm start` | Start the Expo development server |
-| `npm run android` | Build and run on Android |
-| `npm run ios` | Build and run on iOS |
-| `npm run web` | Run on web browser |
-| `npm run lint` | Run ESLint to check code quality |
-| `npm run reset-project` | Reset project to initial state |
-
-## Authentication
-
-SpendWise uses Firebase Authentication for secure user management:
-
-- Users can create new accounts with email and password
-- Passwords are securely stored and managed by Firebase
-- Authentication state persists using AsyncStorage
-- Session management is automatic
-
-## Data Management
-
-All user data is stored in Firebase Firestore:
-
-- **Users Collection**: Stores user profiles and preferences
-- **Wallets Collection**: Manages wallet information
-- **Transactions Collection**: Records all income and expense transactions
-
-## Image Storage (Cloudinary)
-
-Profile images and avatars are stored on Cloudinary with the following setup:
-
-- **Cloud Name**: `your_cloud_name`
-- **Upload Preset**: `your_upload_preset`
-- **Folder**: Images organized by user type (e.g., `users/` folder)
-- **Features**: Automatic optimization, CDN delivery, responsive image formats
-
-### Cloudinary Configuration
-
-Add the following to your constants folder or create a`.env` file if you want to use different Cloudinary credentials:
+3. **Configure Environment Variables:**
+Create a `.env` file in the root directory and populate it with the specific API keys:
 ```env
+EXPO_PUBLIC_FIREBASE_API_KEY=your_key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_bucket
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_id
+EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
+EXPO_PUBLIC_API_URL=https://spendwiseapp.tech/api
 EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
-EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
+EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_preset
 ```
 
-The image upload is handled in [services/imageService.ts](services/imageService.ts) and used throughout the app for profile management.
-
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Create a new branch for your feature
-2. Make your changes
-3. Run the linter: `npm run lint`
-4. Commit with descriptive messages
-5. Push and create a pull request
-
-## Supported Platforms
-
-- **Android** 7.0 (API 24) and above
-- **iOS** 13.0 and above
-- **Web** (via Expo Web)
-
-## Troubleshooting
-
-### Android Build Issues
-- Clear gradle cache: `cd android && ./gradlew clean && cd ..`
-- Ensure JAVA_HOME and ANDROID_HOME are set correctly
-- Check NDK version compatibility
-
-### Dependencies Issues
-- Clear node_modules: `rm -r node_modules && npm install`
-- Clear cache: `npm cache clean --force`
-
-### Firebase Connection Issues
-- Verify Firebase configuration in `config/firebase.ts`
-- Check internet connection
-- Ensure Firebase project is properly set up
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Author
-
-Created by Arslan Ahmed
-Developed by: Arslan Ahmed - [arslanahmednaseem@gmail.com](mailto:arslanahmednaseem@gmail.com)  
-
-## Support
-
-For issues or questions, please create an issue in the repository or contact the development team.
+4. **Run the Application:**
+```bash
+npx expo start
+```
 
 ---
 
-**Happy spending wisely! 💰**
+## Building for Production
+
+### Android (APK / AAB)
+To generate a standalone APK for Android, ensure the Android SDK is configured, then run:
+```bash
+cd android
+./gradlew assembleRelease
+```
+*(The final .apk will be output to android/app/build/outputs/apk/release/)*
+
+To build for the Google Play Store (AAB):
+```bash
+./gradlew bundleRelease
+```
+
+### iOS (IPA)
+To build for iOS, a macOS machine with Xcode installed is required:
+```bash
+npx expo run:ios --configuration Release
+```
+
+*(Alternatively, build both platforms entirely in the cloud using Expo EAS: `eas build --profile production`)*
+
+---
+
+## Official Website
+The official Next.js marketing and backend website for SpendWise is available at: 
+**[https://spendwiseapp.tech](https://spendwiseapp.tech)**
+
+## Developer & Contact
+
+**Arslan Ahmed**
+- Business & Freelance Inquiries: [arslanahmednaseem@gmail.com](mailto:arslanahmednaseem@gmail.com)
+- App Support: [spendwiseoffical@gmail.com](mailto:spendwiseoffical@gmail.com)
+- GitHub: [@mearslanahmed](https://github.com/mearslanahmed)
+
+## Legal
+
+SpendWise is a proprietary application. By downloading, accessing, or running this software, you agree to the Terms of Service and Privacy Policy.
+
+- View the [LICENSE](LICENSE) file for distribution rights.
+- The official web-hosted legal documents can be found at [spendwiseapp.tech/privacy](https://spendwiseapp.tech/privacy) and [spendwiseapp.tech/terms](https://spendwiseapp.tech/terms).
