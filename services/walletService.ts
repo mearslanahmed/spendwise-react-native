@@ -3,6 +3,13 @@ import { uploadFileToCloudinary } from "./imageService";
 import { collection, deleteDoc, doc, getDocs, limit, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { firestore } from "@/config/firebase";
 
+/**
+ * Creates a new wallet or updates an existing one in Firestore.
+ * If an image is provided, it handles the upload to Cloudinary before saving the wallet record.
+ * 
+ * @param {Partial<WalletType>} walletData - The payload containing the wallet details (name, image, icon, uid).
+ * @returns {Promise<ResponseType>} A success object containing the finalized wallet data.
+ */
 export const CreateOrUpdateWallet = async (
     walletData: Partial<WalletType>,
 ): Promise<ResponseType> => {
@@ -47,6 +54,13 @@ export const CreateOrUpdateWallet = async (
     }
 }
 
+/**
+ * Deletes a wallet from Firestore.
+ * Automatically triggers the batch deletion of all transactions associated with this wallet.
+ * 
+ * @param {string} walletId - The unique ID of the wallet to delete.
+ * @returns {Promise<ResponseType>} A success indicator and message.
+ */
 export const deleteWallet = async (walletId: string): Promise<ResponseType> => {
     try{
         const walletRef = doc(firestore, "wallets", walletId);
@@ -69,6 +83,13 @@ export const deleteWallet = async (walletId: string): Promise<ResponseType> => {
 
 const BATCH_LIMIT = 450; // Firestore hard limit is 500; leave headroom
 
+/**
+ * Batch deletes all transactions associated with a specific wallet.
+ * Uses pagination to safely delete records without exceeding Firestore's batch limits.
+ * 
+ * @param {string} walletId - The ID of the wallet whose transactions should be deleted.
+ * @returns {Promise<ResponseType>} A success indicator and message.
+ */
 export const deleteTransactionByWalletId = async (walletId: string): Promise<ResponseType> => {
     try{
         let hasMoreTransaction = true;

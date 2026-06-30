@@ -2,6 +2,19 @@ import { TransactionType, SubscriptionType, WalletType, Message } from '@/types'
 import { createOrUpdateTransaction, createTransfer } from '@/services/transactionService';
 import { resolveDate } from '@/utils/dateHelper';
 
+/**
+ * Communicates with the external Next.js AI API to provide personalized financial advice.
+ * It passes the user's current wallets, recent transactions, and subscriptions as context to the AI,
+ * allowing the AI to call tools (like creating transactions or transfers) on the user's behalf.
+ * 
+ * @param {Message[]} messages - The chat history of the conversation.
+ * @param {WalletType[]} walletsData - The user's currently active wallets.
+ * @param {TransactionType[]} recentTransactions - The user's 20 most recent transactions to provide spending context.
+ * @param {SubscriptionType[]} activeSubscriptions - The user's recurring expenses.
+ * @param {string} currency - The user's preferred currency symbol.
+ * @param {string} [userId] - The authenticated user's ID to authorize tool calls.
+ * @returns {Promise<string>} The response message from the AI, or a tool execution result.
+ */
 export const getFinancialAdvice = async (
   messages: Message[],
   walletsData: WalletType[],
@@ -186,6 +199,13 @@ const executeFunctionCall = async (name: string, args: any, walletsData: WalletT
 }
 
 
+/**
+ * Sends a base64 encoded image to the Next.js AI API for automated receipt extraction.
+ * The AI analyzes the image and returns structured JSON (amount, category, merchant name).
+ * 
+ * @param {string} base64Image - The raw base64 encoded string of the receipt image.
+ * @returns {Promise<any>} A JSON object containing `isReceipt`, `amount`, `category`, and `description`.
+ */
 export const analyzeReceiptImage = async (base64Image: string) => {
   const prompt = `Analyze this image. First, determine if it is a receipt, invoice, or a piece of paper with clear financial transaction details (amount and merchant). If it is NOT a receipt (e.g. a picture of a laptop, a person, a random object), you MUST return {"isReceipt": false} and leave other fields empty/null.
   If it IS a receipt, extract the total amount as a number, suggest an expense category, and extract the merchant name as a short description.

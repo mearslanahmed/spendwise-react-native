@@ -25,6 +25,18 @@ import { scale } from "@/utils/styling";
 import { colors } from "@/constants/theme";
 import { resolveDate } from "@/utils/dateHelper";
 
+/**
+ * Creates a transfer transaction between two wallets. 
+ * This involves deducting from the source wallet and adding to the destination wallet.
+ * It also logs two transaction entries (one expense, one income) to track the transfer accurately.
+ * 
+ * @param {string} sourceWalletId - The ID of the wallet the money is coming from.
+ * @param {string} destWalletId - The ID of the wallet receiving the money.
+ * @param {number} amount - The amount to transfer. Must be greater than 0.
+ * @param {string} uid - The unique Firebase user ID performing the transfer.
+ * @param {string} [note] - An optional description of the transfer.
+ * @returns {Promise<ResponseType>} A success boolean and an optional error message if failed.
+ */
 export const createTransfer = async (
   sourceWalletId: string,
   destWalletId: string,
@@ -105,6 +117,13 @@ export const createTransfer = async (
   }
 };
 
+/**
+ * Creates a new financial transaction (income or expense) or updates an existing one.
+ * It handles the atomic recalculation of wallet balances and optionally uploads receipt images to Cloudinary.
+ * 
+ * @param {Partial<TransactionType>} transactionData - The payload containing amount, type, category, and walletId.
+ * @returns {Promise<ResponseType>} A success response containing the finalized transaction data.
+ */
 export const createOrUpdateTransaction = async (
   transactionData: Partial<TransactionType>
 ): Promise<ResponseType> => {
@@ -330,6 +349,13 @@ const revertAndUpdateWallets = async (
   }
 };
 
+/**
+ * Deletes a transaction and automatically reverts the impact of the transaction on the associated wallet's balance.
+ * 
+ * @param {string} transactionId - The ID of the transaction to delete.
+ * @param {string} walletId - The ID of the wallet the transaction belongs to.
+ * @returns {Promise<{success: boolean, msg?: string}>} Success indicator and optional error message.
+ */
 export const deleteTransaction = async (
   transactionId: string,
   walletId: string
