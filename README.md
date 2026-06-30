@@ -126,11 +126,14 @@ npx expo run:ios --configuration Release
 
 ---
 
-## Official Website & Backend Repository
-The official Next.js marketing and backend website for SpendWise is available at: 
-**[https://spendwiseapp.tech](https://spendwiseapp.tech)**
+## Official Website & Backend API Repository
+While Firebase handles database syncing and authentication, **the Artificial Intelligence features of this mobile app are powered by our custom Next.js backend API.** 
 
-You can view the source code for the Next.js backend and website in its dedicated repository:
+The Next.js web repository serves dual purposes:
+1. It hosts the gorgeous marketing landing page at **[https://spendwiseapp.tech](https://spendwiseapp.tech)**
+2. It hosts the secure backend API route (`/api/ai-receipt`) that the mobile app communicates with to process receipts through Google Gemini and Groq without exposing API keys.
+
+You can view the source code for the Next.js backend API and website in its dedicated repository:
 **[GitHub: spendwise-web](https://github.com/mearslanahmed/spendwise-web)**
 
 ## Developer & Contact
