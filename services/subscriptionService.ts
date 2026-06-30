@@ -1,6 +1,8 @@
 import { firestore } from "@/config/firebase";
 import { ResponseType, SubscriptionType, TransactionType, WalletType } from "@/types";
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, Timestamp, updateDoc, where, runTransaction } from "firebase/firestore";
+import { scheduleLocalNotification } from "./expoNotificationService";
+import { resolveDate } from "@/utils/dateHelper";
 
 export const createSubscription = async (sub: Omit<SubscriptionType, "id">): Promise<ResponseType> => {
   try {
@@ -48,6 +50,7 @@ export const calculateNextBillingDate = (date: Date, frequency: "weekly" | "mont
 export const checkAndProcessSubscriptions = async (uid: string) => {
   try {
     const userDoc = await getDoc(doc(firestore, "users", uid));
+    const pushEnabled = userDoc.exists() ? userDoc.data()?.pushNotificationsEnabled : false;
     const currency = userDoc.exists() ? userDoc.data()?.currency || "$" : "$";
 
     const q = query(collection(firestore, "subscriptions"), where("uid", "==", uid), where("autoDeduct", "==", true));
@@ -56,113 +59,138 @@ export const checkAndProcessSubscriptions = async (uid: string) => {
     if (snapshot.empty) return;
 
     const now = new Date();
-    const batch = writeBatch(firestore);
-    let processedCount = 0;
 
     for (const docSnap of snapshot.docs) {
-      const sub = { id: docSnap.id, ...docSnap.data() } as SubscriptionType;
-      
-      const nextBilling = (sub.nextBillingDate as any)?.toDate ? (sub.nextBillingDate as any).toDate() : new Date(sub.nextBillingDate as string);
-      const lastNotified = sub.lastNotified && (sub.lastNotified as any).toDate ? (sub.lastNotified as any).toDate() : null;
-      const isNotifiedToday = lastNotified && lastNotified.toDateString() === now.toDateString();
+      const subId = docSnap.id;
+      const subRef = doc(firestore, "subscriptions", subId);
 
-      // If billing date has passed or is today
-      if (nextBilling.getTime() <= now.getTime()) {
-        const walletRef = doc(firestore, "wallets", sub.walletId);
-        const walletSnap = await getDoc(walletRef);
+      await runTransaction(firestore, async (transaction) => {
+        const currentSubSnap = await transaction.get(subRef);
+        if (!currentSubSnap.exists()) return;
         
-        if (walletSnap.exists()) {
-          const walletData = walletSnap.data() as WalletType;
-          if ((walletData.amount || 0) < sub.amount) {
-            // Insufficient funds: Don't deduct.
-            // To avoid spamming every time the app opens, check if we already notified today.
-            
-            if (!isNotifiedToday) {
-              const notifRef = doc(collection(firestore, "notifications"));
-              batch.set(notifRef, {
-                uid: uid,
-                title: "Subscription Failed",
-                message: `Insufficient funds in wallet for ${sub.name}. Please transfer money to avoid bounced transactions.`,
-                createdAt: Timestamp.fromDate(now),
-                read: false,
-                type: "subscription"
-              });
+        const sub = currentSubSnap.data() as SubscriptionType;
+        const nextBilling = resolveDate(sub.nextBillingDate);
+        const lastNotified = sub.lastNotified ? resolveDate(sub.lastNotified) : null;
+        const isNotifiedToday = lastNotified && lastNotified.toDateString() === now.toDateString();
 
-              // Mark that we notified them today
-              batch.update(doc(firestore, "subscriptions", sub.id!), {
-                lastNotified: Timestamp.fromDate(now),
-              });
-              processedCount++;
-            }
-          } else {
-            // 1. Create Transaction
-            const txRef = doc(collection(firestore, "transactions"));
-            batch.set(txRef, {
-              type: "expense",
-              category: sub.category,
-              amount: sub.amount,
-              walletId: sub.walletId,
-              uid: uid,
-              date: Timestamp.fromDate(now),
-              description: `Auto-deducted subscription: ${sub.name}`,
-            });
-
-            // 2. Update Wallet
-            batch.update(walletRef, {
-              amount: (walletData.amount || 0) - sub.amount,
-              totalExpense: (walletData.totalExpense || 0) + sub.amount,
-            });
-
-            // 3. Update Subscription nextBillingDate
-            const nextDate = calculateNextBillingDate(nextBilling, sub.frequency);
-            batch.update(doc(firestore, "subscriptions", sub.id!), {
-              nextBillingDate: Timestamp.fromDate(nextDate),
-              lastNotified: null, // reset
-            });
-
-            // 4. Create Notification
+        // If another process already advanced the billing date beyond today, skip.
+        if (nextBilling.getTime() > now.getTime()) {
+          // Check if billing date is exactly tomorrow (within 1 day) for the reminder.
+          const timeDiff = nextBilling.getTime() - now.getTime();
+          const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff === 1 && !isNotifiedToday) {
             const notifRef = doc(collection(firestore, "notifications"));
-            batch.set(notifRef, {
+            transaction.set(notifRef, {
               uid: uid,
-              title: "Subscription Processed",
-              message: `Your ${sub.frequency} subscription for ${sub.name} was successfully paid.`,
+              title: "Upcoming Bill Reminder",
+              message: `Your ${sub.name} subscription (${currency}${sub.amount.toFixed(2)}) is due tomorrow. Make sure your wallet has enough funds!`,
+              createdAt: Timestamp.fromDate(now),
+              read: false,
+              type: "reminder"
+            });
+
+            transaction.update(subRef, {
+              lastNotified: Timestamp.fromDate(now),
+            });
+
+            if (pushEnabled) {
+              scheduleLocalNotification("Upcoming Bill 📅", `Your ${sub.name} subscription is due tomorrow.`);
+            }
+          }
+          return;
+        }
+
+        const walletRef = doc(firestore, "wallets", sub.walletId);
+        const walletSnap = await transaction.get(walletRef);
+        
+        if (!walletSnap.exists()) return; // Wallet was deleted, nothing to deduct from
+        
+        const walletData = walletSnap.data() as WalletType;
+        
+        let currentWalletAmount = walletData.amount || 0;
+        let currentTotalExpense = walletData.totalExpense || 0;
+        let processingDate = new Date(nextBilling);
+        let processedCount = 0;
+        let insufficientFunds = false;
+
+        // Process all missed cycles
+        while (processingDate.getTime() <= now.getTime()) {
+          if (currentWalletAmount < sub.amount) {
+            insufficientFunds = true;
+            break;
+          }
+
+          // 1. Create Transaction for this cycle
+          const txRef = doc(collection(firestore, "transactions"));
+          transaction.set(txRef, {
+            type: "expense",
+            category: sub.category,
+            amount: sub.amount,
+            walletId: sub.walletId,
+            uid: uid,
+            date: Timestamp.fromDate(processingDate),
+            description: `Auto-deducted subscription: ${sub.name}`,
+          });
+
+          currentWalletAmount -= sub.amount;
+          currentTotalExpense += sub.amount;
+          processedCount++;
+
+          // Advance to next billing date
+          processingDate = calculateNextBillingDate(processingDate, sub.frequency);
+        }
+
+        if (insufficientFunds) {
+          // Insufficient funds
+          if (!isNotifiedToday) {
+            const notifRef = doc(collection(firestore, "notifications"));
+            transaction.set(notifRef, {
+              uid: uid,
+              title: "Subscription Failed",
+              message: `Insufficient funds in wallet for ${sub.name}. Please transfer money to avoid bounced transactions.`,
               createdAt: Timestamp.fromDate(now),
               read: false,
               type: "subscription"
             });
+            
+            transaction.update(subRef, {
+              lastNotified: Timestamp.fromDate(now),
+            });
 
-            processedCount++;
+            if (pushEnabled) {
+              scheduleLocalNotification("Subscription Failed 💳", `Insufficient funds for ${sub.name}.`);
+            }
           }
-        }
-      } 
-      // If billing date is tomorrow (within 24-48 hours ideally, but let's just check if it's <= 1 day away)
-      else {
-        const timeDiff = nextBilling.getTime() - now.getTime();
-        const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-        
-        if (daysDiff === 1 && !isNotifiedToday) {
+        } else if (processedCount > 0) {
+          // 2. Update Wallet
+          transaction.update(walletRef, {
+            amount: currentWalletAmount,
+            totalExpense: currentTotalExpense,
+          });
+
+          // 3. Update Subscription nextBillingDate
+          transaction.update(subRef, {
+            nextBillingDate: Timestamp.fromDate(processingDate),
+            lastNotified: null, // reset
+          });
+
+          // 4. Create Notification
           const notifRef = doc(collection(firestore, "notifications"));
-          batch.set(notifRef, {
+          transaction.set(notifRef, {
             uid: uid,
-            title: "Upcoming Bill Reminder",
-            message: `Your ${sub.name} subscription (${currency}${sub.amount.toFixed(2)}) is due tomorrow. Make sure your wallet has enough funds!`,
+            title: "Subscription Processed",
+            message: `Your ${sub.frequency} subscription for ${sub.name} was successfully paid${processedCount > 1 ? ` (${processedCount} cycles)` : ''}.`,
             createdAt: Timestamp.fromDate(now),
             read: false,
-            type: "reminder"
+            type: "subscription"
           });
 
-          // Mark that we notified them today
-          batch.update(doc(firestore, "subscriptions", sub.id!), {
-            lastNotified: Timestamp.fromDate(now),
-          });
-          processedCount++;
+          if (pushEnabled) {
+            scheduleLocalNotification("Subscription Processed ✅", `Successfully paid ${sub.name}.`);
+          }
         }
-      }
-    }
-
-    if (processedCount > 0) {
-      await batch.commit();
-      console.log(`Successfully processed ${processedCount} due subscriptions.`);
+      });
     }
 
   } catch (error) {

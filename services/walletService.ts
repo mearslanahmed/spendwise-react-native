@@ -1,6 +1,6 @@
 import { ResponseType, WalletType } from "@/types";
 import { uploadFileToCloudinary } from "./imageService";
-import { collection, deleteDoc, doc, getDocs, query, setDoc, where, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, limit, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { firestore } from "@/config/firebase";
 
 export const CreateOrUpdateWallet = async (
@@ -52,7 +52,12 @@ export const deleteWallet = async (walletId: string): Promise<ResponseType> => {
         const walletRef = doc(firestore, "wallets", walletId);
         await deleteDoc(walletRef);
 
-        deleteTransactionByWalletId(walletId);
+        // Must be awaited — otherwise transactions become permanent orphans if this fails
+        const txDeleteResult = await deleteTransactionByWalletId(walletId);
+        if (!txDeleteResult.success) {
+            // Wallet is already deleted; log the error but do not block the user
+            console.error("deleteWallet: wallet removed but failed to delete its transactions:", txDeleteResult.msg);
+        }
         
         return {success: true, msg: "Wallet deleted successfully"};
     }
@@ -62,6 +67,8 @@ export const deleteWallet = async (walletId: string): Promise<ResponseType> => {
     }
 }
 
+const BATCH_LIMIT = 450; // Firestore hard limit is 500; leave headroom
+
 export const deleteTransactionByWalletId = async (walletId: string): Promise<ResponseType> => {
     try{
         let hasMoreTransaction = true;
@@ -69,7 +76,8 @@ export const deleteTransactionByWalletId = async (walletId: string): Promise<Res
         while(hasMoreTransaction){
             const transactionQuery = query(
                 collection(firestore, "transactions"),
-                where("walletId", "==", walletId)
+                where("walletId", "==", walletId),
+                limit(BATCH_LIMIT)
             );
 
             const transactionSnapshot = await getDocs(transactionQuery);
@@ -86,6 +94,10 @@ export const deleteTransactionByWalletId = async (walletId: string): Promise<Res
 
             await batch.commit();
 
+            // If fewer docs than limit were returned, this was the last page
+            if (transactionSnapshot.size < BATCH_LIMIT) {
+                hasMoreTransaction = false;
+            }
         }
         
         return {success: true, msg: "All transaction deleted successfully!"};
@@ -94,4 +106,4 @@ export const deleteTransactionByWalletId = async (walletId: string): Promise<Res
         const msg = error instanceof Error ? error.message : "Failed to delete transactions";
         return {success: false, msg};
     }
-}
+}

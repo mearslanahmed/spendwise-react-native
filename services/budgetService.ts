@@ -55,7 +55,7 @@ export const fetchUserBudgets = async (uid: string): Promise<BudgetType[]> => {
     });
     return budgets;
   } catch (error) {
-    console.log("Error fetching user budgets:", error);
+    console.error("Error fetching user budgets:", error);
     return [];
   }
 };
@@ -87,7 +87,7 @@ export const fetchCategorySpentThisMonth = async (
 
     return snapshot.data().totalSpent || 0;
   } catch (error) {
-    console.log("Error fetching category spent amount this month:", error);
+    console.error("Error fetching category spent amount this month:", error);
     return 0;
   }
 };

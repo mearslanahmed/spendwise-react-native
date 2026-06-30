@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { TransactionType, SubscriptionType, WalletType, Message } from '@/types';
 import { createOrUpdateTransaction, createTransfer } from '@/services/transactionService';
+import { resolveDate } from '@/utils/dateHelper';
 
 export const getFinancialAdvice = async (
   messages: Message[],
@@ -16,7 +17,7 @@ export const getFinancialAdvice = async (
 
   // Format Recent Transactions (Last 20 max to save tokens)
   const recentTxns = recentTransactions.slice(0, 20).map(t => 
-    `- ${t.type === 'expense' ? 'Spent' : 'Received'} ${currency}${t.amount} for ${t.category} on ${new Date((t.date as any)?.toDate ? (t.date as any).toDate() : t.date).toLocaleDateString()}`
+    `- ${t.type === 'expense' ? 'Spent' : 'Received'} ${currency}${t.amount} for ${t.category} on ${resolveDate(t.date).toLocaleDateString()}`
   ).join('\n');
 
   // Format Subscriptions
@@ -173,14 +174,19 @@ ${subscriptions || 'No active subscriptions'}
     }
 
   } catch (error: any) {
-    console.log("Primary Gemini 3.5 API Error in Chat:", error.message || error);
+    console.error("Primary Gemini 3.5 API Error in Chat:", error.message || error);
 
     // Fallback to Groq
     try {
       const groqApiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
-      if (!groqApiKey) throw new Error("Groq API Key is missing");
+      if (!groqApiKey) {
+        if (!process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
+           return "AI configuration is missing. Please set up your API keys to use this feature.";
+        }
+        throw new Error("Groq API Key is missing");
+      }
 
-      console.log("Attempting fallback to Groq Llama 4 Scout for Chat...");
+      console.error("Attempting fallback to Groq Llama 4 Scout for Chat...");
       
       // Convert messages to OpenAI format for Groq
       const groqMessages = [
@@ -297,9 +303,6 @@ export const analyzeReceiptImage = async (base64Image: string) => {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    // TEMPORARY TEST: Force Gemini to fail to test Meta Llama on Groq!
-    throw new Error("Simulating 503 High Demand to test Meta Llama");
-
     const response = await ai.models.generateContent({
       model: 'gemini-3.5-flash',
       contents: [
@@ -336,14 +339,19 @@ export const analyzeReceiptImage = async (base64Image: string) => {
       return { error: "No internet connection. Please connect to Wi-Fi or cellular data and try again." };
     }
 
-    console.log("Primary Gemini 3.5 API Error:", error.message || error);
+    console.error("Primary Gemini 3.5 API Error:", error.message || error);
     
     // Fallback to Groq
     try {
       const groqApiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY || '';
-      if (!groqApiKey) throw new Error("Groq API Key is missing");
+      if (!groqApiKey) {
+         if (!process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
+            return { error: "AI configuration is missing. Please set up your API keys." };
+         }
+         throw new Error("Groq API Key is missing");
+      }
 
-      console.log("Attempting fallback to Groq Llama 4 Scout...");
+      console.error("Attempting fallback to Groq Llama 4 Scout...");
       const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -376,7 +384,7 @@ export const analyzeReceiptImage = async (base64Image: string) => {
       }
       throw new Error("Failed to parse Groq response");
     } catch (groqError: any) {
-      console.log("Fallback Error:", groqError.message || groqError);
+      console.error("Fallback Error:", groqError.message || groqError);
       return { error: "The AI is currently experiencing high demand. Please enter the details manually for now." };
     }
   }

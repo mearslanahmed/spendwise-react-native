@@ -11,14 +11,26 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
             return {success: true, data: file};
         }
 
+        // Guard: fail clearly if env vars are missing rather than uploading to wrong account
+        if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+            return { success: false, msg: "Image upload is not configured. Please contact support." };
+        }
+
         if(file && file.uri){
+            const uriParts = file.uri.split('.');
+            const fileType = uriParts[uriParts.length - 1];
+            let mimeType = "image/jpeg";
+            if (fileType === 'png') mimeType = "image/png";
+            else if (fileType === 'webp') mimeType = "image/webp";
+            else if (fileType === 'gif') mimeType = "image/gif";
+
             const formData = new FormData();
             formData.append("file",
             {
                 uri: file?.uri,
-                type: "image/jpeg",
-                name: file?.uri?.split('/')?.pop() || "file.jpg"
-                } as any);
+                type: mimeType,
+                name: file?.uri?.split('/')?.pop() || `file.${fileType || 'jpg'}`
+            } as any);
 
             formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
             formData.append("folder", folderName);
@@ -39,6 +51,7 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
     }
 }
 
+
 export const getProfileImage = (file: any) => {
     // If it's already a string URL, return it
     if (typeof file === 'string' && file) return file;
@@ -55,20 +68,4 @@ export const getProfileImage = (file: any) => {
 
     // Fallback to local default avatar
     return require('../assets/images/defaultAvatar.png');
-};
-
-export const getProfilePath = (file: any) => {
-    if (typeof file === 'string' && file) return file;
-
-    // Check for uri (image picker result)
-    if (file && typeof file === 'object' && 'uri' in file && file.uri) {
-        return file.uri;
-    }
-
-    // Check for url (uploaded/stored images)
-    if (file && typeof file === 'object' && 'url' in file && file.url) {
-        return (file as { url: string }).url;
-    }
-
-    return null;
-};
+};

@@ -1,6 +1,6 @@
 import { firestore } from "@/config/firebase";
 import { ResponseType, UserDataType } from "@/types";
-import { doc, updateDoc, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where, getDocs, writeBatch, limit } from "firebase/firestore";
 import { uploadFileToCloudinary } from "./imageService";
 
 export const updateUser = async (
@@ -34,40 +34,39 @@ export const updateUser = async (
   }
 };
 
+// Deletes all documents matching a query in safe batches of 450 (Firestore limit is 500)
+const deleteCollectionWhere = async (collectionName: string, uid: string): Promise<void> => {
+  const BATCH_LIMIT = 450;
+  let hasMore = true;
+  while (hasMore) {
+    const q = query(
+      collection(firestore, collectionName),
+      where("uid", "==", uid),
+      limit(BATCH_LIMIT)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) { hasMore = false; break; }
+    const batch = writeBatch(firestore);
+    snap.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    if (snap.size < BATCH_LIMIT) hasMore = false;
+  }
+};
+
 export const deleteUserAccountData = async (uid: string): Promise<ResponseType> => {
   try {
-    const batch = writeBatch(firestore);
+    // Delete all user-owned collections in parallel for speed
+    await Promise.all([
+      deleteCollectionWhere("transactions", uid),
+      deleteCollectionWhere("wallets", uid),
+      deleteCollectionWhere("budgets", uid),
+      deleteCollectionWhere("subscriptions", uid),
+      deleteCollectionWhere("notifications", uid),
+    ]);
 
-    // 1. Delete all transactions of the user
-    const transactionsRef = collection(firestore, "transactions");
-    const transactionsQuery = query(transactionsRef, where("uid", "==", uid));
-    const transactionDocs = await getDocs(transactionsQuery);
-    transactionDocs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
+    // Finally delete the user document itself
+    await writeBatch(firestore).delete(doc(firestore, "users", uid)).commit();
 
-    // 2. Delete all wallets of the user
-    const walletsRef = collection(firestore, "wallets");
-    const walletsQuery = query(walletsRef, where("uid", "==", uid));
-    const walletDocs = await getDocs(walletsQuery);
-    walletDocs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    // 3. Delete all budgets of the user
-    const budgetsRef = collection(firestore, "budgets");
-    const budgetsQuery = query(budgetsRef, where("uid", "==", uid));
-    const budgetDocs = await getDocs(budgetsQuery);
-    budgetDocs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    // 4. Delete user document from Firestore
-    const userRef = doc(firestore, "users", uid);
-    batch.delete(userRef);
-
-    // Commit batch
-    await batch.commit();
     return { success: true, msg: "User account data deleted successfully" };
   } catch (error: any) {
     return { 
@@ -79,34 +78,15 @@ export const deleteUserAccountData = async (uid: string): Promise<ResponseType> 
 
 export const resetUserAccountData = async (uid: string): Promise<ResponseType> => {
   try {
-    const batch = writeBatch(firestore);
+    // Reset = delete financial data but keep the user document (profile, settings)
+    await Promise.all([
+      deleteCollectionWhere("transactions", uid),
+      deleteCollectionWhere("wallets", uid),
+      deleteCollectionWhere("budgets", uid),
+      deleteCollectionWhere("subscriptions", uid),
+      deleteCollectionWhere("notifications", uid),
+    ]);
 
-    // 1. Delete all transactions of the user
-    const transactionsRef = collection(firestore, "transactions");
-    const transactionsQuery = query(transactionsRef, where("uid", "==", uid));
-    const transactionDocs = await getDocs(transactionsQuery);
-    transactionDocs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    // 2. Delete all wallets of the user
-    const walletsRef = collection(firestore, "wallets");
-    const walletsQuery = query(walletsRef, where("uid", "==", uid));
-    const walletDocs = await getDocs(walletsQuery);
-    walletDocs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    // 3. Delete all budgets of the user
-    const budgetsRef = collection(firestore, "budgets");
-    const budgetsQuery = query(budgetsRef, where("uid", "==", uid));
-    const budgetDocs = await getDocs(budgetsQuery);
-    budgetDocs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    // Commit batch
-    await batch.commit();
     return { success: true, msg: "App data reset successfully" };
   } catch (error: any) {
     return { 
