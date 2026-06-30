@@ -7,18 +7,17 @@
     "icon": "./assets/images/icon.png",
     "scheme": "spendwise",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#262626",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.mearslanahmed.SpendWise"
+      "package": "com.mearslanahmed.SpendWise",
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -38,11 +37,17 @@
           }
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin/app.plugin.js",
+      "expo-notifications"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c6fd233d-1781-4b10-b619-f7fda943eac3"
+      }
     }
   }
 }
