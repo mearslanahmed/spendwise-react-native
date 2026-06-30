@@ -1,4 +1,4 @@
-import { StyleSheet, View, Pressable, ActivityIndicator, TouchableOpacity, Linking, Platform } from "react-native";
+import { StyleSheet, View, ActivityIndicator, TouchableOpacity, Linking, Platform } from "react-native";
 import React, { useState, useEffect } from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import Typo from "@/components/Typo";
@@ -66,7 +66,7 @@ const VerifyEmail = () => {
         false
       )
     );
-  }, []);
+  }, [ring1Opacity, ring1Scale, ring2Opacity, ring2Scale]);
 
   // Animated Styles
   const animatedRing1 = useAnimatedStyle(() => ({
@@ -127,7 +127,7 @@ const VerifyEmail = () => {
     return () => {
       if (checkInterval) clearInterval(checkInterval);
     };
-  }, []);
+  }, [router, setUser, user?.name]);
 
   const handleOpenEmailApp = async () => {
     try {
@@ -149,7 +149,7 @@ const VerifyEmail = () => {
             category: "android.intent.category.APP_EMAIL",
           });
           return;
-        } catch (intentError) {
+        } catch {
           // Fallback to Gmail/Outlook web URLs if intent fails
           const androidURLs = [
             "https://mail.google.com",
@@ -168,7 +168,7 @@ const VerifyEmail = () => {
       
       // Fallback to mailto composer if no native email apps could be opened directly
       await Linking.openURL("mailto:");
-    } catch (error: any) {
+    } catch {
       Toast.show({
         type: "error",
         text1: "Error",

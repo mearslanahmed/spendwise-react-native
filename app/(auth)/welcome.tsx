@@ -30,7 +30,7 @@ const slides = [
   },
   {
     id: '3',
-    image: require("../../assets/images/splash-icon.png"),
+    image: require("../../assets/images/ai-advisor.png"),
     title1: "Your Personal",
     title2: "AI Advisor",
     sub1: "Chat with an intelligent assistant",

@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text, View, TouchableOpacity, Platform } from "react-native";
-import React, { useRef, useState, useEffect } from "react";
+import { Pressable, StyleSheet, View, TouchableOpacity } from "react-native";
+import React, { useRef, useState } from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { colors, spacingX, spacingY, radius } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
@@ -16,12 +16,14 @@ import { useTheme } from "@/contexts/themeContext";
 // Safely require native modules to prevent load crashes in Expo Go
 let GoogleSignin: any = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
-} catch (error) {
+} catch {
   // console.log("GoogleSignin native module not available");
 }
 
 const Login = () => {
+  console.log('Login render start');
   const emailRef = useRef("");
   const passwordRef = useRef("");
   const passwordNodeRef = useRef<any>(null);
@@ -65,7 +67,7 @@ const Login = () => {
     try {
       setIsLoading(true);
       GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_FIREBASE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+        webClientId: process.env.EXPO_PUBLIC_FIREBASE_GOOGLE_CLIENT_ID || '',
       });
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
@@ -82,7 +84,11 @@ const Login = () => {
       }
     } catch (error: any) {
       if (error.code !== 'SIGN_IN_CANCELLED') {
-        Toast.show({ type: 'error', text1: 'Google Sign In', text2: error.message });
+        let msg = error.message;
+        if (msg.includes('DEVELOPER_ERROR')) {
+          msg = "Google Sign-In is currently not available.";
+        }
+        Toast.show({ type: 'error', text1: 'Google Sign In', text2: msg });
       }
     } finally {
       setIsLoading(false);
@@ -141,7 +147,7 @@ const Login = () => {
             </Typo>
           </Pressable>
 
-          <Button loading={isLoading} onPress={handelSubmit}>
+          <Button loading={isLoading} onPress={handelSubmit} accessibilityLabel="Login">
             <Typo fontWeight={"700"} color={colors.black} size={21}>
               Login
             </Typo>
