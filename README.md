@@ -71,7 +71,7 @@
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/mearslanahmed/SpendWise.git
+git clone https://github.com/mearslanahmed/spendwise-react-native.git
 cd SpendWise
 ```
 
