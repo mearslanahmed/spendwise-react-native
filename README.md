@@ -60,44 +60,7 @@
 
 ---
 
-## Getting Started
 
-### Prerequisites
-- Node.js (v18 or higher)
-- Java Development Kit (JDK 21)
-- Android Studio (for local compilation) or an Expo Go client.
-
-### Installation
-
-1. **Clone the repository:**
-```bash
-git clone https://github.com/mearslanahmed/spendwise-react-native.git
-cd SpendWise
-```
-
-2. **Install dependencies:**
-```bash
-npm install
-```
-
-3. **Configure Environment Variables:**
-Create a `.env` file in the root directory and populate it with the specific API keys:
-```env
-EXPO_PUBLIC_FIREBASE_API_KEY=your_key
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_bucket
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_id
-EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
-EXPO_PUBLIC_API_URL=https://spendwiseapp.tech/api
-EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
-EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_preset
-```
-
-4. **Run the Application:**
-```bash
-npx expo start
-```
 
 
 
