@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import React from 'react'
 import Button from '@/components/Button'
 import Typo from '@/components/Typo'
@@ -11,17 +11,15 @@ import HomeCard from '@/components/HomeCard'
 import TransactionList from '@/components/TransactionList'
 import FilterTabs from '@/components/FilterTabs'
 import { useData } from '@/contexts/dataContext'
-import { BudgetType, TransactionType } from '@/types'
-import { Timestamp } from 'firebase/firestore'
 import { useRouter } from 'expo-router'
 import { expenseCategories } from '@/constants/data'
 import { useTheme } from '@/contexts/themeContext'
-
+import { resolveTime } from '@/utils/dateHelper'
 
 const Home = () => {
     const { user } = useAuth();
     const router = useRouter();
-    const { colors: themeColors, isDark } = useTheme();
+    const { colors: themeColors } = useTheme();
     const { transactions, budgets, notifications, loading } = useData();
 
     const unreadCount = React.useMemo(() => {
@@ -54,7 +52,7 @@ const Home = () => {
         const endOfWeek = startOfWeek + (7 * 24 * 60 * 60 * 1000) - 1;
         
         filtered = filtered.filter(tx => {
-          const txTime = (tx.date as any)?.toDate ? (tx.date as any).toDate().getTime() : new Date(tx.date as string).getTime();
+          const txTime = resolveTime(tx.date);
           return txTime >= startOfWeek && txTime <= endOfWeek;
         });
       } else if (activeFilter === "This Month") {
@@ -63,14 +61,14 @@ const Home = () => {
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
         
         filtered = filtered.filter(tx => {
-          const txTime = (tx.date as any)?.toDate ? (tx.date as any).toDate().getTime() : new Date(tx.date as string).getTime();
+          const txTime = resolveTime(tx.date);
           return txTime >= startOfMonth && txTime <= endOfMonth;
         });
       }
       
       const sorted = filtered.sort((a, b) => {
-        const aTime = (a.date as Timestamp)?.toDate().getTime() || new Date(a.date as string).getTime();
-        const bTime = (b.date as Timestamp)?.toDate().getTime() || new Date(b.date as string).getTime();
+        const aTime = resolveTime(a.date);
+        const bTime = resolveTime(b.date);
         return bTime - aTime;
       });
       return sorted.slice(0, queryLimit);
@@ -79,7 +77,7 @@ const Home = () => {
     const monthTransactions = React.useMemo(() => {
       const limitTime = startOfMonth.getTime();
       return transactions.filter((tx) => {
-        const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+        const txTime = resolveTime(tx.date);
         return txTime >= limitTime;
       });
     }, [transactions, startOfMonth]);

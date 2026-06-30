@@ -1,8 +1,5 @@
 import {
-  Alert,
   StyleSheet,
-  Text,
-  Touchable,
   TouchableOpacity,
   View,
   ScrollView,
@@ -10,7 +7,7 @@ import {
 import React from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
-import { verticalScale, scale } from "@/utils/styling";
+import { verticalScale } from "@/utils/styling";
 import Header from "@/components/Header";
 import Typo from "@/components/Typo";
 import { useAuth } from "@/contexts/authContext";
@@ -27,9 +24,14 @@ import { auth } from "@/config/firebase";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { updateUser } from "@/services/userService";
+let GoogleSignin: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
+} catch {}
 const Profile = () => {
   const { user, updateUserData } = useAuth();
-  const { colors: themeColors, isDark } = useTheme();
+  const { colors: themeColors } = useTheme();
   const router = useRouter();
   const [logoutAlertVisible, setLogoutAlertVisible] = React.useState(false);
 
@@ -78,6 +80,9 @@ const Profile = () => {
 
   const handleLogout = async () => {
     Toast.show({ type: 'success', text1: 'Logged out', text2: 'You have been successfully logged out.' });
+    if (GoogleSignin) {
+      try { await GoogleSignin.signOut(); } catch {}
+    }
     await signOut(auth);
   };
 

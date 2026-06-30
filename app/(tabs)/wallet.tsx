@@ -16,6 +16,7 @@ import TransactionList from "@/components/TransactionList";
 import FilterTabs from "@/components/FilterTabs";
 import { Image } from "expo-image";
 import UpcomingBills from "@/components/UpcomingBills";
+import { resolveTime } from "@/utils/dateHelper";
 
 const { width: screenWidth } = Dimensions.get("window");
 const cardWidth = scale(295);
@@ -35,15 +36,14 @@ const Wallet = () => {
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
 
-  const maskAmount = (val: number) =>
-    isBalanceHidden ? "••••" : `${user?.currency || "$"}${val.toFixed(2)}`;
+
 
   const wallets = useMemo(() => {
     return [...allWallets].sort((a, b) => {
       const aCreated = a.created as any;
       const bCreated = b.created as any;
-      const aTime = aCreated?.toDate ? aCreated.toDate().getTime() : new Date(aCreated || 0).getTime();
-      const bTime = bCreated?.toDate ? bCreated.toDate().getTime() : new Date(bCreated || 0).getTime();
+      const aTime = resolveTime(aCreated);
+      const bTime = resolveTime(bCreated);
       return bTime - aTime;
     });
   }, [allWallets]);
@@ -69,7 +69,7 @@ const Wallet = () => {
       const endOfWeek = startOfWeek + (7 * 24 * 60 * 60 * 1000) - 1;
       
       txs = txs.filter((tx) => {
-        const txTime = (tx.date as any)?.toDate ? (tx.date as any).toDate().getTime() : new Date(tx.date as string).getTime();
+        const txTime = resolveTime(tx.date);
         return txTime >= startOfWeek && txTime <= endOfWeek;
       });
     } else if (activeFilter === "This Month") {
@@ -78,7 +78,7 @@ const Wallet = () => {
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
       
       txs = txs.filter((tx) => {
-        const txTime = (tx.date as any)?.toDate ? (tx.date as any).toDate().getTime() : new Date(tx.date as string).getTime();
+        const txTime = resolveTime(tx.date);
         return txTime >= startOfMonth && txTime <= endOfMonth;
       });
     }
@@ -147,8 +147,7 @@ const Wallet = () => {
     const cardGradient = (preset ? preset.gradient : ["#374151", "#1f2937"]) as unknown as readonly [string, string, ...string[]];
     const brandBg = preset ? preset.bgColor : colors.neutral700;
 
-    // Mask card number using wallet ID
-    const cardIdStr = item.id ? String(item.id).substring(Math.max(0, String(item.id).length - 4)) : "8899";
+
     const maskedCardNumber = `***   ***   ***   ****`;
 
     // Colored glow shadow matching the card gradient

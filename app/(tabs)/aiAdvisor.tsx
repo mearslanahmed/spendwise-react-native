@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, ScrollView } from 'react-native'
+import { StyleSheet, View, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, ScrollView } from 'react-native'
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useFocusEffect } from 'expo-router'
 import Markdown from 'react-native-markdown-display'
@@ -15,7 +15,7 @@ import { Message } from '@/types'
 import Header from '@/components/Header'
 
 const AiAdvisor = () => {
-    const { colors: themeColors, isDark } = useTheme();
+    const { colors: themeColors } = useTheme();
     const { wallets, transactions, subscriptions } = useData();
     const { user } = useAuth();
     
@@ -27,7 +27,7 @@ const AiAdvisor = () => {
     const flatListRef = useRef<FlatList>(null);
 
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
 
     useEffect(() => {
         if (messages.length > 0) {

@@ -9,13 +9,14 @@ import SegmentedPill from '@/components/SegmentedPill';
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import Loading from '@/components/Loading'
 import { useAuth } from '@/contexts/authContext'
-import { Timestamp } from 'firebase/firestore'
+
 import { useTheme } from '@/contexts/themeContext'
 import * as Icons from 'phosphor-react-native'
 import { useRouter } from 'expo-router'
 import { expenseCategories } from '@/constants/data'
 import { getLast12Months, getLast7Days, getYearsRange } from '@/utils/common'
 import { useData } from '@/contexts/dataContext'
+import { resolveTime, resolveDate } from '@/utils/dateHelper';
 
 
 const Statistics = () => {
@@ -35,7 +36,7 @@ const Statistics = () => {
     const startOfMonthTime = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).getTime();
 
     allUserTransactions.forEach((tx) => {
-      const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+      const txTime = resolveTime(tx.date);
       if (txTime >= startOfMonthTime && tx.type === "expense" && tx.category) {
         totals[tx.category] = (totals[tx.category] || 0) + Number(tx.amount);
       }
@@ -67,7 +68,7 @@ const Statistics = () => {
     }
 
     allUserTransactions.forEach((tx) => {
-      const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+      const txTime = resolveTime(tx.date);
       if (txTime >= limitTime) {
         if (tx.type === "income") {
           income += Number(tx.amount) || 0;
@@ -111,7 +112,7 @@ const Statistics = () => {
     }
 
     allUserTransactions.forEach((tx) => {
-      const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+      const txTime = resolveTime(tx.date);
       if (txTime >= limitTime && tx.type === "expense" && tx.category) {
         totals[tx.category] = (totals[tx.category] || 0) + Number(tx.amount);
       }
@@ -145,7 +146,7 @@ const Statistics = () => {
         const dayEnd = new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
 
         allUserTransactions.forEach((tx) => {
-          const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+          const txTime = resolveTime(tx.date);
           if (txTime >= dayStart && txTime <= dayEnd) {
             if (tx.type === "income") {
               day.income += Number(tx.amount) || 0;
@@ -177,7 +178,7 @@ const Statistics = () => {
         const endOfMonth = new Date(y, m, 0, 23, 59, 59, 999).getTime();
 
         allUserTransactions.forEach((tx) => {
-          const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+          const txTime = resolveTime(tx.date);
           if (txTime >= startOfMonth && txTime <= endOfMonth) {
             if (tx.type === "income") {
               month.income += Number(tx.amount) || 0;
@@ -205,11 +206,11 @@ const Statistics = () => {
       let firstYear = new Date().getFullYear();
       if (allUserTransactions.length > 0) {
         const sorted = [...allUserTransactions].sort((a, b) => {
-          const aTime = (a.date as Timestamp)?.toDate().getTime() || new Date(a.date as string).getTime();
-          const bTime = (b.date as Timestamp)?.toDate().getTime() || new Date(b.date as string).getTime();
+          const aTime = resolveTime(a.date);
+          const bTime = resolveTime(b.date);
           return aTime - bTime;
         });
-        firstYear = (sorted[0].date as Timestamp)?.toDate().getFullYear() || new Date(sorted[0].date as string).getFullYear();
+        firstYear = resolveDate(sorted[0].date).getFullYear();
       }
       const currentYear = new Date().getFullYear();
       const yearsData = getYearsRange(firstYear, currentYear);
@@ -220,7 +221,7 @@ const Statistics = () => {
         const endOfYear = new Date(y, 11, 31, 23, 59, 59, 999).getTime();
 
         allUserTransactions.forEach((tx) => {
-          const txTime = (tx.date as Timestamp)?.toDate().getTime() || new Date(tx.date as string).getTime();
+          const txTime = resolveTime(tx.date);
           if (txTime >= startOfYear && txTime <= endOfYear) {
             if (tx.type === "income") {
               yearObj.income += Number(tx.amount) || 0;
