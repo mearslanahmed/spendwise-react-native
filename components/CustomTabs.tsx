@@ -7,7 +7,7 @@ import * as Icons from "phosphor-react-native";
 import { useTheme } from "@/contexts/themeContext";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 
 // Animated Tab Item Component
 const TabItem = ({ route, isFocused, options, onPress, onLongPress, iconRender, themeColors }: any) => {

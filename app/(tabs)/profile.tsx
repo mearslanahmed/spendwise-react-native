@@ -18,6 +18,7 @@ import { Image } from "expo-image";
 import { getProfileImage } from "@/services/imageService";
 import { accountOptionType } from "@/types";
 import * as Icons from "phosphor-react-native";
+import Constants from 'expo-constants';
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { signOut } from "firebase/auth";
 import { auth } from "@/config/firebase";
@@ -164,9 +165,7 @@ const Profile = () => {
           {accountOptions.map((item, index) => {
             return (
               <Animated.View
-                entering={FadeInDown.delay(index * 50)
-                  .springify()
-                  .damping(14)}
+                entering={FadeInDown.delay(index * 50).duration(400)}
                 key={index.toString()}
                 style={styles.listItem}
               >
@@ -202,7 +201,7 @@ const Profile = () => {
         {/* app version */}
         <View style={styles.versionContainer}>
           <Typo size={12} color={colors.neutral500} style={{ textAlign: "center" }}>
-            SpendWise v1.0.0
+            SpendWise v{Constants.expoConfig?.version || "1.0.0"}
           </Typo>
         </View>
       </ScrollView>

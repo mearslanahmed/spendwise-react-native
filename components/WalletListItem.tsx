@@ -42,9 +42,7 @@ const WalletListItem = ({
 
   return (
     <Animated.View 
-        entering ={FadeInDown.delay(index * 50)
-            .springify()
-            .damping(14)}
+        entering={FadeInDown.delay(index * 50).duration(400)}
     >
       <TouchableOpacity style={styles.container} onPress={openWallet}>
         <View style={[

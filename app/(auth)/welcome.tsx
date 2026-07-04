@@ -112,7 +112,7 @@ const Welcome = () => {
           </View>
 
           <Animated.View
-            entering={FadeInDown.duration(1000).delay(200).springify().damping(12)}
+            entering={FadeInDown.duration(1000).delay(200)}
             style={styles.buttonContainer}
           >
             <Button onPress={() => router.push('/(auth)/register')}>

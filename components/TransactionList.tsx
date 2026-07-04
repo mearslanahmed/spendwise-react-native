@@ -137,7 +137,7 @@ const TransactionItem = React.memo(({
   });
   return (
     <Animated.View
-        entering={FadeInDown.delay(index * 70).springify().damping(14)}
+        entering={FadeInDown.delay(index * 70).duration(400)}
     >
       <TouchableOpacity style={[styles.row, { backgroundColor: themeColors.card }]} onPress={() => handleClick(item)}>
         <View style={[styles.icon, { backgroundColor: category.bgColor }]}>
