@@ -18,14 +18,14 @@ describe('Header Component', () => {
 
   it('renders left icon when provided', async () => {
     const { getByTestId } = await render(
-      <Header leftIcon={<Text testID="left-icon">Left</Text>} />
+      <Header title="" leftIcon={<Text testID="left-icon">Left</Text>} />
     );
     expect(getByTestId('left-icon')).toBeTruthy();
   });
 
   it('renders right icon when provided', async () => {
     const { getByTestId } = await render(
-      <Header rightIcon={<Text testID="right-icon">Right</Text>} />
+      <Header title="" rightIcon={<Text testID="right-icon">Right</Text>} />
     );
     expect(getByTestId('right-icon')).toBeTruthy();
   });

@@ -55,14 +55,14 @@ describe('TransactionList Component', () => {
   });
 
   it('renders loading state when loading is true', async () => {
-    const { getByTestId } = await render(<TransactionList data={[]} loading={true} />);
+    const { getByTestId } = await render(<TransactionList title="Test" data={[]} loading={true} />);
     // Loading component uses ActivityIndicator, we can check for it
     expect(getByTestId('loading-indicator')).toBeTruthy();
   });
 
   it('renders empty list message when data is empty and not loading', async () => {
     const { getByText } = await render(
-      <TransactionList data={[]} loading={false} emptyListMessage="No transactions found" />
+      <TransactionList title="Test" data={[]} loading={false} emptyListMessage="No transactions found" />
     );
     expect(getByText('No transactions found')).toBeTruthy();
   });
@@ -72,7 +72,7 @@ describe('TransactionList Component', () => {
       { id: '1', category: 'food', amount: 50, date: { seconds: 1000 }, type: 'expense' },
       { id: '2', category: 'salary', amount: 2000, date: { seconds: 2000 }, type: 'income' },
     ];
-    const { getByText } = await render(<TransactionList data={mockData as any} loading={false} />);
+    const { getByText } = await render(<TransactionList title="Test" data={mockData as any} loading={false} />);
     
     // Check amounts
     expect(getByText('- $50')).toBeTruthy();
@@ -86,7 +86,7 @@ describe('TransactionList Component', () => {
     const mockData = [
       { id: '1', category: 'food', amount: 50, date: { seconds: 1000 }, type: 'expense' }
     ];
-    const { getByText } = await render(<TransactionList data={mockData as any} loading={false} />);
+    const { getByText } = await render(<TransactionList title="Test" data={mockData as any} loading={false} />);
     
     fireEvent.press(getByText('Others'));
     
