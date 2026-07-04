@@ -34,7 +34,7 @@ const Home = () => {
       // Delay slightly to ensure layout is mounted
       const timer = setTimeout(checkTutorial, 500);
       return () => clearTimeout(timer);
-    }, []);
+    }, [router]);
 
     const unreadCount = React.useMemo(() => {
       return notifications?.filter(n => !n.read).length || 0;
