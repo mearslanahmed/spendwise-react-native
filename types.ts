@@ -114,6 +114,7 @@ export type TransactionListType = {
     titleRightComponent?: React.ReactNode;
     onEndReached?: () => void;
     horizontalPadding?: number;
+    onEmptyClick?: () => void;
 };
 
 export type TransactionItemsProps = {

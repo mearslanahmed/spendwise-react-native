@@ -1,7 +1,7 @@
 import { ResponseType, WalletType } from "@/types";
 import { uploadFileToCloudinary } from "./imageService";
 import { collection, deleteDoc, doc, getDocs, limit, query, setDoc, where, writeBatch } from "firebase/firestore";
-import { firestore } from "@/config/firebase";
+import { firestore, auth } from "@/config/firebase";
 
 /**
  * Creates a new wallet or updates an existing one in Firestore.
@@ -92,12 +92,16 @@ const BATCH_LIMIT = 450; // Firestore hard limit is 500; leave headroom
  */
 export const deleteTransactionByWalletId = async (walletId: string): Promise<ResponseType> => {
     try{
+        const uid = auth.currentUser?.uid;
+        if (!uid) throw new Error("User not authenticated");
+
         let hasMoreTransaction = true;
 
         while(hasMoreTransaction){
             const transactionQuery = query(
                 collection(firestore, "transactions"),
                 where("walletId", "==", walletId),
+                where("uid", "==", uid),
                 limit(BATCH_LIMIT)
             );
 

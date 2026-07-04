@@ -20,7 +20,7 @@ const Home = () => {
     const { user } = useAuth();
     const router = useRouter();
     const { colors: themeColors } = useTheme();
-    const { transactions, budgets, notifications, loading } = useData();
+    const { transactions, budgets, notifications, loading, wallets } = useData();
 
     const unreadCount = React.useMemo(() => {
       return notifications?.filter(n => !n.read).length || 0;
@@ -163,7 +163,8 @@ const Home = () => {
         <TransactionList 
           data={recentTransactions}
           loading={transactionLoading}
-          emptyListMessage="No Transaction added yet!"
+          emptyListMessage={wallets.length === 0 ? "No wallets found. Tap to create one!" : "No transactions yet. Tap to add one!"}
+          onEmptyClick={() => wallets.length === 0 ? router.push("/(modals)/walletModal" as any) : router.push("/(modals)/transactionModal")}
           title="Recent Transactions"
           onEndReached={loadMore}
           titleRightComponent={

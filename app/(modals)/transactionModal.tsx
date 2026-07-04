@@ -63,6 +63,16 @@ const TransactionModal = () => {
   const router = useRouter();
 
   useEffect(() => {
+    if (wallets.length === 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Wallet Required',
+        text2: 'Please create a wallet to log this transaction.',
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     if (analyzingReceipt) {
       Animated.loop(
         Animated.sequence([
@@ -228,7 +238,7 @@ const TransactionModal = () => {
           ...prev,
           walletId: oldTransaction.walletId,
         }));
-      } else if (wallets.length === 1) {
+      } else if (wallets.length > 0) {
         setTransaction((prev) => ({
           ...prev,
           walletId: wallets[0].id,
@@ -240,6 +250,11 @@ const TransactionModal = () => {
     if (loading) return;
     if (!user?.uid) {
       Toast.show({ type: 'error', text1: 'Error', text2: 'You must be logged in to do this.' });
+      return;
+    }
+
+    if (wallets.length === 0) {
+      Toast.show({ type: 'error', text1: 'Wallet Required', text2: 'Please create a wallet first before adding a transaction.' });
       return;
     }
 
@@ -399,29 +414,42 @@ const TransactionModal = () => {
             <Typo color={colors.neutral200} size={16}>
               Wallet
             </Typo>
-            <Dropdown
-              style={[styles.dropdownContainer, { borderColor: missingFields.includes("wallet") ? colors.rose : themeColors.border, borderWidth: missingFields.includes("wallet") ? 1.5 : 1 }]}
-              activeColor={themeColors.inputBg}
-              placeholderStyle={[styles.dropdownPlaceholder, { color: themeColors.textLighter }]}
-              selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
-              iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
-              data={wallets.map((wallet) => ({
-                label: `${wallet?.name} (${user?.currency || "$"}${wallet.amount})`,
-                value: wallet.id,
-              }))}
-              maxHeight={300}
-              labelField="label"
-              valueField="value"
-              itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
-              itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
-              containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
-              placeholder={"Select Wallet"}
-              value={transaction.walletId}
-              onChange={(item) => {
-                setTransaction({ ...transaction, walletId: item.value || "" });
-                setMissingFields(prev => prev.filter(f => f !== 'wallet'));
-              }}
-            />
+            {wallets.length > 0 ? (
+              <Dropdown
+                style={[styles.dropdownContainer, { borderColor: missingFields.includes("wallet") ? colors.rose : themeColors.border, borderWidth: missingFields.includes("wallet") ? 1.5 : 1 }]}
+                activeColor={themeColors.inputBg}
+                placeholderStyle={[styles.dropdownPlaceholder, { color: themeColors.textLighter }]}
+                selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
+                iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
+                data={wallets.map((wallet) => ({
+                  label: `${wallet?.name} (${user?.currency || "$"}${wallet.amount})`,
+                  value: wallet.id,
+                }))}
+                maxHeight={300}
+                labelField="label"
+                valueField="value"
+                itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
+                itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
+                containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
+                placeholder={"Select Wallet"}
+                value={transaction.walletId}
+                onChange={(item) => {
+                  setTransaction({ ...transaction, walletId: item.value || "" });
+                  setMissingFields(prev => prev.filter(f => f !== 'wallet'));
+                }}
+              />
+            ) : (
+              <TouchableOpacity
+                style={[styles.dateInput, { borderColor: colors.rose, borderWidth: 1.5, justifyContent: 'center' }]}
+                onPress={() => {
+                  router.replace("/(modals)/walletModal" as any);
+                }}
+              >
+                <Typo color={colors.rose} size={14} fontWeight={"600"}>
+                  No wallets found. Tap to create one!
+                </Typo>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* expense category */}
@@ -574,7 +602,7 @@ const TransactionModal = () => {
       )}
 
       {/* Floating Magic Scan Button */}
-      {!oldTransaction?.id && !analyzingReceipt && (
+      {!oldTransaction?.id && !analyzingReceipt && wallets.length > 0 && (
         <View style={{
           position: 'absolute',
           bottom: verticalScale(100),
@@ -639,7 +667,7 @@ const TransactionModal = () => {
       <CustomAlert
         visible={deleteAlertVisible}
         title="Confirm"
-        message="Are you sure you want to delete this transaction?\n\nThis action cannot be undone."
+        message={"Are you sure you want to delete this transaction?\nThis action cannot be undone."}
         onCancel={() => setDeleteAlertVisible(false)}
         onConfirm={onDelete}
         confirmText="Delete"

@@ -22,6 +22,7 @@ const TransactionList = ({
   titleRightComponent,
   onEndReached,
   horizontalPadding = 0,
+  onEmptyClick,
 }: TransactionListType) => {
     const router = useRouter();
   const handleClick = React.useCallback((item: TransactionType) => {
@@ -77,13 +78,24 @@ const TransactionList = ({
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
             !loading ? (
-              <Typo
-                size={15}
-                color={colors.neutral400}
-                style={{ textAlign: "center", marginTop: spacingY._15, paddingHorizontal: horizontalPadding }}
-              >
-                {emptyListMessage}
-              </Typo>
+              onEmptyClick ? (
+                <TouchableOpacity
+                  onPress={onEmptyClick}
+                  style={{ alignItems: "center", marginTop: spacingY._15, paddingHorizontal: horizontalPadding }}
+                >
+                  <Typo size={15} color={colors.primary} style={{ textAlign: "center", fontWeight: "600" }}>
+                    {emptyListMessage}
+                  </Typo>
+                </TouchableOpacity>
+              ) : (
+                <Typo
+                  size={15}
+                  color={colors.neutral400}
+                  style={{ textAlign: "center", marginTop: spacingY._15, paddingHorizontal: horizontalPadding }}
+                >
+                  {emptyListMessage}
+                </Typo>
+              )
             ) : null
           }
           renderItem={({ item, index }: any) => (

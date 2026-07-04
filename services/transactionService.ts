@@ -376,25 +376,28 @@ export const deleteTransaction = async (
     // fetch wallet to update amount, totalIncome or totalExpenses
     const walletRef = doc(firestore, "wallets", walletId);
     const walletSnapshot = await getDoc(walletRef);
-    const walletData = walletSnapshot.data() as WalletType;
-
-    // check fields to be updated based on transaction type
-    const updateType =
-      transactionType === "income" ? "totalIncome" : "totalExpense";
-
-    const newWalletAmount =
-      walletData?.amount! -
-      (transactionType === "income" ? transactionAmount : -transactionAmount);
-
-    const newIncomeExpenseAmount =
-      Number(walletData[updateType] ?? 0) - Number(transactionAmount ?? 0);
-
+    
     const batch = writeBatch(firestore);
 
-    batch.update(walletRef, {
-      amount: newWalletAmount,
-      [updateType]: newIncomeExpenseAmount,
-    });
+    if (walletSnapshot.exists()) {
+      const walletData = walletSnapshot.data() as WalletType;
+
+      // check fields to be updated based on transaction type
+      const updateType =
+        transactionType === "income" ? "totalIncome" : "totalExpense";
+
+      const newWalletAmount =
+        walletData?.amount! -
+        (transactionType === "income" ? transactionAmount : -transactionAmount);
+
+      const newIncomeExpenseAmount =
+        Number(walletData[updateType] ?? 0) - Number(transactionAmount ?? 0);
+
+      batch.update(walletRef, {
+        amount: newWalletAmount,
+        [updateType]: newIncomeExpenseAmount,
+      });
+    }
 
     batch.delete(transactionRef);
     
