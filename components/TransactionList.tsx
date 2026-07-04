@@ -174,6 +174,8 @@ const TransactionItem = React.memo(({
   );
 });
 
+TransactionItem.displayName = 'TransactionItem';
+
 export default TransactionList;
 
 const styles = StyleSheet.create({

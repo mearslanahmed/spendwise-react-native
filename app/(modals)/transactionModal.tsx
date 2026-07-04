@@ -62,6 +62,19 @@ const TransactionModal = () => {
   const fadeAnim = useRef(new Animated.Value(0.3)).current;
   const router = useRouter();
 
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const { wallets: allWallets, budgets, transactions } = useData();
+
+  const wallets = React.useMemo(() => {
+    return [...allWallets].sort((a, b) => {
+      const aCreated = a.created as any;
+      const bCreated = b.created as any;
+      const aTime = resolveTime(aCreated);
+      const bTime = resolveTime(bCreated);
+      return bTime - aTime;
+    });
+  }, [allWallets]);
+
   useEffect(() => {
     if (wallets.length === 0) {
       Toast.show({
@@ -70,7 +83,7 @@ const TransactionModal = () => {
         text2: 'Please create a wallet to log this transaction.',
       });
     }
-  }, []);
+  }, [wallets.length]);
 
   useEffect(() => {
     if (analyzingReceipt) {
@@ -90,20 +103,8 @@ const TransactionModal = () => {
       ).start();
     }
   }, [analyzingReceipt, fadeAnim]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const { wallets: allWallets, budgets, transactions } = useData();
 
 
-  const wallets = React.useMemo(() => {
-    return [...allWallets].sort((a, b) => {
-      const aCreated = a.created as any;
-      const bCreated = b.created as any;
-      const aTime = resolveTime(aCreated);
-      const bTime = resolveTime(bCreated);
-      return bTime - aTime;
-    });
-  }, [allWallets]);
 
   type paramType = {
     id: string;
@@ -255,7 +256,7 @@ const TransactionModal = () => {
           walletId: defaultWalletId,
         }));
       }
-  },[wallets.length, wallets, oldTransaction.amount, oldTransaction?.category, oldTransaction?.date, oldTransaction.description, oldTransaction?.id, oldTransaction?.image, oldTransaction?.type, oldTransaction.walletId, user?.uid])
+  },[wallets.length, wallets, transactions, oldTransaction.amount, oldTransaction?.category, oldTransaction?.date, oldTransaction.description, oldTransaction?.id, oldTransaction?.image, oldTransaction?.type, oldTransaction.walletId, user?.uid])
 
   const onSubmit = async () => {
     if (loading) return;

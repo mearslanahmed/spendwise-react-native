@@ -30,6 +30,7 @@ export type accountOptionType = {
     icon: React.ReactNode;
     bgColor: string;
     routeName?: any;
+    url?: string;
 };
 export type TypoProps = {
     size?: number;

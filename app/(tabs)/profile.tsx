@@ -25,6 +25,8 @@ import { auth } from "@/config/firebase";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { updateUser } from "@/services/userService";
+import * as WebBrowser from 'expo-web-browser';
+import * as Network from 'expo-network';
 let GoogleSignin: any = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -61,14 +63,14 @@ const Profile = () => {
     {
       title: "Privacy Policy",
       icon: <Icons.LockIcon size={26} color={colors.white} weight="fill" />,
-      routeName: "/(modals)/privacyPolicyModal",
+      url: "https://spendwiseapp.tech/privacy",
       bgColor: colors.neutral600,
     },
 
     {
       title: "Terms of Service",
       icon: <Icons.FileTextIcon size={26} color={colors.white} weight="fill" />,
-      routeName: "/(modals)/termsOfServiceModal",
+      url: "https://spendwiseapp.tech/terms",
       bgColor: colors.neutral600,
     },
 
@@ -116,12 +118,21 @@ const Profile = () => {
     handleLogout();
   }
 
-  const handlePress = (item: accountOptionType) => {
+  const handlePress = async (item: accountOptionType) => {
     if (item.title === "Logout") {
       showLogoutAlert();
     }
 
-    if (item.routeName) router.push(item.routeName);
+    if (item.url) {
+      const networkState = await Network.getNetworkStateAsync();
+      if (!networkState.isConnected) {
+        Toast.show({ type: 'error', text1: 'Offline', text2: 'Internet connection is required to view documents.' });
+        return;
+      }
+      await WebBrowser.openBrowserAsync(item.url);
+    } else if (item.routeName) {
+      router.push(item.routeName);
+    }
   };
 
   return (

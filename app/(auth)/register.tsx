@@ -9,6 +9,8 @@ import Input from "@/components/Input";
 import * as Icons from "phosphor-react-native";
 import Button from "@/components/Button";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import * as Network from 'expo-network';
 import { useAuth } from "@/contexts/authContext";
 import Toast from 'react-native-toast-message';
 import { useTheme } from "@/contexts/themeContext";
@@ -244,9 +246,14 @@ const Register = () => {
               <Typo size={14} color={colors.neutral400}>
                 I agree to the{" "}
                 <Text
-                  onPress={(e) => {
+                  onPress={async (e) => {
                     e.stopPropagation();
-                    router.push("/(modals)/termsOfServiceModal");
+                    const networkState = await Network.getNetworkStateAsync();
+                    if (!networkState.isConnected) {
+                      Toast.show({ type: 'error', text1: 'Offline', text2: 'Internet connection is required.' });
+                      return;
+                    }
+                    WebBrowser.openBrowserAsync("https://spendwiseapp.tech/terms");
                   }}
                   style={styles.linkText}
                 >
@@ -254,9 +261,14 @@ const Register = () => {
                 </Text>
                 {" & "}
                 <Text
-                  onPress={(e) => {
+                  onPress={async (e) => {
                     e.stopPropagation();
-                    router.push("/(modals)/privacyPolicyModal");
+                    const networkState = await Network.getNetworkStateAsync();
+                    if (!networkState.isConnected) {
+                      Toast.show({ type: 'error', text1: 'Offline', text2: 'Internet connection is required.' });
+                      return;
+                    }
+                    WebBrowser.openBrowserAsync("https://spendwiseapp.tech/privacy");
                   }}
                   style={styles.linkText}
                 >
