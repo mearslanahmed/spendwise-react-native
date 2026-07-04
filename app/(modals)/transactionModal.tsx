@@ -239,9 +239,20 @@ const TransactionModal = () => {
           walletId: oldTransaction.walletId,
         }));
       } else if (wallets.length > 0) {
+        let defaultWalletId = wallets[0].id;
+        if (transactions && transactions.length > 0) {
+          const sortedTx = [...transactions].sort((a, b) => {
+            return resolveTime(b.date) - resolveTime(a.date);
+          });
+          const lastUsedWalletId = sortedTx[0].walletId;
+          if (wallets.some(w => w.id === lastUsedWalletId)) {
+            defaultWalletId = lastUsedWalletId!;
+          }
+        }
+
         setTransaction((prev) => ({
           ...prev,
-          walletId: wallets[0].id,
+          walletId: defaultWalletId,
         }));
       }
   },[wallets.length, wallets, oldTransaction.amount, oldTransaction?.category, oldTransaction?.date, oldTransaction.description, oldTransaction?.id, oldTransaction?.image, oldTransaction?.type, oldTransaction.walletId, user?.uid])

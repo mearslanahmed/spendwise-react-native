@@ -18,7 +18,7 @@ const PrivacyPolicyModal = () => {
           style={{ marginBottom: spacingY._10, marginTop: spacingY._10 }}
         />
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <Typo size={15} color={colors.textLight} style={{ marginBottom: spacingY._10 }}>
             Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </Typo>
