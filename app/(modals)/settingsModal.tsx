@@ -1,4 +1,4 @@
-import { ActivityIndicator, Linking, Platform, StyleSheet, TouchableOpacity, View, Switch } from "react-native";
+import { ActivityIndicator, Linking, Platform, StyleSheet, TouchableOpacity, View, Switch, ScrollView } from "react-native";
 import React, { useState, useEffect } from "react";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
@@ -359,6 +359,8 @@ const SettingsModal = () => {
           </View>
         )}
 
+        <ScrollView contentContainerStyle={{ paddingBottom: verticalScale(40) }} showsVerticalScrollIndicator={false}>
+
         <View style={styles.content}>
           {/* Preferences Section */}
           <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
@@ -500,6 +502,19 @@ const SettingsModal = () => {
 
             <TouchableOpacity
               style={styles.actionRow}
+              onPress={() => router.push("/(modals)/tutorialModal" as any)}
+              disabled={loading}
+            >
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+                Replay App Tutorial
+              </Typo>
+              <Icons.PlayCircleIcon size={20} color={themeColors.textLighter} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+
+            <TouchableOpacity
+              style={styles.actionRow}
               onPress={handleExportCSV}
               disabled={loading}
             >
@@ -544,6 +559,7 @@ const SettingsModal = () => {
             </TouchableOpacity>
           </View>
         </View>
+        </ScrollView>
       </View>
 
       {/* Account Deletion Confirmation Alerts */}

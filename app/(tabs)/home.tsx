@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import React, { useEffect } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Button from '@/components/Button'
 import Typo from '@/components/Typo'
 import { colors, radius, spacingX, spacingY } from '@/constants/theme'
@@ -21,6 +22,19 @@ const Home = () => {
     const router = useRouter();
     const { colors: themeColors } = useTheme();
     const { transactions, budgets, notifications, loading, wallets } = useData();
+
+    useEffect(() => {
+      const checkTutorial = async () => {
+        const hasSeen = await AsyncStorage.getItem('hasSeenTutorial');
+        if (!hasSeen) {
+          router.push("/(modals)/tutorialModal" as any);
+        }
+      };
+      
+      // Delay slightly to ensure layout is mounted
+      const timer = setTimeout(checkTutorial, 500);
+      return () => clearTimeout(timer);
+    }, []);
 
     const unreadCount = React.useMemo(() => {
       return notifications?.filter(n => !n.read).length || 0;
