@@ -20,7 +20,7 @@ import CustomAlert from "@/components/CustomAlert";
 import { useTheme } from "@/contexts/themeContext";
 import { walletPresets } from "@/constants/data";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 
 const PresetCardItem = ({
   preset,
@@ -46,7 +46,7 @@ const PresetCardItem = ({
   };
 
   const handlePressOut = () => {
-    scaleVal.value = withSpring(isSelected ? 1.03 : 1, { damping: 12 });
+    scaleVal.value = withTiming(isSelected ? 1.03 : 1, { duration: 150 });
   };
 
   const IconComponent = preset.icon;
@@ -140,7 +140,7 @@ const WalletModal = () => {
     if(oldWallet?.id) data.id = oldWallet?.id;
     setLoading(true);
     
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     const timeoutPromise = new Promise<{success: boolean, msg: string, offline?: boolean}>((resolve) => {
       timeoutId = setTimeout(() => resolve({ success: true, msg: "Saved offline. Connect to internet to sync.", offline: true }), 3000);
     });

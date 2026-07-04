@@ -15,7 +15,7 @@ const TabItem = ({ route, isFocused, options, onPress, onLongPress, iconRender, 
   const dotOpacity = useSharedValue(isFocused ? 1 : 0);
 
   useEffect(() => {
-    scaleValue.value = withSpring(isFocused ? 1.15 : 1, { damping: 10, stiffness: 100 });
+    scaleValue.value = withTiming(isFocused ? 1.15 : 1, { duration: 200 });
     dotOpacity.value = withTiming(isFocused ? 1 : 0, { duration: 250 });
   }, [isFocused, scaleValue, dotOpacity]);
 

@@ -4,6 +4,9 @@ import { CustomButtonProps } from '@/types'
 import { colors, radius } from '@/constants/theme'
 import { verticalScale } from '@/utils/styling'
 import Loading from './Loading'
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated'
+
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 const Button = ({
     style,
@@ -12,6 +15,12 @@ const Button = ({
     children,
     ...props
 }: CustomButtonProps) => {
+    const scale = useSharedValue(1);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }]
+    }));
+
     if(loading){
         return (
             <View style={[styles.button, style, {backgroundColor: 'transparent'}]}>
@@ -21,9 +30,16 @@ const Button = ({
     }
 
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.button, style]} {...props}>
+    <AnimatedTouchableOpacity 
+      activeOpacity={0.8}
+      onPressIn={() => scale.value = withTiming(0.97, { duration: 100 })}
+      onPressOut={() => scale.value = withTiming(1, { duration: 150 })}
+      onPress={onPress} 
+      style={[styles.button, style, animatedStyle]} 
+      {...props}
+    >
       {children}
-    </TouchableOpacity>
+    </AnimatedTouchableOpacity>
   )
 }
 

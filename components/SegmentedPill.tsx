@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, LayoutChangeEvent } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, LayoutChangeEvent, Easing } from 'react-native';
 import { colors, radius, spacingX, spacingY } from '@/constants/theme';
 import { useTheme } from '@/contexts/themeContext';
 import Typo from './Typo';
@@ -23,11 +23,11 @@ const SegmentedPill = ({ tabs, activeIndex, onChange, style }: SegmentedPillProp
 
   useEffect(() => {
     if (tabWidth > 0) {
-      Animated.spring(translateX, {
+      Animated.timing(translateX, {
         toValue: activeIndex * tabWidth,
         useNativeDriver: true,
-        bounciness: 2,
-        speed: 12,
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
       }).start();
     }
   }, [activeIndex, tabWidth, translateX]);
