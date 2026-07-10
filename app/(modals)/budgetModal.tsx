@@ -33,8 +33,18 @@ const BudgetModal = () => {
 
   const [loading, setLoading] = useState(false);
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
 
   const { budgets: existingBudgets } = useData();
+
+  // Filter category dropdown data so users don't select a category that already has a budget
+  const availableCategories = React.useMemo(() => {
+    const categories = Object.values(expenseCategories);
+    if (oldBudget?.id) {
+      return categories;
+    }
+    return categories.filter(cat => !existingBudgets.some(b => b.category === cat.value));
+  }, [existingBudgets, oldBudget?.id]);
 
   const oldBudget = useLocalSearchParams<{ id?: string; category?: string; amount?: string }>();
 
@@ -65,6 +75,7 @@ const BudgetModal = () => {
       category: categoryValue,
       amount: match ? match.amount : prev.amount || 0,
     }));
+    setMissingFields((prev) => prev.filter((f) => f !== 'category'));
   };
 
   const onSubmit = async () => {
@@ -75,7 +86,13 @@ const BudgetModal = () => {
     }
 
     const { category, amount } = budget;
-    if (!category || amount === undefined || amount <= 0) {
+    
+    const missing: string[] = [];
+    if (!category) missing.push("category");
+    if (amount === undefined || amount <= 0) missing.push("amount");
+
+    if (missing.length > 0) {
+      setMissingFields(missing);
       Toast.show({
         type: "error",
         text1: "Budget",
@@ -83,6 +100,7 @@ const BudgetModal = () => {
       });
       return;
     }
+    setMissingFields([]);
 
     const data: BudgetType = {
       category,
@@ -161,12 +179,15 @@ const BudgetModal = () => {
               Category
             </Typo>
             <Dropdown
-              style={[styles.dropdownContainer, { borderColor: themeColors.border }]}
+              style={[
+                styles.dropdownContainer, 
+                { borderColor: missingFields.includes("category") ? colors.rose : themeColors.border, borderWidth: missingFields.includes("category") ? 1.5 : 1 }
+              ]}
               activeColor={themeColors.inputBg}
               placeholderStyle={[styles.dropdownPlaceholder, { color: themeColors.textLighter }]}
               selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
               iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
-              data={Object.values(expenseCategories)}
+              data={availableCategories}
               maxHeight={300}
               labelField="label"
               valueField="value"
@@ -183,7 +204,7 @@ const BudgetModal = () => {
           {/* Amount Input */}
           <View style={styles.inputContainer}>
             <Typo color={colors.neutral200} size={16}>
-              Monthly Limit ({user?.currency || "$"})
+              Monthly Budget Limit ({user?.currency || "$"})
             </Typo>
             <Input
               keyboardType="decimal-pad"
@@ -191,8 +212,20 @@ const BudgetModal = () => {
               value={budget.amount ? budget.amount.toString() : ""}
               onChangeText={(value: string) => {
                 setBudget({ ...budget, amount: value.replace(/[^0-9.]/g, "").replace(/(\..*?)\..*/g, '$1') as any });
+                setMissingFields((prev) => prev.filter((f) => f !== 'amount'));
               }}
+              containerStyle={missingFields.includes("amount") ? { borderColor: colors.rose, borderWidth: 1.5 } : {}}
             />
+          </View>
+
+          {/* Info Banner about Monthly Reset */}
+          <View style={[styles.infoBanner, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
+            <Icon.InfoIcon size={scale(18)} color={colors.primary} weight="bold" />
+            <View style={{ flex: 1 }}>
+              <Typo size={12} color={themeColors.textLighter} style={{ lineHeight: 16 }}>
+                Category budgets reset automatically on the 1st of every month.
+              </Typo>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -243,6 +276,15 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     gap: spacingY._10,
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(10),
+    padding: scale(12),
+    borderRadius: radius._12,
+    borderWidth: 1,
+    marginTop: spacingY._10,
   },
   footer: {
     alignItems: "center",
