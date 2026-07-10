@@ -53,7 +53,7 @@ export const checkAndProcessSubscriptions = async (uid: string) => {
     const pushEnabled = userDoc.exists() ? userDoc.data()?.pushNotificationsEnabled : false;
     const currency = userDoc.exists() ? userDoc.data()?.currency || "$" : "$";
 
-    const q = query(collection(firestore, "subscriptions"), where("uid", "==", uid), where("autoDeduct", "==", true));
+    const q = query(collection(firestore, "subscriptions"), where("uid", "==", uid));
     const snapshot = await getDocs(q);
     
     if (snapshot.empty) return;
@@ -83,8 +83,10 @@ export const checkAndProcessSubscriptions = async (uid: string) => {
             const notifRef = doc(collection(firestore, "notifications"));
             transaction.set(notifRef, {
               uid: uid,
-              title: "Upcoming Bill Reminder",
-              message: `Your ${sub.name} subscription (${currency}${sub.amount.toFixed(2)}) is due tomorrow. Make sure your wallet has enough funds!`,
+              title: sub.autoDeduct ? "Upcoming Auto-Pay Bill" : "Upcoming Manual Bill",
+              message: sub.autoDeduct 
+                ? `Your ${sub.name} auto-pay bill (${currency}${sub.amount.toFixed(2)}) is due tomorrow.`
+                : `Your manual bill ${sub.name} (${currency}${sub.amount.toFixed(2)}) is due tomorrow. Please pay it manually!`,
               createdAt: Timestamp.fromDate(now),
               read: false,
               type: "reminder"
@@ -95,7 +97,34 @@ export const checkAndProcessSubscriptions = async (uid: string) => {
             });
 
             if (pushEnabled) {
-              scheduleLocalNotification("Upcoming Bill 📅", `Your ${sub.name} subscription is due tomorrow.`);
+              scheduleLocalNotification(
+                sub.autoDeduct ? "Upcoming Auto-Pay Bill 📅" : "Upcoming Manual Bill 📅", 
+                `Your ${sub.name} is due tomorrow.`
+              );
+            }
+          }
+          return;
+        }
+
+        // If manual bill is due now / overdue, remind them and do not auto-deduct.
+        if (!sub.autoDeduct) {
+          if (!isNotifiedToday) {
+            const notifRef = doc(collection(firestore, "notifications"));
+            transaction.set(notifRef, {
+              uid: uid,
+              title: "Manual Bill Overdue ⚠️",
+              message: `Your manual bill ${sub.name} (${currency}${sub.amount.toFixed(2)}) is due. Please remember to pay it!`,
+              createdAt: Timestamp.fromDate(now),
+              read: false,
+              type: "reminder"
+            });
+
+            transaction.update(subRef, {
+              lastNotified: Timestamp.fromDate(now),
+            });
+
+            if (pushEnabled) {
+              scheduleLocalNotification("Manual Bill Overdue ⚠️", `Please remember to pay ${sub.name}.`);
             }
           }
           return;
@@ -198,14 +227,14 @@ export const checkAndProcessSubscriptions = async (uid: string) => {
   }
 };
 
-export const paySubscriptionManually = async (subId: string): Promise<ResponseType> => {
+export const paySubscriptionManually = async (subId: string, overrideAmount?: number): Promise<ResponseType> => {
   try {
     const subRef = doc(firestore, "subscriptions", subId);
     
     const result = await runTransaction(firestore, async (transaction) => {
       const subSnap = await transaction.get(subRef);
       if (!subSnap.exists()) {
-        throw new Error("Subscription not found");
+        return { success: false, msg: "Subscription not found" };
       }
       
       const sub = subSnap.data() as SubscriptionType;
@@ -214,15 +243,17 @@ export const paySubscriptionManually = async (subId: string): Promise<ResponseTy
       const walletRef = doc(firestore, "wallets", sub.walletId);
       const walletSnap = await transaction.get(walletRef);
       if (!walletSnap.exists()) {
-        throw new Error("Associated wallet not found");
+        return { success: false, msg: "Associated wallet not found" };
       }
       
       const walletData = walletSnap.data() as WalletType;
       const walletAmount = walletData.amount || 0;
       const totalExpense = walletData.totalExpense || 0;
       
-      if (walletAmount < sub.amount) {
-        throw new Error("Insufficient funds in the wallet");
+      const payAmount = overrideAmount !== undefined && overrideAmount > 0 ? overrideAmount : sub.amount;
+      
+      if (walletAmount < payAmount) {
+        return { success: false, msg: "Insufficient funds in the wallet" };
       }
       
       const now = new Date();
@@ -232,7 +263,7 @@ export const paySubscriptionManually = async (subId: string): Promise<ResponseTy
       transaction.set(txRef, {
         type: "expense",
         category: sub.category,
-        amount: sub.amount,
+        amount: payAmount,
         walletId: sub.walletId,
         uid: sub.uid,
         date: Timestamp.fromDate(now),
@@ -241,8 +272,8 @@ export const paySubscriptionManually = async (subId: string): Promise<ResponseTy
       
       // 2. Update Wallet balance
       transaction.update(walletRef, {
-        amount: walletAmount - sub.amount,
-        totalExpense: totalExpense + sub.amount,
+        amount: walletAmount - payAmount,
+        totalExpense: totalExpense + payAmount,
       });
       
       // 3. Update Subscription nextBillingDate

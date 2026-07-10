@@ -54,7 +54,7 @@ const Profile = () => {
     },
 
     {
-      title: "Manage Subscriptions",
+      title: "Bills & Subscriptions",
       icon: <Icons.Receipt size={26} color={colors.white} weight="fill" />,
       routeName: "/(modals)/subscriptionsListModal",
       bgColor: "#059669",

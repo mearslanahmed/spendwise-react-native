@@ -51,6 +51,36 @@ const ManageSubscriptionModal = () => {
     if (selectedDate) setDate(selectedDate);
   };
 
+  const handleNameChange = (text: string) => {
+    setName(text);
+    const lower = text.toLowerCase().trim();
+    if (lower.includes("netflix") || lower.includes("spotify") || lower.includes("youtube") || lower.includes("disney") || lower.includes("hulu") || lower.includes("hbo") || lower.includes("prime video")) {
+      setCategory("entertainment");
+      setSubIcon("streaming");
+    } else if (lower.includes("electricity") || lower.includes("power") || lower.includes("electric")) {
+      setCategory("utilities");
+      setSubIcon("electricity");
+    } else if (lower.includes("water") || lower.includes("hydro")) {
+      setCategory("utilities");
+      setSubIcon("water");
+    } else if (lower.includes("internet") || lower.includes("wifi") || lower.includes("broadband") || lower.includes("network")) {
+      setCategory("utilities");
+      setSubIcon("internet");
+    } else if (lower.includes("phone") || lower.includes("mobile") || lower.includes("cellular") || lower.includes("sim")) {
+      setCategory("utilities");
+      setSubIcon("mobile");
+    } else if (lower.includes("gym") || lower.includes("fitness") || lower.includes("health") || lower.includes("workout")) {
+      setCategory("personal");
+      setSubIcon("gym");
+    } else if (lower.includes("rent") || lower.includes("mortgage") || lower.includes("house") || lower.includes("apartment")) {
+      setCategory("rent");
+      setSubIcon("rent");
+    } else if (lower.includes("music") || lower.includes("apple music")) {
+      setCategory("entertainment");
+      setSubIcon("music");
+    }
+  };
+
   const handleSave = async () => {
     if (loading) return;
     if (!user?.uid) {
@@ -92,7 +122,7 @@ const ManageSubscriptionModal = () => {
     if (isEditing) {
       res = await updateSubscription(params.id as string, subData);
     } else {
-      res = await createSubscription({ ...subData, createdAt: Timestamp.fromDate(new Date()) });
+      res = await createSubscription(subData);
     }
 
     setLoading(false);
@@ -100,8 +130,8 @@ const ManageSubscriptionModal = () => {
     if (res.success) {
       Toast.show({
         type: "success",
-        text1: "Success",
-        text2: isEditing ? "Subscription updated" : "Subscription added",
+        text1: isEditing ? "Updated" : "Created",
+        text2: res.msg,
       });
       router.back();
     } else {
@@ -122,13 +152,13 @@ const ManageSubscriptionModal = () => {
           style={{ marginBottom: spacingY._20, marginTop: spacingY._10 }} 
         />
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.inputContainer}>
-            <Typo size={14} color={themeColors.textLight} fontWeight="500">Subscription Name</Typo>
+            <Typo size={14} color={themeColors.textLight} fontWeight="500">Bill / Subscription Name</Typo>
             <Input 
-              placeholder="e.g. Netflix, Gym"
+              placeholder="e.g. Electricity, Netflix"
               value={name}
-              onChangeText={setName}
+              onChangeText={handleNameChange}
               returnKeyType="next"
               onSubmitEditing={() => amountRef.current?.focus()}
               containerStyle={missingFields.includes("name") ? { borderColor: colors.rose, borderWidth: 1.5 } : {}}
@@ -136,7 +166,7 @@ const ManageSubscriptionModal = () => {
           </View>
           
           <View style={styles.inputContainer}>
-            <Typo size={14} color={themeColors.textLight} fontWeight="500">Amount</Typo>
+            <Typo size={14} color={themeColors.textLight} fontWeight="500">Amount / Monthly Estimate</Typo>
             <Input 
               inputRef={amountRef}
               placeholder="0.00"
@@ -148,7 +178,7 @@ const ManageSubscriptionModal = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Typo size={14} color={themeColors.textLight} fontWeight="500">Frequency</Typo>
+            <Typo size={14} color={themeColors.textLight} fontWeight="500">Billing Cycle</Typo>
             <SegmentedPill 
               tabs={["Weekly", "Monthly", "Yearly"]}
               activeIndex={freqIndex}

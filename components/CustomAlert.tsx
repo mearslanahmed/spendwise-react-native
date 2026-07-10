@@ -14,6 +14,7 @@ type CustomAlertProps = {
   cancelText?: string;
   confirmText?: string;
   loading?: boolean;
+  children?: React.ReactNode;
 };
 
 const CustomAlert = ({
@@ -25,6 +26,7 @@ const CustomAlert = ({
   cancelText = "Cancel",
   confirmText = "Confirm",
   loading = false,
+  children,
 }: CustomAlertProps) => {
   const { colors: themeColors, isDark } = useTheme();
   return (
@@ -37,6 +39,8 @@ const CustomAlert = ({
           <Typo size={15} color={themeColors.textLight} style={styles.message}>
             {message}
           </Typo>
+
+          {children}
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 

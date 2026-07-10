@@ -14,6 +14,7 @@ import { paySubscriptionManually } from '@/services/subscriptionService';
 import Toast from 'react-native-toast-message';
 import { Alert } from 'react-native';
 import CustomAlert from './CustomAlert';
+import Input from './Input';
 
 type UpcomingBillsProps = {
   subscriptions: SubscriptionType[];
@@ -28,17 +29,30 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
   
   const [alertVisible, setAlertVisible] = useState(false);
   const [selectedSubForPay, setSelectedSubForPay] = useState<{ id: string, name: string, amount: number } | null>(null);
+  const [payAmountInput, setPayAmountInput] = useState("");
   const [paying, setPaying] = useState(false);
 
   const handleConfirmPay = (id: string, name: string, amount: number) => {
     setSelectedSubForPay({ id, name, amount });
+    setPayAmountInput(amount.toString());
     setAlertVisible(true);
   };
 
   const executePayment = async () => {
     if (!selectedSubForPay) return;
+    
+    const parsedAmount = parseFloat(payAmountInput);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Amount',
+        text2: 'Please enter a valid bill amount.'
+      });
+      return;
+    }
+    
     setPaying(true);
-    const res = await paySubscriptionManually(selectedSubForPay.id);
+    const res = await paySubscriptionManually(selectedSubForPay.id, parsedAmount);
     setPaying(false);
     setAlertVisible(false);
     if (res.success) {
@@ -48,7 +62,11 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
         text2: res.msg
       });
     } else {
-      Alert.alert("Payment Failed", res.msg);
+      Toast.show({
+        type: 'error',
+        text1: 'Payment Failed',
+        text2: res.msg || 'Insufficient funds in the wallet.'
+      });
     }
   };
   
@@ -100,6 +118,9 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
             const cat = expenseCategories[sub.category];
             const IconComponent = customIcon?.icon || cat?.icon || Icons.Receipt;
             const iconBg = customIcon?.bgColor || cat?.bgColor || colors.neutral500;
+            
+            const daysUntilStr = getDaysUntil(sub.nextBillingDate);
+            const isOverdue = daysUntilStr === "Overdue";
 
             return (
               <TouchableOpacity 
@@ -108,8 +129,9 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
                   styles.billCard, 
                   { 
                     backgroundColor: themeColors.card, 
-                    borderColor: isDark ? themeColors.border : "rgba(0,0,0,0.03)",
+                    borderColor: isOverdue ? "rgba(239, 68, 68, 0.4)" : (isDark ? themeColors.border : "rgba(0,0,0,0.03)"),
                     shadowColor: isDark ? "transparent" : "#000",
+                    borderWidth: isOverdue ? 1.5 : 1,
                   }
                 ]}
                 onPress={() => router.push("/(modals)/subscriptionsListModal" as any)}
@@ -120,8 +142,8 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
                 
                 <View style={styles.cardBody}>
                   <Typo size={14} fontWeight="700" textProps={{ numberOfLines: 1 }} color={themeColors.text}>{sub.name}</Typo>
-                  <Typo size={12} color={themeColors.textLighter} fontWeight="500" style={{ marginTop: 2 }}>
-                    {getDaysUntil(sub.nextBillingDate)}
+                  <Typo size={12} color={isOverdue ? colors.rose : themeColors.textLighter} fontWeight={isOverdue ? "600" : "500"} style={{ marginTop: 2 }}>
+                    {daysUntilStr}
                   </Typo>
                 </View>
 
@@ -144,12 +166,23 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
       <CustomAlert
         visible={alertVisible}
         title="Pay Bill"
-        message={`Pay ${selectedSubForPay?.name} (${user?.currency || "$"}${selectedSubForPay?.amount?.toFixed(2)}) now?`}
+        message={`Confirm details to pay ${selectedSubForPay?.name} now:`}
         onCancel={() => setAlertVisible(false)}
         onConfirm={executePayment}
         confirmText="Confirm"
         loading={paying}
-      />
+      >
+        <View style={{ marginBottom: spacingY._15, gap: spacingY._5 }}>
+          <Typo size={13} color={themeColors.textLighter} fontWeight="600">BILL AMOUNT ({user?.currency || "$"})</Typo>
+          <Input
+            keyboardType="decimal-pad"
+            value={payAmountInput}
+            onChangeText={(val) => setPayAmountInput(val.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'))}
+            placeholder="0.00"
+            containerStyle={{ height: verticalScale(45) }}
+          />
+        </View>
+      </CustomAlert>
     </View>
   );
 };
