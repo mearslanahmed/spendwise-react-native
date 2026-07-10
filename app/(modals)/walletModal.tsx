@@ -101,6 +101,7 @@ const WalletModal = () => {
 
   const [loading, setLoading] = useState(false);
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
   const router = useRouter();
 
   const isPreset = typeof wallet.image === "string" && wallet.image.startsWith("preset_");
@@ -127,10 +128,17 @@ const WalletModal = () => {
     // handle profile update logic here
     let { name, image } = wallet;
     console.log("Submit Wallet:", { name, image });
-    if (!wallet.name || !wallet.image) {
+    
+    const missing: string[] = [];
+    if (!name) missing.push("name");
+    if (!image) missing.push("image");
+
+    if (missing.length > 0) {
+      setMissingFields(missing);
       Toast.show({ type: 'error', text1: 'Wallet', text2: "Please fill all the fields" });
       return;
     }
+    setMissingFields([]);
 
     const data: WalletType = {
       name,
@@ -263,22 +271,31 @@ const WalletModal = () => {
             <Input
               placeholder="Wallet name..."
               value={wallet.name}
-              onChangeText={(value: string) => setWallet({ ...wallet, name: value })}
-              containerStyle={{ marginTop: spacingY._10 }}
+              onChangeText={(value: string) => {
+                setWallet({ ...wallet, name: value });
+                setMissingFields((prev) => prev.filter((f) => f !== 'name'));
+              }}
+              containerStyle={{ 
+                marginTop: spacingY._10,
+                ...(missingFields.includes("name") ? { borderColor: colors.rose, borderWidth: 1.5 } : {})
+              }}
             />
           </View>
 
           {/* Template Selector */}
           <View style={styles.inputContainer}>
             <View style={styles.sectionLabelRow}>
-              <Typo size={13} color={themeColors.textLighter} fontWeight="600">CARD TEMPLATE</Typo>
+              <Typo size={13} color={missingFields.includes("image") ? colors.rose : themeColors.textLighter} fontWeight="600">CARD TEMPLATE</Typo>
               {wallet.image && typeof wallet.image === 'string' && wallet.image.startsWith('preset_') && (
                 <Typo size={12} color={colors.primary} fontWeight="600">
                   {walletPresets[wallet.image]?.label || ''}
                 </Typo>
               )}
             </View>
-            <View style={styles.presetsGrid}>
+            <View style={[
+              styles.presetsGrid,
+              missingFields.includes("image") ? { borderColor: colors.rose, borderWidth: 1.5, borderRadius: radius._12, padding: scale(6) } : {}
+            ]}>
               {Object.values(walletPresets).map((preset) => {
                 const isSelected = wallet.image === preset.value;
                 return (
@@ -293,6 +310,7 @@ const WalletModal = () => {
                         image: preset.value,
                         name: prev.name ? prev.name : preset.label
                       }));
+                      setMissingFields((prev) => prev.filter((f) => f !== 'image'));
                     }}
                   />
                 );
@@ -301,8 +319,11 @@ const WalletModal = () => {
           </View>
 
           {/* Custom Logo Upload — compact inline row */}
-          <View style={styles.inputContainer}>
-            <Typo size={13} color={themeColors.textLighter} fontWeight="600">CUSTOM LOGO</Typo>
+          <View style={[
+            styles.inputContainer,
+            missingFields.includes("image") && !wallet.image ? { borderColor: colors.rose, borderWidth: 1.5, borderRadius: radius._12, padding: scale(6) } : {}
+          ]}>
+            <Typo size={13} color={missingFields.includes("image") && !wallet.image ? colors.rose : themeColors.textLighter} fontWeight="600">CUSTOM LOGO</Typo>
             {
               wallet.image && typeof wallet.image !== 'string' ? (
                 // Image selected — show thumbnail with remove
@@ -337,11 +358,12 @@ const WalletModal = () => {
                     }
                     const result = await (await import('expo-image-picker')).launchImageLibraryAsync({
                       mediaTypes: ['images'],
-                      allowsEditing: false,
+                      allowsEditing: true,
                       quality: 0.5,
                     });
                     if (!result.canceled && result.assets?.length) {
                       setWallet({ ...wallet, image: result.assets[0] });
+                      setMissingFields((prev) => prev.filter((f) => f !== 'image'));
                     }
                   }}
                   style={[styles.uploadInlineBtn, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
