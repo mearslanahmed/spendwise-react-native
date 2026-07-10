@@ -97,6 +97,70 @@ export const transactionTypes = [
   { label: "Income", value: "income" },
 ];
 
+export const billIcons: {
+  [key: string]: {
+    label: string;
+    value: string;
+    icon: any;
+    bgColor: string;
+  }
+} = {
+  electricity: {
+    label: "Electricity",
+    value: "electricity",
+    icon: Icons.LightningIcon,
+    bgColor: "#ca8a04", // amber/gold
+  },
+  water: {
+    label: "Water",
+    value: "water",
+    icon: Icons.DropIcon,
+    bgColor: "#0284c7", // light blue
+  },
+  internet: {
+    label: "Internet",
+    value: "internet",
+    icon: Icons.WifiHighIcon,
+    bgColor: "#4f46e5", // indigo
+  },
+  streaming: {
+    label: "Streaming",
+    value: "streaming",
+    icon: Icons.TelevisionIcon,
+    bgColor: "#e11d48", // rose
+  },
+  mobile: {
+    label: "Mobile Phone",
+    value: "mobile",
+    icon: Icons.PhoneIcon,
+    bgColor: "#0891b2", // cyan
+  },
+  gym: {
+    label: "Gym & Health",
+    value: "gym",
+    icon: Icons.BarbellIcon,
+    bgColor: "#059669", // emerald
+  },
+  rent: {
+    label: "Rent & Mortgage",
+    value: "rent",
+    icon: Icons.HouseIcon,
+    bgColor: "#075985", // deep blue
+  },
+  music: {
+    label: "Music",
+    value: "music",
+    icon: Icons.MusicNoteIcon,
+    bgColor: "#db2777", // pink
+  },
+  others: {
+    label: "Others",
+    value: "others",
+    icon: Icons.ReceiptIcon,
+    bgColor: "#525252", // gray
+  },
+};
+
 export const walletPresets: {
   [key: string]: {
     label: string;

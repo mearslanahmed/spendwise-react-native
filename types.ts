@@ -93,6 +93,7 @@ export type SubscriptionType = {
     autoDeduct: boolean;
     createdAt?: Date | Timestamp | string;
     lastNotified?: Date | Timestamp | string;
+    subIcon?: string;
 };
 
 export type CategoryType = {

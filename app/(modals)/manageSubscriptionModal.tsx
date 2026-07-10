@@ -14,7 +14,7 @@ import { createSubscription, updateSubscription } from '@/services/subscriptionS
 import Input from '@/components/Input'
 import Button from '@/components/Button'
 import { verticalScale } from '@/utils/styling'
-import { expenseCategories } from '@/constants/data'
+import { expenseCategories, billIcons } from '@/constants/data'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import * as Icons from 'phosphor-react-native'
 import SegmentedPill from '@/components/SegmentedPill'
@@ -38,6 +38,7 @@ const ManageSubscriptionModal = () => {
   const [freqIndex, setFreqIndex] = useState(params.frequency ? freqOptions.indexOf(params.frequency as string) : 1);
   
   const [autoDeduct, setAutoDeduct] = useState(params.autoDeduct === "true");
+  const [subIcon, setSubIcon] = useState(params.subIcon as string || "others");
   
   const [date, setDate] = useState(params.nextBillingDate ? new Date(params.nextBillingDate as string) : new Date());
   const [showPicker, setShowPicker] = useState(false);
@@ -84,6 +85,7 @@ const ManageSubscriptionModal = () => {
       frequency: freqOptions[freqIndex] as any,
       nextBillingDate: Timestamp.fromDate(date),
       autoDeduct,
+      subIcon,
     };
 
     let res;
@@ -115,7 +117,7 @@ const ManageSubscriptionModal = () => {
     <ModalWrapper>
       <View style={styles.container}>
         <Header 
-          title={isEditing ? "Edit Subscription" : "Add Subscription"} 
+          title={isEditing ? "Edit Bill / Subscription" : "Add Bill / Subscription"} 
           leftIcon={<BackButton />}
           style={{ marginBottom: spacingY._20, marginTop: spacingY._10 }} 
         />
@@ -256,6 +258,35 @@ const ManageSubscriptionModal = () => {
                     <IconComp size={verticalScale(16)} weight={isSelected ? "fill" : "regular"} color={isSelected ? colors.white : themeColors.text} />
                     <Typo size={13} fontWeight="500" color={isSelected ? colors.white : themeColors.text}>
                       {cat.label}
+                    </Typo>
+                  </TouchableOpacity>
+                )
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Typo size={14} color={themeColors.textLight} fontWeight="500">Bill Icon</Typo>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginTop: 10 }}>
+              {Object.keys(billIcons).map(iconKey => {
+                const item = billIcons[iconKey];
+                const isSelected = subIcon === iconKey;
+                const IconComp = item.icon;
+                return (
+                  <TouchableOpacity 
+                    key={iconKey} 
+                    style={[
+                      styles.catPill, 
+                      { 
+                        backgroundColor: isSelected ? item.bgColor : themeColors.inputBg,
+                        borderColor: isSelected ? item.bgColor : themeColors.border 
+                      }
+                    ]}
+                    onPress={() => setSubIcon(iconKey)}
+                  >
+                    <IconComp size={verticalScale(16)} weight={isSelected ? "fill" : "regular"} color={isSelected ? colors.white : themeColors.text} />
+                    <Typo size={13} fontWeight="500" color={isSelected ? colors.white : themeColors.text}>
+                      {item.label}
                     </Typo>
                   </TouchableOpacity>
                 )

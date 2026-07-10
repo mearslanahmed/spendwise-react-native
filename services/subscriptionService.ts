@@ -197,3 +197,67 @@ export const checkAndProcessSubscriptions = async (uid: string) => {
     console.error("Error processing subscriptions:", error);
   }
 };
+
+export const paySubscriptionManually = async (subId: string): Promise<ResponseType> => {
+  try {
+    const subRef = doc(firestore, "subscriptions", subId);
+    
+    const result = await runTransaction(firestore, async (transaction) => {
+      const subSnap = await transaction.get(subRef);
+      if (!subSnap.exists()) {
+        throw new Error("Subscription not found");
+      }
+      
+      const sub = subSnap.data() as SubscriptionType;
+      const nextBilling = resolveDate(sub.nextBillingDate);
+      
+      const walletRef = doc(firestore, "wallets", sub.walletId);
+      const walletSnap = await transaction.get(walletRef);
+      if (!walletSnap.exists()) {
+        throw new Error("Associated wallet not found");
+      }
+      
+      const walletData = walletSnap.data() as WalletType;
+      const walletAmount = walletData.amount || 0;
+      const totalExpense = walletData.totalExpense || 0;
+      
+      if (walletAmount < sub.amount) {
+        throw new Error("Insufficient funds in the wallet");
+      }
+      
+      const now = new Date();
+      
+      // 1. Create Transaction for this payment
+      const txRef = doc(collection(firestore, "transactions"));
+      transaction.set(txRef, {
+        type: "expense",
+        category: sub.category,
+        amount: sub.amount,
+        walletId: sub.walletId,
+        uid: sub.uid,
+        date: Timestamp.fromDate(now),
+        description: `Manual subscription payment: ${sub.name}`,
+      });
+      
+      // 2. Update Wallet balance
+      transaction.update(walletRef, {
+        amount: walletAmount - sub.amount,
+        totalExpense: totalExpense + sub.amount,
+      });
+      
+      // 3. Update Subscription nextBillingDate
+      const advancedBillingDate = calculateNextBillingDate(nextBilling, sub.frequency);
+      transaction.update(subRef, {
+        nextBillingDate: Timestamp.fromDate(advancedBillingDate),
+        lastNotified: null,
+      });
+      
+      return { success: true, msg: `Successfully paid ${sub.name}` };
+    });
+    
+    return result;
+  } catch (error: any) {
+    console.error("Error paying subscription manually:", error);
+    return { success: false, msg: error.message || "Failed to process manual payment" };
+  }
+};

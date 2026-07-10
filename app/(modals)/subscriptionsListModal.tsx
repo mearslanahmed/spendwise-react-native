@@ -9,13 +9,15 @@ import { useData } from '@/contexts/dataContext'
 import Button from '@/components/Button'
 import { useTheme } from '@/contexts/themeContext'
 import * as Icons from 'phosphor-react-native'
-import { verticalScale } from '@/utils/styling'
+import { scale, verticalScale } from '@/utils/styling'
 import { expenseCategories } from '@/constants/data'
 import { useRouter } from 'expo-router'
-import { deleteSubscription } from '@/services/subscriptionService'
+import { deleteSubscription, paySubscriptionManually } from '@/services/subscriptionService'
 import { useAuth } from '@/contexts/authContext'
 import { resolveDate } from '@/utils/dateHelper'
 import CustomAlert from '@/components/CustomAlert'
+import { billIcons } from '@/constants/data'
+import Toast from 'react-native-toast-message'
 
 const SubscriptionsListModal = () => {
   const { subscriptions } = useData();
@@ -40,6 +42,34 @@ const SubscriptionsListModal = () => {
     }
   };
 
+  const handlePayNow = async (id: string) => {
+    const res = await paySubscriptionManually(id);
+    if (res.success) {
+      Toast.show({
+        type: 'success',
+        text1: 'Subscription Paid',
+        text2: res.msg,
+      });
+    } else {
+      Alert.alert("Payment Failed", res.msg);
+    }
+  };
+
+  const monthlyTotal = React.useMemo(() => {
+    return subscriptions.reduce((total, sub) => {
+      let monthlyAmt = sub.amount;
+      if (sub.frequency === "weekly") {
+        monthlyAmt = sub.amount * 4.33;
+      } else if (sub.frequency === "yearly") {
+        monthlyAmt = sub.amount / 12;
+      }
+      return total + monthlyAmt;
+    }, 0);
+  }, [subscriptions]);
+
+  const autoDeductCount = subscriptions.filter(s => s.autoDeduct).length;
+  const manualCount = subscriptions.length - autoDeductCount;
+
   const getDaysUntil = (dateStr: string | any) => {
     const target = resolveDate(dateStr);
     const now = new Date();
@@ -56,12 +86,38 @@ const SubscriptionsListModal = () => {
     <ModalWrapper>
       <View style={styles.container}>
         <Header 
-          title="My Subscriptions" 
+          title="Bills & Subscriptions" 
           leftIcon={<BackButton />}
           style={{ marginBottom: spacingY._20, marginTop: spacingY._10 }}
         />
         
         <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
+          {subscriptions.length > 0 && (
+            <View style={[styles.statsCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={styles.statsLeft}>
+                <Typo size={12} color={themeColors.textLighter} fontWeight="600">TOTAL MONTHLY COMMITTED</Typo>
+                <Typo size={28} fontWeight="800" style={{ marginTop: 4 }}>
+                  {user?.currency || "$"}{monthlyTotal.toFixed(2)}
+                </Typo>
+              </View>
+              <View style={styles.statsDivider} />
+              <View style={styles.statsRight}>
+                <View style={styles.statsRow}>
+                  <Icons.ArrowsClockwise size={verticalScale(14)} color={colors.green} weight="bold" />
+                  <Typo size={12} color={themeColors.textLight} fontWeight="600">
+                    {autoDeductCount} Auto-Pay
+                  </Typo>
+                </View>
+                <View style={[styles.statsRow, { marginTop: 6 }]}>
+                  <Icons.Receipt size={verticalScale(14)} color={themeColors.textLighter} weight="bold" />
+                  <Typo size={12} color={themeColors.textLight} fontWeight="600">
+                    {manualCount} Manual
+                  </Typo>
+                </View>
+              </View>
+            </View>
+          )}
+
           {subscriptions.length === 0 ? (
             <View style={styles.emptyState}>
               <Icons.Receipt size={verticalScale(50)} color={themeColors.textLighter} weight="duotone" />
@@ -71,8 +127,10 @@ const SubscriptionsListModal = () => {
             </View>
           ) : (
             subscriptions.map(sub => {
+              const customIcon = sub.subIcon ? billIcons[sub.subIcon] : null;
               const cat = expenseCategories[sub.category];
-              const IconComponent = cat?.icon || Icons.Receipt;
+              const IconComponent = customIcon?.icon || cat?.icon || Icons.Receipt;
+              const iconBgColor = customIcon?.bgColor || cat?.bgColor || colors.neutral500;
 
               return (
                 <View 
@@ -81,7 +139,7 @@ const SubscriptionsListModal = () => {
                 >
                   <View style={styles.cardHeader}>
                     <View style={styles.cardLeft}>
-                      <View style={[styles.iconContainer, { backgroundColor: cat?.bgColor || colors.neutral500 }]}>
+                      <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
                         <IconComponent size={verticalScale(20)} weight="fill" color={colors.white} />
                       </View>
                       <View>
@@ -102,6 +160,14 @@ const SubscriptionsListModal = () => {
                       </Typo>
                     </View>
                     <View style={styles.actions}>
+                      {!sub.autoDeduct && (
+                        <TouchableOpacity 
+                          style={[styles.payBtn, { backgroundColor: "rgba(22, 163, 74, 0.15)" }]}
+                          onPress={() => handlePayNow(sub.id!)}
+                        >
+                          <Typo size={12} color={colors.green} fontWeight="700">Pay Now</Typo>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity 
                         style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
                         onPress={() => router.push({
@@ -114,7 +180,8 @@ const SubscriptionsListModal = () => {
                             walletId: sub.walletId,
                             frequency: sub.frequency,
                             autoDeduct: sub.autoDeduct ? "true" : "false",
-                            nextBillingDate: resolveDate(sub.nextBillingDate).toISOString()
+                            nextBillingDate: resolveDate(sub.nextBillingDate).toISOString(),
+                            subIcon: sub.subIcon || "others"
                           }
                         })}
                       >
@@ -217,5 +284,39 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: verticalScale(30),
     right: verticalScale(20),
+  },
+  statsCard: {
+    padding: spacingX._15,
+    borderRadius: radius._20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacingY._5,
+  },
+  statsLeft: {
+    flex: 1.2,
+  },
+  statsDivider: {
+    width: 1,
+    height: '80%',
+    backgroundColor: 'rgba(150, 150, 150, 0.2)',
+    marginHorizontal: spacingX._15,
+  },
+  statsRight: {
+    flex: 0.8,
+    justifyContent: 'center',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  payBtn: {
+    paddingVertical: scale(5),
+    paddingHorizontal: scale(10),
+    borderRadius: radius._10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: scale(3),
   },
 })

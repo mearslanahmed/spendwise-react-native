@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { colors, radius, spacingX, spacingY } from '@/constants/theme';
 import { useTheme } from '@/contexts/themeContext';
@@ -6,10 +6,14 @@ import Typo from './Typo';
 import { scale, verticalScale } from '@/utils/styling';
 import { SubscriptionType } from '@/types';
 import * as Icons from "phosphor-react-native";
-import { expenseCategories } from '@/constants/data';
+import { expenseCategories, billIcons } from '@/constants/data';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/authContext';
 import { resolveDate } from '@/utils/dateHelper';
+import { paySubscriptionManually } from '@/services/subscriptionService';
+import Toast from 'react-native-toast-message';
+import { Alert } from 'react-native';
+import CustomAlert from './CustomAlert';
 
 type UpcomingBillsProps = {
   subscriptions: SubscriptionType[];
@@ -21,6 +25,32 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
   const { user } = useAuth();
 
   const now = new Date();
+  
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [selectedSubForPay, setSelectedSubForPay] = useState<{ id: string, name: string, amount: number } | null>(null);
+  const [paying, setPaying] = useState(false);
+
+  const handleConfirmPay = (id: string, name: string, amount: number) => {
+    setSelectedSubForPay({ id, name, amount });
+    setAlertVisible(true);
+  };
+
+  const executePayment = async () => {
+    if (!selectedSubForPay) return;
+    setPaying(true);
+    const res = await paySubscriptionManually(selectedSubForPay.id);
+    setPaying(false);
+    setAlertVisible(false);
+    if (res.success) {
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: res.msg
+      });
+    } else {
+      Alert.alert("Payment Failed", res.msg);
+    }
+  };
   
   // Sort subscriptions by closest billing date
   const sortedSubs = [...subscriptions].sort((a, b) => {
@@ -66,8 +96,10 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
           contentContainerStyle={styles.scrollContent}
         >
           {sortedSubs.map((sub) => {
+            const customIcon = sub.subIcon ? billIcons[sub.subIcon] : null;
             const cat = expenseCategories[sub.category];
-            const IconComponent = cat?.icon || Icons.Receipt;
+            const IconComponent = customIcon?.icon || cat?.icon || Icons.Receipt;
+            const iconBg = customIcon?.bgColor || cat?.bgColor || colors.neutral500;
 
             return (
               <TouchableOpacity 
@@ -82,7 +114,7 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
                 ]}
                 onPress={() => router.push("/(modals)/subscriptionsListModal" as any)}
               >
-                <View style={[styles.iconContainer, { backgroundColor: cat?.bgColor || colors.neutral500 }]}>
+                <View style={[styles.iconContainer, { backgroundColor: iconBg }]}>
                   <IconComponent size={verticalScale(18)} weight="fill" color={colors.white} />
                 </View>
                 
@@ -93,12 +125,31 @@ const UpcomingBills = ({ subscriptions }: UpcomingBillsProps) => {
                   </Typo>
                 </View>
 
-                <Typo size={15} fontWeight="800" color={themeColors.text}>{user?.currency || "$"}{sub.amount.toFixed(0)}</Typo>
+                <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                  <Typo size={15} fontWeight="800" color={themeColors.text}>{user?.currency || "$"}{sub.amount.toFixed(0)}</Typo>
+                  {!sub.autoDeduct && (
+                    <TouchableOpacity 
+                      style={styles.checkPayBtn}
+                      onPress={() => handleConfirmPay(sub.id!, sub.name, sub.amount)}
+                    >
+                      <Icons.CheckCircle size={verticalScale(18)} color={colors.green} weight="fill" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
       )}
+      <CustomAlert
+        visible={alertVisible}
+        title="Pay Bill"
+        message={`Pay ${selectedSubForPay?.name} (${user?.currency || "$"}${selectedSubForPay?.amount?.toFixed(2)}) now?`}
+        onCancel={() => setAlertVisible(false)}
+        onConfirm={executePayment}
+        confirmText="Confirm"
+        loading={paying}
+      />
     </View>
   );
 };
@@ -152,5 +203,9 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  checkPayBtn: {
+    marginTop: scale(3),
+    padding: scale(2),
   }
 });
