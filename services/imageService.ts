@@ -4,7 +4,22 @@ import axios from "axios";
 
 const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
-export const uploadFileToCloudinary = async (file: {uri?: string} | string, folderName: string): Promise<ResponseType> => {
+export const getImageSource = (file: any) => {
+    if (!file) return null;
+    if (typeof file === 'string' && file) return file;
+    if (typeof file === 'number') return file; // for local require()
+    if (typeof file === 'object') {
+        if ('uri' in file && file.uri) return file.uri;
+        if ('url' in file && file.url) return file.url;
+    }
+    return null;
+};
+
+export const uploadFileToCloudinary = async (
+    file: {uri?: string} | string,
+    folderName: string,
+    userId?: string
+): Promise<ResponseType> => {
     try{
         if(!file) return {success: true, data: null};
         if(typeof file == 'string'){
@@ -30,8 +45,12 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
                 return { success: false, msg: "Backend API URL is not configured." };
             }
 
+            const finalFolder = userId 
+                ? `spendwise/${userId}/${folderName}`
+                : `spendwise/anonymous/${folderName}`;
+
             const signatureRes = await axios.post(`${apiUrl}/generate-signature`, {
-                folder: folderName
+                folder: finalFolder
             });
 
             const { signature, timestamp } = signatureRes.data;
@@ -50,7 +69,7 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
             } as any);
 
             // 2. Append Signature and necessary fields for signed upload (NO PRESET)
-            formData.append("folder", folderName);
+            formData.append("folder", finalFolder);
             formData.append("api_key", apiKey);
             formData.append("timestamp", timestamp.toString());
             formData.append("signature", signature);
@@ -61,7 +80,13 @@ export const uploadFileToCloudinary = async (file: {uri?: string} | string, fold
                 }
             });
 
-            return {success: true, data: response?.data?.secure_url};
+            return {
+                success: true, 
+                data: {
+                    url: response?.data?.secure_url,
+                    publicId: response?.data?.public_id
+                }
+            };
         }
 
         return{success: true, msg: "Image uploaded successfully"};

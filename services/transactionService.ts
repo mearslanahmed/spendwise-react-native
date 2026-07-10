@@ -1,5 +1,5 @@
 import { FirebaseError } from "firebase/app";
-import { firestore } from "@/config/firebase";
+import { firestore, auth } from "@/config/firebase";
 import { TransactionType, WalletType, ResponseType } from "@/types";
 import {
   collection,
@@ -175,7 +175,8 @@ export const createOrUpdateTransaction = async (
     if (image) {
       const imageUploadRes = await uploadFileToCloudinary(
         image,
-        "transactions"
+        "transactions",
+        transactionData.uid || auth.currentUser?.uid
       );
       if (!imageUploadRes.success) {
         return {

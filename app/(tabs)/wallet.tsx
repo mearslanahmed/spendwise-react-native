@@ -17,6 +17,7 @@ import FilterTabs from "@/components/FilterTabs";
 import { Image } from "expo-image";
 import UpcomingBills from "@/components/UpcomingBills";
 import { resolveTime } from "@/utils/dateHelper";
+import { getImageSource } from "@/services/imageService";
 
 const { width: screenWidth } = Dimensions.get("window");
 const cardWidth = scale(295);
@@ -176,7 +177,7 @@ const Wallet = () => {
               ) : (
                 <Image
                   style={styles.cardLogoImage}
-                  source={item.image}
+                  source={getImageSource(item.image)}
                   contentFit="cover"
                   transition={100}
                 />

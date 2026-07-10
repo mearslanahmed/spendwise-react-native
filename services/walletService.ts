@@ -19,7 +19,8 @@ export const CreateOrUpdateWallet = async (
         if(walletData.image){
                 const imageUploadRes = await uploadFileToCloudinary(
                 walletData.image,
-                "wallets"
+                "wallets",
+                walletData.uid || auth.currentUser?.uid
                 );
                 if(!imageUploadRes.success){
                 return {

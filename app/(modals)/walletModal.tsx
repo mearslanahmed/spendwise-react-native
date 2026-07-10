@@ -18,6 +18,7 @@ import { CreateOrUpdateWallet, deleteWallet } from "@/services/walletService";
 import Toast from 'react-native-toast-message';
 import CustomAlert from "@/components/CustomAlert";
 import { useTheme } from "@/contexts/themeContext";
+import { getImageSource } from "@/services/imageService";
 import { walletPresets } from "@/constants/data";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
@@ -213,7 +214,7 @@ const WalletModal = () => {
                       wallet.image ? (
                         <Image
                           style={styles.previewCardLogoImage}
-                          source={wallet.image}
+                          source={getImageSource(wallet.image)}
                           contentFit="cover"
                           transition={100}
                         />
@@ -309,7 +310,7 @@ const WalletModal = () => {
                   <View style={styles.uploadThumbnail}>
                     <Image
                       style={{ flex: 1 }}
-                      source={wallet.image}
+                      source={getImageSource(wallet.image)}
                       contentFit="cover"
                       transition={100}
                     />
