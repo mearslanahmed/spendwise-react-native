@@ -93,7 +93,7 @@ const SettingsModal = () => {
         import("@/services/expoNotificationService").then(({ scheduleLocalNotification }) => {
             scheduleLocalNotification(
                 "Notifications Enabled! 🔔",
-                `Awesome! We will remind you every day at ${localReminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`
+                `You will now receive alerts for upcoming bills, and a daily reminder to log expenses at ${localReminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`
             );
         });
 
@@ -445,7 +445,7 @@ const SettingsModal = () => {
                   disabled={loading}
                 >
                   <Typo size={15} color={themeColors.textLighter} style={{ flex: 1, paddingLeft: spacingX._15 }}>
-                    Daily Reminder Time
+                    Reminder to log expenses
                   </Typo>
                   <Typo size={15} color={colors.primary} fontWeight="600">
                     {localReminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

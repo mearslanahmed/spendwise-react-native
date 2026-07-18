@@ -329,7 +329,7 @@ const ManageSubscriptionModal = () => {
         <View style={styles.footer}>
           <Button onPress={handleSave} loading={loading}>
             <Typo color={colors.black} size={16} fontWeight="700">
-              {isEditing ? "Save Changes" : "Create Subscription"}
+              {isEditing ? "Save Changes" : "Add Bill / Subscription"}
             </Typo>
           </Button>
         </View>

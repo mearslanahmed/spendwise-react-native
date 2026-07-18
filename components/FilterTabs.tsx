@@ -40,7 +40,7 @@ const FilterTabs = ({ filters, activeFilter, onFilterSelect, style }: FilterTabs
               <Typo 
                 size={12} 
                 fontWeight={isActive ? "600" : "500"}
-                color={isActive ? colors.white : themeColors.textLighter}
+                color={isActive ? colors.black : themeColors.textLighter}
               >
                 {filter}
               </Typo>

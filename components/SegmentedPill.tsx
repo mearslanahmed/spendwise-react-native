@@ -78,7 +78,7 @@ const SegmentedPill = ({ tabs, activeIndex, onChange, style }: SegmentedPillProp
               <Typo 
                 size={13} 
                 fontWeight={isActive ? "700" : "600"}
-                color={isActive ? colors.white : themeColors.textLight}
+                color={isActive ? colors.black : themeColors.textLight}
               >
                 {tab}
               </Typo>
