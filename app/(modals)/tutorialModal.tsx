@@ -1,15 +1,28 @@
-import { View, StyleSheet, FlatList, Dimensions, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, StyleSheet, FlatList, Dimensions, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent, ActivityIndicator } from 'react-native';
 import React, { useRef, useState } from 'react';
 import ModalWrapper from '@/components/ModalWrapper';
 import Typo from '@/components/Typo';
 import { colors, radius, spacingX, spacingY } from '@/constants/theme';
 import { useTheme } from '@/contexts/themeContext';
-import { HouseIcon, WalletIcon, ChartLineUpIcon, ChatCircleTextIcon, GearIcon, Icon } from 'phosphor-react-native';
+import { HouseIcon, WalletIcon, ChartLineUpIcon, ChatCircleTextIcon, GearIcon, Icon, CurrencyCircleDollarIcon } from 'phosphor-react-native';
 import { verticalScale } from '@/utils/styling';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Dropdown } from "react-native-element-dropdown";
+import { useAuth } from "@/contexts/authContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { firestore } from "@/config/firebase";
 
 const { width } = Dimensions.get('window');
+
+const currencies = [
+  { label: "USD ($)", value: "$" },
+  { label: "EUR (€)", value: "€" },
+  { label: "GBP (£)", value: "£" },
+  { label: "INR (₹)", value: "₹" },
+  { label: "JPY (¥)", value: "¥" },
+  { label: "PKR (Rs.)", value: "Rs." },
+];
 
 type SlideType = {
   id: string;
@@ -51,16 +64,28 @@ const SLIDES: SlideType[] = [
   {
     id: '5',
     title: '5. Profile & Settings',
-    description: 'Finally, the Profile tab is your personal hub. Change your Currency, manage Subscriptions, update your Profile, and so much more. Explore the tab to fully personalize your experience!',
+    description: 'The Profile tab is your personal hub. You can update your settings, view notifications, and manage subscriptions.',
     IconComponent: GearIcon,
     iconColor: '#a855f7', // purple
+  },
+  {
+    id: '6',
+    title: '6. Quick Setup',
+    description: 'Let\'s personalize your experience. Please select your preferred currency before we start tracking!',
+    IconComponent: CurrencyCircleDollarIcon,
+    iconColor: '#f59e0b', // yellow/amber
   },
 ];
 
 const TutorialModal = () => {
   const { colors: themeColors } = useTheme();
   const router = useRouter();
+  const { user, updateUserData } = useAuth();
+  
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedCurrency, setSelectedCurrency] = useState(user?.currency || "$");
+  const [loading, setLoading] = useState(false);
+  
   const flatListRef = useRef<FlatList>(null);
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -72,8 +97,23 @@ const TutorialModal = () => {
   };
 
   const finishTutorial = async () => {
-    await AsyncStorage.setItem('hasSeenTutorial', 'true');
-    router.back();
+    setLoading(true);
+    try {
+      if (user?.uid) {
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, { currency: selectedCurrency });
+        await updateUserData(user.uid);
+      }
+      await AsyncStorage.setItem('hasSeenTutorial', 'true');
+      router.back();
+    } catch (e) {
+      console.error("Error setting currency on onboarding:", e);
+      // Let them pass anyway so they aren't stuck
+      await AsyncStorage.setItem('hasSeenTutorial', 'true');
+      router.back();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const nextSlide = () => {
@@ -97,6 +137,28 @@ const TutorialModal = () => {
         <Typo size={16} color={themeColors.textLight} style={styles.description}>
           {item.description}
         </Typo>
+
+        {/* Conditional render for the 6th slide interactive setup */}
+        {item.id === '6' && (
+          <View style={{ marginTop: spacingY._30, width: '100%', paddingHorizontal: spacingX._20 }}>
+             <Dropdown
+                style={[styles.dropdownContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
+                activeColor={themeColors.card}
+                selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
+                iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
+                data={currencies}
+                maxHeight={250}
+                labelField="label"
+                valueField="value"
+                itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
+                itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
+                containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
+                value={selectedCurrency}
+                onChange={(item) => setSelectedCurrency(item.value)}
+                disable={loading}
+              />
+          </View>
+        )}
       </View>
     );
   };
@@ -133,12 +195,17 @@ const TutorialModal = () => {
           </View>
           
           <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.primary }]}
+            style={[styles.button, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
             onPress={nextSlide}
+            disabled={loading}
           >
-            <Typo size={18} fontWeight="700" color={colors.white}>
-              {currentIndex === SLIDES.length - 1 ? "Get Started" : "Next"}
-            </Typo>
+            {loading ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Typo size={18} fontWeight="700" color={colors.white}>
+                {currentIndex === SLIDES.length - 1 ? "Get Started" : "Next"}
+              </Typo>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -199,5 +266,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
+  },
+  dropdownContainer: {
+    height: verticalScale(50),
+    borderWidth: 1,
+    paddingHorizontal: spacingX._15,
+    borderRadius: radius._15,
+  },
+  dropdownItemText: { 
+    fontSize: verticalScale(14),
+  },
+  dropdownSelectedText: {
+    fontSize: verticalScale(14),
+  },
+  dropdownListContainer: {
+    borderRadius: radius._12,
+    borderWidth: 1,
+    top: 5,
+  },
+  dropdownItemContainer: {
+    borderRadius: radius._10,
+    marginHorizontal: spacingX._5,
+  },
+  dropdownIcon: {
+    height: verticalScale(20),
   },
 });
