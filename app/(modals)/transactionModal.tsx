@@ -130,7 +130,7 @@ const TransactionModal = () => {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
+        allowsEditing: false,
         quality: 0.2,
         base64: true,
     });
