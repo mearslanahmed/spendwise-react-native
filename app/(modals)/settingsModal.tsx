@@ -13,8 +13,16 @@ import Toast from 'react-native-toast-message';
 import { Dropdown } from "react-native-element-dropdown";
 import * as Icons from "phosphor-react-native";
 import CustomAlert from "@/components/CustomAlert";
+import Input from "@/components/Input";
 import { deleteUserAccountData, resetUserAccountData } from "@/services/userService";
-import { deleteUser } from "firebase/auth";
+import { deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+
+let GoogleSignin: any = null;
+try {
+  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
+} catch (error) {
+  // Ignore
+}
 import { useRouter } from "expo-router";
 import { cacheDirectory, writeAsStringAsync } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -40,6 +48,8 @@ const SettingsModal = () => {
   // Account Deletion state
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [reAuthPassword, setReAuthPassword] = useState("");
+  const isPasswordUser = auth.currentUser?.providerData[0]?.providerId === "password";
 
   // App Data Reset state
   const [resetAlertVisible, setResetAlertVisible] = useState(false);
@@ -298,49 +308,81 @@ const SettingsModal = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (!user?.uid) return;
-    setConfirmDeleteVisible(false);
+    if (!user?.uid || !auth.currentUser) return;
+    
     setLoading(true);
+    
     try {
-      // 1. Delete all user data in Firestore
-      const dbRes = await deleteUserAccountData(user.uid);
+      const providerId = auth.currentUser.providerData[0]?.providerId;
+      
+      // 1. Proactively Re-Authenticate
+      if (providerId === "password") {
+         if (!reAuthPassword) {
+           Toast.show({ type: "error", text1: "Error", text2: "Please enter your password to confirm." });
+           setLoading(false);
+           return;
+         }
+         const credential = EmailAuthProvider.credential(auth.currentUser.email || "", reAuthPassword);
+         await reauthenticateWithCredential(auth.currentUser, credential);
+      } else if (providerId === "google.com") {
+         if (GoogleSignin) {
+           await GoogleSignin.hasPlayServices();
+           const userInfo = await GoogleSignin.signIn();
+           const credential = GoogleAuthProvider.credential(userInfo.data.idToken);
+           await reauthenticateWithCredential(auth.currentUser, credential);
+         }
+      }
+      
+      // 2. Freshly authenticated, wipe DB
+      const dbDeletePromise = deleteUserAccountData(user.uid);
+      const timeoutPromise = new Promise<{success: boolean, msg: string}>((resolve) => 
+        setTimeout(() => resolve({ success: false, msg: "Database deletion timed out. Please try again." }), 15000)
+      );
+      
+      const dbRes = await Promise.race([dbDeletePromise, timeoutPromise]);
+      
       if (!dbRes.success) {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: dbRes.msg || "Failed to clear database records",
-        });
+        Toast.show({ type: "error", text1: "Error", text2: dbRes.msg || "Failed to clear database records" });
         setLoading(false);
         return;
       }
 
-      // 2. Delete the user from Auth
-      const firebaseUser = auth.currentUser;
-      if (firebaseUser) {
-        await deleteUser(firebaseUser);
-      }
+      setConfirmDeleteVisible(false);
       
+      // Hide the loading spinner before triggering Firebase Auth deletion
+      setLoading(false);
+
+      // 3. Delete the user from Auth
+      await deleteUser(auth.currentUser);
+
       Toast.show({
         type: "success",
         text1: "Account Deleted",
         text2: "Your account and data have been permanently deleted.",
       });
+
     } catch (error: any) {
-      if (error.code === "auth/requires-recent-login") {
-        Toast.show({
-          type: "error",
-          text1: "Action Required",
-          text2: "Please log out and log back in, then try deleting again.",
-        });
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: error.message || "Failed to delete account",
-        });
-      }
-    } finally {
       setLoading(false);
+      
+      let errorMsg = "An unexpected error occurred. Please try again.";
+      if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password") {
+        errorMsg = "Incorrect password. Please try again.";
+      } else if (error.code === "auth/network-request-failed") {
+        errorMsg = "Network error. Please check your connection.";
+      } else if (error.code === "auth/too-many-requests") {
+        errorMsg = "Too many failed attempts. Please try again later.";
+      } else if (error.message) {
+        // Fallback for non-auth errors or unmapped codes
+        errorMsg = "Failed to authenticate or delete account";
+      }
+
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: errorMsg,
+      });
+    } finally {
+      setReAuthPassword("");
     }
   };
 
@@ -578,11 +620,27 @@ const SettingsModal = () => {
       <CustomAlert
         visible={confirmDeleteVisible}
         title="Final Confirmation"
-        message="Are you absolutely sure? This is your last warning before your account is permanently deleted."
-        onCancel={() => setConfirmDeleteVisible(false)}
+        message={isPasswordUser ? "Please verify your password to permanently delete your account and data. You cannot undo this." : "Are you absolutely sure? This is your last warning before your account is permanently deleted."}
+        onCancel={() => {
+          setConfirmDeleteVisible(false);
+          setReAuthPassword("");
+        }}
         onConfirm={handleDeleteAccount}
         confirmText="Permanently Delete"
-      />
+      >
+        {isPasswordUser && (
+          <View style={{ marginBottom: spacingY._15 }}>
+            <Input 
+              placeholder="Enter your password"
+              value={reAuthPassword}
+              onChangeText={setReAuthPassword}
+              secureTextEntry
+              containerStyle={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border }}
+              textColor={themeColors.text}
+            />
+          </View>
+        )}
+      </CustomAlert>
 
       {/* App Data Reset Confirmation Alerts */}
       <CustomAlert

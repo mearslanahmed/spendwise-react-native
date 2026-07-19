@@ -27,7 +27,7 @@ import Toast from 'react-native-toast-message';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import ImageUpload from "@/components/ImageUpload";
-import { resolveTime } from "@/utils/dateHelper";
+import { resolveTime, formatDateShort } from "@/utils/dateHelper";
 
 import CustomAlert from "@/components/CustomAlert";
 import { Dropdown } from "react-native-element-dropdown";
@@ -509,7 +509,7 @@ const TransactionModal = () => {
                 onPress={() => setShowDatePicker(true)}
               >
                 <Typo size={14}>
-                  {(transaction.date as Date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                  {formatDateShort(transaction.date, true)}
                 </Typo>
               </Pressable>
             )}

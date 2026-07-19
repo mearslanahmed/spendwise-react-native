@@ -12,7 +12,7 @@ import { useData } from "@/contexts/dataContext";
 import { useTheme } from "@/contexts/themeContext";
 import { deleteAllNotifications, deleteNotification, markAllAsRead } from "@/services/notificationService";
 import CustomAlert from "@/components/CustomAlert";
-import { resolveDate } from "@/utils/dateHelper";
+import { resolveDate, formatDateShort } from "@/utils/dateHelper";
 
 const NotificationsModal = () => {
   const { user } = useAuth();
@@ -27,12 +27,14 @@ const NotificationsModal = () => {
   };
 
   const formatDate = (date: any) => {
-    return resolveDate(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const d = resolveDate(date);
+    const shortDate = formatDateShort(d, false);
+    let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${shortDate} at ${h}:${m} ${ampm}`;
   };
 
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);

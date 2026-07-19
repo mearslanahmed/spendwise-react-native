@@ -7,8 +7,7 @@ import Typo from "./Typo";
 import { FlashList } from "@shopify/flash-list";
 import Loading from "./Loading";
 import { expenseCategories, incomeCategory } from "@/constants/data";
-import { resolveDate } from "@/utils/dateHelper";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import { resolveDate, formatDateShort } from "@/utils/dateHelper";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/authContext";
 import { useTheme } from "@/contexts/themeContext";
@@ -130,15 +129,9 @@ const TransactionItem = React.memo(({
     item?.type === "income" ? incomeCategory : (expenseCategories[item.category!] || expenseCategories['others']);
   const IconComponent = category?.icon;
 
-  const date = resolveDate(item?.date)?.toLocaleDateString("en-US", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const date = formatDateShort(item?.date, true);
   return (
-    <Animated.View
-        entering={FadeInDown.delay(index * 70).duration(400)}
-    >
+    <View>
       <TouchableOpacity style={[styles.row, { backgroundColor: themeColors.card }]} onPress={() => handleClick(item)}>
         <View style={[styles.icon, { backgroundColor: category.bgColor }]}>
           {IconComponent && (
@@ -170,7 +163,7 @@ const TransactionItem = React.memo(({
           </Typo>
         </View>
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   );
 });
 

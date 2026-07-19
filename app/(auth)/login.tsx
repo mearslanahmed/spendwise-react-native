@@ -19,15 +19,15 @@ try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
 } catch {
-  // console.log("GoogleSignin native module not available");
+  
 }
 
 const Login = () => {
-  console.log('Login render start');
   const emailRef = useRef("");
   const passwordRef = useRef("");
   const passwordNodeRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  console.log('Login render start');
   const router = useRouter();
   const { login: loginUser, loginWithGoogle } = useAuth();
   const { colors: themeColors } = useTheme();
