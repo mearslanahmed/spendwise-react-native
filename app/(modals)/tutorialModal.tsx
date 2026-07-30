@@ -206,9 +206,9 @@ const TutorialModal = () => {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={colors.black} />
             ) : (
-              <Typo size={18} fontWeight="700" color={colors.white}>
+              <Typo size={18} fontWeight="700" color={colors.black}>
                 {currentIndex === SLIDES.length - 1 ? "Get Started" : "Next"}
               </Typo>
             )}

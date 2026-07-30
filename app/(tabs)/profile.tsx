@@ -3,6 +3,7 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import React from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
@@ -21,12 +22,13 @@ import * as Icons from "phosphor-react-native";
 import Constants from 'expo-constants';
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { signOut } from "firebase/auth";
-import { auth } from "@/config/firebase";
+import { auth, firestore } from "@/config/firebase";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { updateUser } from "@/services/userService";
 import * as WebBrowser from 'expo-web-browser';
 import * as Network from 'expo-network';
+
 let GoogleSignin: any = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -38,47 +40,27 @@ const Profile = () => {
   const router = useRouter();
   const [logoutAlertVisible, setLogoutAlertVisible] = React.useState(false);
 
-  const accountOptions: accountOptionType[] = [
-    {
-      title: "Edit Profile",
-      icon: <Icons.UserIcon size={26} color={colors.white} weight="fill" />,
-      routeName: "/(modals)/profileModal",
-      bgColor: "#6366f1",
-    },
+  const [loading, setLoading] = React.useState(false);
 
-    {
-      title: "Settings",
-      icon: <Icons.GearSixIcon size={26} color={colors.white} weight="fill" />,
-      routeName: "/(modals)/settingsModal",
-      bgColor: "#6366f1",
-    },
+  const accountGroup: accountOptionType[] = [
+    { title: "Edit Profile", icon: <Icons.UserIcon size={24} color={colors.black} weight="fill" />, routeName: "/(modals)/profileModal", bgColor: colors.primary },
+    { title: "Settings", icon: <Icons.GearSixIcon size={24} color={colors.black} weight="fill" />, routeName: "/(modals)/settingsModal", bgColor: colors.primary },
+  ];
 
-    {
-      title: "Bills & Subscriptions",
-      icon: <Icons.Receipt size={26} color={colors.white} weight="fill" />,
-      routeName: "/(modals)/subscriptionsListModal",
-      bgColor: "#059669",
-    },
+  const financeGroup: accountOptionType[] = [
+    { title: "Bills & Subscriptions", icon: <Icons.Receipt size={24} color={colors.white} weight="fill" />, routeName: "/(modals)/subscriptionsListModal", bgColor: "#059669" },
+  ];
 
-    {
-      title: "Privacy Policy",
-      icon: <Icons.LockIcon size={26} color={colors.white} weight="fill" />,
-      url: "https://spendwiseapp.tech/privacy",
-      bgColor: colors.neutral600,
-    },
+  const supportGroup: accountOptionType[] = [
+    { title: "Help Center", icon: <Icons.Question size={24} color={colors.white} weight="fill" />, routeName: "/(modals)/helpCenterModal", bgColor: colors.neutral500 },
+    { title: "Contact Us", icon: <Icons.Headset size={24} color={colors.white} weight="fill" />, url: "mailto:spendwiseofficial@gmail.com", bgColor: colors.neutral500 },
+    { title: "Visit Official Website", icon: <Icons.GlobeIcon size={24} color={colors.white} weight="fill" />, url: "https://spendwiseapp.tech", bgColor: colors.neutral500 },
+    { title: "Privacy Policy", icon: <Icons.LockIcon size={24} color={colors.white} weight="fill" />, url: "https://spendwiseapp.tech/privacy", bgColor: colors.neutral500 },
+    { title: "Terms of Service", icon: <Icons.FileTextIcon size={24} color={colors.white} weight="fill" />, url: "https://spendwiseapp.tech/terms", bgColor: colors.neutral500 },
+  ];
 
-    {
-      title: "Terms of Service",
-      icon: <Icons.FileTextIcon size={26} color={colors.white} weight="fill" />,
-      url: "https://spendwiseapp.tech/terms",
-      bgColor: colors.neutral600,
-    },
-
-    {
-      title: "Logout",
-      icon: <Icons.SignOutIcon size={26} color={colors.white} weight="fill" />,
-      bgColor: "#e11d48",
-    },
+  const dangerGroup: accountOptionType[] = [
+    { title: "Logout", icon: <Icons.SignOutIcon size={24} color={colors.white} weight="fill" />, bgColor: colors.rose },
   ];
 
   const handleLogout = async () => {
@@ -121,18 +103,49 @@ const Profile = () => {
   const handlePress = async (item: accountOptionType) => {
     if (item.title === "Logout") {
       showLogoutAlert();
-    }
-
-    if (item.url) {
-      const networkState = await Network.getNetworkStateAsync();
-      if (!networkState.isConnected) {
-        Toast.show({ type: 'error', text1: 'Offline', text2: 'Internet connection is required to view documents.' });
-        return;
+    } else if (item.url) {
+      if (item.url.startsWith("mailto:")) {
+        await WebBrowser.openBrowserAsync(item.url);
+      } else {
+        const networkState = await Network.getNetworkStateAsync();
+        if (!networkState.isConnected) {
+          Toast.show({ type: 'error', text1: 'Offline', text2: 'Internet connection is required to view documents.' });
+          return;
+        }
+        await WebBrowser.openBrowserAsync(item.url);
       }
-      await WebBrowser.openBrowserAsync(item.url);
     } else if (item.routeName) {
       router.push(item.routeName);
     }
+  };
+
+  const renderListCard = (items: accountOptionType[], indexOffset: number = 0) => {
+    return (
+      <Animated.View entering={FadeInDown.delay(indexOffset * 100).duration(400)} style={[styles.cardGroup, { backgroundColor: themeColors.card }]}>
+        {items.map((item, index) => (
+          <View key={item.title}>
+            <TouchableOpacity
+              style={styles.flexRow}
+              onPress={() => handlePress(item)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.listIcon, { backgroundColor: item?.bgColor }]}>
+                {item.icon}
+              </View>
+              <Typo size={16} style={{ flex: 1 }} color={item.title === 'Logout' ? colors.rose : themeColors.text} fontWeight="500">
+                {item.title}
+              </Typo>
+              {item.title !== 'Logout' && (
+                <Icons.CaretRightIcon size={verticalScale(18)} weight="bold" color={themeColors.textLighter} />
+              )}
+            </TouchableOpacity>
+            {index < items.length - 1 && (
+              <View style={[styles.separator, { backgroundColor: themeColors.border }]} />
+            )}
+          </View>
+        ))}
+      </Animated.View>
+    );
   };
 
   return (
@@ -144,69 +157,34 @@ const Profile = () => {
         <Header title="Profile" style={{ marginVertical: spacingY._10 }} />
 
         {/* user info */}
-        <View style={styles.userInfo}>
-          {/* avatar */}
+        <Animated.View entering={FadeInDown.duration(400)} style={styles.userInfo}>
           <TouchableOpacity onPress={handleImagePick} style={styles.avatarContainer}>
-            {/* user image */}
             <Image
               source={getProfileImage(user?.image)}
               style={styles.avatar}
               contentFit="cover"
               transition={100}
             />
-            <View style={[styles.editIcon, { backgroundColor: themeColors.card }]}>
+            <View style={[styles.editIcon, { backgroundColor: themeColors.card, borderColor: themeColors.background, borderWidth: 4 }]}>
               <Icons.CameraIcon size={20} color={themeColors.text} weight="fill" />
             </View>
           </TouchableOpacity>
-
-          {/* name & email */}
           <View style={styles.nameContainer}>
             <Typo size={24} fontWeight={"600"} color={themeColors.text}>
-              {user?.name || "User Name"}
+              {user?.name || "Finance Tracker"}
             </Typo>
-
             <Typo size={15} color={themeColors.textLighter}>
-              {user?.email || "user@example.com"}
+              {user?.email || "Tap Edit Profile to setup"}
             </Typo>
           </View>
-        </View>
+        </Animated.View>
 
         {/* account options */}
         <View style={styles.accountOptions}>
-          {accountOptions.map((item, index) => {
-            return (
-              <Animated.View
-                entering={FadeInDown.delay(index * 50).duration(400)}
-                key={index.toString()}
-                style={styles.listItem}
-              >
-                <TouchableOpacity
-                  style={styles.flexRow}
-                  onPress={() => handlePress(item)}
-                >
-                  {/* icon */}
-                  <View
-                    style={[
-                      styles.listIcon,
-                      {
-                        backgroundColor: item?.bgColor,
-                      },
-                    ]}
-                  >
-                    {item.icon && item.icon}
-                  </View>
-                  <Typo size={16} style={{ flex: 1 }} color={themeColors.text} fontWeight={"500"}>
-                    {item.title}
-                  </Typo>
-                  <Icons.CaretRightIcon
-                    size={verticalScale(20)}
-                    weight="bold"
-                    color={themeColors.text}
-                  />
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
+          {renderListCard(accountGroup, 2)}
+          {renderListCard(financeGroup, 3)}
+          {renderListCard(supportGroup, 4)}
+          {renderListCard(dangerGroup, 5)}
         </View>
 
         {/* app version */}
@@ -217,7 +195,7 @@ const Profile = () => {
         </View>
       </ScrollView>
 
-      <CustomAlert
+        <CustomAlert
         visible={logoutAlertVisible}
         title="Confirm Logout"
         message="Are you sure you want to logout?"
@@ -225,6 +203,12 @@ const Profile = () => {
         onConfirm={confirmLogout}
         confirmText="Logout"
       />
+
+      {loading && (
+        <View style={styles.loaderOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )}
     </ScreenWrapper>
   );
 };
@@ -233,7 +217,6 @@ export default Profile;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     paddingHorizontal: spacingX._20,
   },
 
@@ -241,6 +224,17 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(10),
     alignItems: "center",
     gap: spacingY._15,
+  },
+  loaderOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
 
   avatarContainer: {
@@ -278,28 +272,39 @@ const styles = StyleSheet.create({
   },
 
   listIcon: {
-    height: verticalScale(44),
-    width: verticalScale(44),
+    height: verticalScale(38),
+    width: verticalScale(38),
     backgroundColor: colors.neutral500,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: radius._15,
+    borderRadius: radius._12,
     borderCurve: "continuous",
   },
 
-  listItem: {
-    marginBottom: verticalScale(17),
+  accountOptions: {
+    marginTop: spacingY._30,
+  },
+  
+  cardGroup: {
+    borderRadius: radius._15,
+    overflow: 'hidden',
+    marginBottom: spacingY._20,
+    borderCurve: "continuous",
   },
 
-  accountOptions: {
-    marginTop: spacingY._35,
+  separator: {
+    height: 1,
+    marginLeft: verticalScale(56), // aligns with text
   },
 
   flexRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacingX._10,
+    paddingVertical: spacingY._12,
+    paddingHorizontal: spacingX._15,
+    gap: spacingX._12,
   },
+  
   versionContainer: {
     marginTop: spacingY._30,
     marginBottom: spacingY._10,

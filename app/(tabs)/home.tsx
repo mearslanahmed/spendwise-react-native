@@ -166,7 +166,7 @@ const Home = () => {
               weight={unreadCount > 0 ? "fill" : "bold"}
             />
             {unreadCount > 0 && (
-              <View style={styles.notificationBadge} />
+              <View style={[styles.notificationBadge, { borderColor: themeColors.inputBg, borderWidth: 2 }]} />
             )}
           </TouchableOpacity>
         </View>
@@ -280,6 +280,7 @@ const Home = () => {
                   </ScrollView>
                 </View>
               )}
+
             </View>
           } 
         />
@@ -323,11 +324,11 @@ const styles = StyleSheet.create({
   },
   notificationBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 6,
+    right: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: colors.rose,
   },
   searchIcon: {
@@ -345,6 +346,11 @@ const styles = StyleSheet.create({
     bottom: verticalScale(100),
     right: verticalScale(20),
     zIndex: 999,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
   },
 
   // ScrollView Layout

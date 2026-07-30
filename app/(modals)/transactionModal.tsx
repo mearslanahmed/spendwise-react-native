@@ -376,7 +376,7 @@ const TransactionModal = () => {
           {/* amount of transaction */}
           <View style={styles.inputContainer}>
             {/* Name Input */}
-            <Typo color={colors.neutral200} size={16}>
+            <Typo color={themeColors.text} size={16}>
               Amount
             </Typo>
             <Input
@@ -395,7 +395,7 @@ const TransactionModal = () => {
           {/* transaction type */}
           <View style={styles.inputContainer}>
             {/* Name Input */}
-            <Typo color={colors.neutral200} size={16}>
+            <Typo color={themeColors.text} size={16}>
               Type
             </Typo>
             <Dropdown
@@ -423,7 +423,7 @@ const TransactionModal = () => {
           {/* wallets category*/}
           <View style={styles.inputContainer}>
             {/* Name Input */}
-            <Typo color={colors.neutral200} size={16}>
+            <Typo color={themeColors.text} size={16}>
               Wallet
             </Typo>
             {wallets.length > 0 ? (
@@ -468,7 +468,7 @@ const TransactionModal = () => {
           {transaction.type === "expense" && (
             <View style={styles.inputContainer}>
               {/* Name Input */}
-              <Typo color={colors.neutral200} size={16}>
+              <Typo color={themeColors.text} size={16}>
                 Expense Category
               </Typo>
               <Dropdown
@@ -500,7 +500,7 @@ const TransactionModal = () => {
           {/* date picker */}
           <View style={styles.inputContainer}>
             {/* Name Input */}
-            <Typo color={colors.neutral200} size={16}>
+            <Typo color={themeColors.text} size={16}>
               Date
             </Typo>
             {!showDatePicker && (
@@ -558,11 +558,11 @@ const TransactionModal = () => {
           {/* transaction description */}
           <View style={styles.inputContainer}>
             <View style={styles.flexRow}>
-              <Typo color={colors.neutral200} size={16}>
+              <Typo color={themeColors.text} size={16}>
                 Description
               </Typo>
-              <Typo color={colors.neutral500} size={14}>
-                Optional
+              <Typo color={themeColors.textLighter} size={14}>
+                (optional)
               </Typo>
             </View>
 
@@ -585,10 +585,10 @@ const TransactionModal = () => {
           <View style={styles.inputContainer}>
             {/* Name Input */}
             <View style={styles.flexRow}>
-              <Typo color={colors.neutral200} size={16}>
+              <Typo color={themeColors.text} size={16}>
                 Receipt
               </Typo>
-              <Typo color={colors.neutral500} size={14}>
+              <Typo color={themeColors.textLighter} size={14}>
                 (optional)
               </Typo>
             </View>
@@ -638,7 +638,7 @@ const TransactionModal = () => {
               elevation: 5,
             }}
           >
-            <Icon.SparkleIcon size={verticalScale(28)} color={colors.white} weight="fill" />
+            <Icon.SparkleIcon size={verticalScale(28)} color={colors.black} weight="fill" />
           </TouchableOpacity>
           <Typo 
             color={themeColors.text} 
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral500,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.15,
     shadowRadius: 15,
     elevation: 5,
   },

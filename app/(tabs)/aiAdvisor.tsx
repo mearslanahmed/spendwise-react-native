@@ -85,16 +85,28 @@ const AiAdvisor = () => {
     const renderMessage = ({ item }: { item: Message }) => {
         const isUser = item.sender === 'user';
         return (
-            <View style={[styles.messageBubble, isUser ? [styles.userBubble, { backgroundColor: colors.primary }] : [styles.aiBubble, { backgroundColor: themeColors.card }]]}>
-                {isUser ? (
-                    <Typo size={15} color={colors.black}>
-                        {item.text}
-                    </Typo>
-                ) : (
-                    <Markdown style={{ body: { color: themeColors.text, fontSize: 15 } }}>
-                        {item.text}
-                    </Markdown>
+            <View style={[styles.messageRow, isUser ? styles.userRow : styles.aiRow]}>
+                {!isUser && (
+                    <View style={styles.aiAvatar}>
+                        <Icons.Sparkle size={verticalScale(16)} weight="fill" color={colors.black} />
+                    </View>
                 )}
+                <View style={[styles.messageBubble, isUser ? [styles.userBubble, { backgroundColor: colors.primary }] : [styles.aiBubble, { backgroundColor: themeColors.card }]]}>
+                    {isUser ? (
+                        <Typo size={15} color={colors.black}>
+                            {item.text}
+                        </Typo>
+                    ) : (
+                        <Markdown 
+                            style={{ 
+                                body: { color: themeColors.text, fontSize: 15 },
+                                paragraph: { margin: 0, marginTop: 0, marginBottom: 0 }
+                            }}
+                        >
+                            {item.text}
+                        </Markdown>
+                    )}
+                </View>
             </View>
         );
     };
@@ -129,10 +141,15 @@ const AiAdvisor = () => {
                     contentContainerStyle={styles.messageList}
                     showsVerticalScrollIndicator={false}
                     ListFooterComponent={loading ? (
-                        <View style={[styles.messageBubble, styles.aiBubble, { backgroundColor: themeColors.card, marginTop: spacingY._10 }]}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <ActivityIndicator size="small" color={colors.primary} />
-                                <Typo size={14} color={themeColors.textLighter}>SpendWise AI is typing...</Typo>
+                        <View style={[styles.messageRow, styles.aiRow, { marginTop: spacingY._5 }]}>
+                            <View style={styles.aiAvatar}>
+                                <Icons.Sparkle size={verticalScale(16)} weight="fill" color={colors.black} />
+                            </View>
+                            <View style={[styles.messageBubble, styles.aiBubble, { backgroundColor: themeColors.card }]}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <ActivityIndicator size="small" color={colors.primary} />
+                                    <Typo size={14} color={themeColors.textLighter}>SpendWise AI is typing...</Typo>
+                                </View>
                             </View>
                         </View>
                     ) : null}
@@ -197,17 +214,34 @@ const styles = StyleSheet.create({
         paddingVertical: spacingY._20,
         gap: spacingY._15,
     },
+    messageRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: spacingX._7,
+    },
+    userRow: {
+        justifyContent: 'flex-end',
+    },
+    aiRow: {
+        justifyContent: 'flex-start',
+    },
+    aiAvatar: {
+        height: verticalScale(28),
+        width: verticalScale(28),
+        borderRadius: 100,
+        backgroundColor: colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     messageBubble: {
-        maxWidth: '85%',
+        maxWidth: '80%',
         padding: spacingY._15,
         borderRadius: radius._15,
     },
     userBubble: {
-        alignSelf: 'flex-end',
         borderBottomRightRadius: 0,
     },
     aiBubble: {
-        alignSelf: 'flex-start',
         borderBottomLeftRadius: 0,
     },
     inputContainer: {

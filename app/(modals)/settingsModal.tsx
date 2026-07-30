@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
 import Typo from "@/components/Typo";
 import { useAuth } from "@/contexts/authContext";
-import { collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { auth, firestore } from "@/config/firebase";
 import Toast from 'react-native-toast-message';
 import { Dropdown } from "react-native-element-dropdown";
@@ -24,8 +24,6 @@ try {
   // Ignore
 }
 import { useRouter } from "expo-router";
-import { cacheDirectory, writeAsStringAsync } from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
 import { useTheme } from "@/contexts/themeContext";
 import { registerForPushNotificationsAsync, scheduleDailyReminder, cancelAllScheduledNotifications } from "@/services/expoNotificationService";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
@@ -190,90 +188,6 @@ const SettingsModal = () => {
     }
   };
 
-  const handleContactSupport = () => {
-    Linking.openURL("mailto:spendwiseoffical@gmail.com?subject=SpendWise%20Support%20Request")
-      .catch(() => {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Could not open mail client. Please email spendwiseoffical@gmail.com.",
-        });
-      });
-  };
-
-  const handleExportCSV = async () => {
-    if (loading) return;
-    if (!user?.uid) return;
-    setLoading(true);
-    try {
-      // 1. Fetch user transactions from Firestore
-      const q = query(
-        collection(firestore, "transactions"),
-        where("uid", "==", user.uid)
-      );
-      const querySnapshot = await getDocs(q);
-      const transactionsData: any[] = [];
-      querySnapshot.forEach((doc) => {
-        transactionsData.push({ id: doc.id, ...doc.data() });
-      });
-
-      if (transactionsData.length === 0) {
-        Toast.show({
-          type: "info",
-          text1: "Export Report",
-          text2: "No transactions found to export.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Client-side sort by date descending
-      transactionsData.sort((a, b) => {
-        const secA = a.date?.seconds || 0;
-        const secB = b.date?.seconds || 0;
-        return secB - secA;
-      });
-
-      // 2. Format transactions into CSV format
-      const headers = "Date,Type,Category,Amount,Description\n";
-      const rows = transactionsData.map((t) => {
-        const date = t.date?.seconds 
-          ? new Date(t.date.seconds * 1000).toLocaleDateString("en-US") 
-          : "";
-        const cleanDesc = t.description ? t.description.replace(/"/g, '""') : "";
-        return `"${date}","${t.type}","${t.category}",${t.amount},"${cleanDesc}"`;
-      }).join("\n");
-
-      const csvContent = headers + rows;
-      const fileName = `SpendWise_Transactions_${new Date().toISOString().split('T')[0]}.csv`;
-
-      // Use cache directory and share sheet (works cross-platform and handles permissions automatically)
-      const fileUri = `${cacheDirectory}${fileName}`;
-      await writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: "text/csv",
-          dialogTitle: "Export SpendWise Transactions",
-          UTI: "public.comma-separated-values-text",
-        });
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "Sharing Unavailable",
-          text2: "Sharing is not supported on this device.",
-        });
-      }
-    } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Export Failed",
-        text2: error.message || "Failed to generate CSV report.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleResetData = async () => {
     if (!user?.uid) return;
@@ -407,7 +321,7 @@ const SettingsModal = () => {
           {/* Preferences Section */}
           <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
-              <Icons.CurrencyCircleDollarIcon size={24} color={themeColors.textLighter} />
+              <Icons.CurrencyCircleDollarIcon size={24} color={themeColors.textLighter} weight="fill" />
               <Typo size={16} fontWeight="600" color={themeColors.text}>
                 Preferences
               </Typo>
@@ -505,72 +419,51 @@ const SettingsModal = () => {
               </>
             )}
 
-          </View>
-
-          {/* Support Section */}
-          <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-            <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
-              <Icons.QuestionIcon size={24} color={themeColors.textLighter} />
-              <Typo size={16} fontWeight="600" color={themeColors.text}>
-                Support & Reports
-              </Typo>
-            </View>
-
-            <TouchableOpacity
-              style={styles.actionRow}
-              onPress={handleContactSupport}
-              disabled={loading}
-            >
-              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
-                Contact Support
-              </Typo>
-              <Icons.EnvelopeIcon size={20} color={themeColors.textLighter} />
-            </TouchableOpacity>
-
             <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
             <TouchableOpacity
-              style={styles.actionRow}
-              onPress={() => Linking.openURL("https://spendwiseapp.tech")}
+              style={styles.settingRow}
+              onPress={() => router.push("/(modals)/tutorialModal")}
               disabled={loading}
+              activeOpacity={0.7}
             >
-              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
-                Visit Official Website
-              </Typo>
-              <Icons.GlobeIcon size={20} color={themeColors.textLighter} />
-            </TouchableOpacity>
-
-            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
-
-            <TouchableOpacity
-              style={styles.actionRow}
-              onPress={() => router.push("/(modals)/tutorialModal" as any)}
-              disabled={loading}
-            >
-              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+              <Icons.PlayCircleIcon size={24} color={themeColors.textLighter} weight="fill" />
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1, paddingVertical: 5 }}>
                 Replay App Tutorial
               </Typo>
-              <Icons.PlayCircleIcon size={20} color={themeColors.textLighter} />
+              <Icons.CaretRight size={verticalScale(20)} color={themeColors.textLighter} weight="bold" />
             </TouchableOpacity>
 
-            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+          </View>
 
+
+          {/* Data Management Section */}
+          <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
+              <Icons.DatabaseIcon size={24} color={themeColors.textLighter} weight="fill" />
+              <Typo size={16} fontWeight="600" color={themeColors.text}>
+                Data
+              </Typo>
+            </View>
+            
             <TouchableOpacity
-              style={styles.actionRow}
-              onPress={handleExportCSV}
+              style={styles.settingRow}
+              onPress={() => router.push("/(modals)/exportModal")}
               disabled={loading}
+              activeOpacity={0.7}
             >
-              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+              <Icons.ExportIcon size={24} color={themeColors.textLighter} weight="bold" />
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1, paddingVertical: 5 }}>
                 Export Transactions to CSV
               </Typo>
-              <Icons.ExportIcon size={20} color={themeColors.textLighter} />
+              <Icons.CaretRight size={verticalScale(20)} color={themeColors.textLighter} weight="bold" />
             </TouchableOpacity>
           </View>
 
           {/* Danger Zone */}
           <View style={[styles.section, styles.dangerSection, { backgroundColor: themeColors.card }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
-              <Icons.WarningIcon size={24} color={colors.rose} />
+              <Icons.WarningIcon size={24} color={colors.rose} weight="fill" />
               <Typo size={16} fontWeight="600" color={colors.rose}>
                 Danger Zone
               </Typo>
@@ -581,10 +474,10 @@ const SettingsModal = () => {
               onPress={() => setResetAlertVisible(true)}
               disabled={loading}
             >
+              <Icons.ArrowClockwiseIcon size={24} color={colors.rose} weight="bold" />
               <Typo size={15} color={colors.rose} style={{ flex: 1 }} fontWeight="500">
                 Reset App Data (Clear Records)
               </Typo>
-              <Icons.ArrowClockwiseIcon size={20} color={colors.rose} />
             </TouchableOpacity>
 
             <View style={[styles.divider, { backgroundColor: "rgba(239, 68, 68, 0.2)" }]} />
@@ -594,10 +487,10 @@ const SettingsModal = () => {
               onPress={() => setDeleteAlertVisible(true)}
               disabled={loading}
             >
+              <Icons.TrashIcon size={24} color={colors.rose} weight="fill" />
               <Typo size={15} color={colors.rose} style={{ flex: 1 }} fontWeight="500">
                 Delete Account & Clear Data
               </Typo>
-              <Icons.TrashIcon size={20} color={colors.rose} />
             </TouchableOpacity>
           </View>
         </View>
@@ -636,7 +529,6 @@ const SettingsModal = () => {
               onChangeText={setReAuthPassword}
               secureTextEntry
               containerStyle={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border }}
-              textColor={themeColors.text}
             />
           </View>
         )}
@@ -711,11 +603,13 @@ const styles = StyleSheet.create({
   settingRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: spacingX._10,
   },
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: spacingY._5,
+    gap: spacingX._10,
   },
   divider: {
     height: 1,

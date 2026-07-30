@@ -72,7 +72,7 @@ const ProfileModal = () => {
     const onSubmit = async () => {
         let { name } = userData;
         if (!name.trim()) {
-            Toast.show({ type: 'error', text1: 'User', text2: "Please fill all the fields" });
+            Toast.show({ type: 'error', text1: 'Profile', text2: "Please fill all the fields" });
             return;
         }
 
@@ -85,7 +85,7 @@ const ProfileModal = () => {
             Toast.show({ type: 'success', text1: 'Success', text2: 'Profile updated successfully!' });
             router.back();
         } else {
-            Toast.show({ type: 'error', text1: 'User', text2: res.msg });
+            Toast.show({ type: 'error', text1: 'Update Failed', text2: res.msg });
         }
     };
   return (
@@ -107,17 +107,18 @@ const ProfileModal = () => {
               transition={100}
             />
 
-            <TouchableOpacity onPress={onPickImage} style={styles.editIcon}>
-                <Icon.PencilIcon
+            <TouchableOpacity onPress={onPickImage} style={[styles.editIcon, { backgroundColor: themeColors.card, borderColor: themeColors.background, borderWidth: 4 }]}>
+                <Icon.CameraIcon
                     size={verticalScale(20)}
-                    color={colors.neutral800}
+                    color={themeColors.text}
+                    weight="fill"
                 />
             </TouchableOpacity>
           </View>
 
           <View style={styles.inputContainer}>
             {/* Name Input */}
-            <Typo color={colors.neutral200}>Name</Typo>
+            <Typo color={themeColors.textLighter}>Name</Typo>
             <Input
                 placeholder="Name"
                 value={userData.name}
@@ -129,7 +130,7 @@ const ProfileModal = () => {
 
           {/* Email Address (Read-only) */}
           <View style={styles.inputContainer}>
-            <Typo color={colors.neutral200}>Email Address</Typo>
+            <Typo color={themeColors.textLighter}>Email Address</Typo>
             <Input
                 value={user?.email || ""}
                 editable={false}
@@ -139,7 +140,7 @@ const ProfileModal = () => {
 
           {isPasswordUser && !isGoogleUser && (
             <View style={styles.inputContainer}>
-              <Typo color={colors.neutral200}>Security</Typo>
+              <Typo color={themeColors.textLighter}>Security</Typo>
               <TouchableOpacity
                 style={[
                   styles.passwordButton,
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "space-between",
-    paddingHorizontal: spacingY._20,
+    paddingHorizontal: spacingX._20,
   },
   footer: {
     alignItems: "center",
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   },
 
   form: {
-    gap: spacingY._30,
+    gap: spacingY._20,
     marginTop: spacingY._15,
     paddingBottom: spacingY._30,
   },

@@ -42,11 +42,16 @@ const PresetCardItem = ({
     };
   });
 
+  useEffect(() => {
+    scaleVal.value = withTiming(isSelected ? 1.03 : 1, { duration: 150 });
+  }, [isSelected]);
+
   const handlePressIn = () => {
     scaleVal.value = withTiming(0.95, { duration: 100 });
   };
 
   const handlePressOut = () => {
+    // The useEffect will catch the actual state change, but this acts as a fallback
     scaleVal.value = withTiming(isSelected ? 1.03 : 1, { duration: 150 });
   };
 
@@ -55,7 +60,7 @@ const PresetCardItem = ({
   return (
     <Animated.View style={[
       styles.presetItem,
-      isSelected ? { borderColor: colors.primary } : { borderColor: themeColors.border },
+      isSelected ? { borderColor: colors.primary } : { borderColor: 'transparent' },
       animatedStyle
     ]}>
       <Pressable
@@ -199,7 +204,7 @@ const WalletModal = () => {
 
           {/* Live Card Preview */}
           <View style={styles.previewContainer}>
-            <View style={styles.previewCardWrapper}>
+            <View style={[styles.previewCardWrapper, { shadowColor: previewGradient[0], shadowOpacity: 0.35, shadowRadius: 14, elevation: 8 }]}>
               <LinearGradient
                 colors={previewGradient}
                 start={{ x: 0, y: 0 }}

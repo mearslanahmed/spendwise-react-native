@@ -22,10 +22,7 @@ const ChangePasswordModal = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
+  // Removed manual toggle states as Input.tsx handles it internally
   // Password requirements validation state
   const hasMinLength = newPassword.length >= 8;
   const hasLetter = /[a-zA-Z]/.test(newPassword);
@@ -126,15 +123,13 @@ const ChangePasswordModal = () => {
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 autoFocus={true}
-                secureTextEntry={!showCurrent}
+                secureTextEntry
                 icon={
-                  <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)}>
-                    <Icons.EyeIcon
-                      size={20}
-                      color={themeColors.textLighter}
-                      weight={showCurrent ? "fill" : "regular"}
-                    />
-                  </TouchableOpacity>
+                  <Icons.LockIcon
+                    size={20}
+                    color={themeColors.textLighter}
+                    weight="fill"
+                  />
                 }
               />
             </View>
@@ -146,15 +141,13 @@ const ChangePasswordModal = () => {
                 placeholder="Enter new password"
                 value={newPassword}
                 onChangeText={setNewPassword}
-                secureTextEntry={!showNew}
+                secureTextEntry
                 icon={
-                  <TouchableOpacity onPress={() => setShowNew(!showNew)}>
-                    <Icons.EyeIcon
-                      size={20}
-                      color={themeColors.textLighter}
-                      weight={showNew ? "fill" : "regular"}
-                    />
-                  </TouchableOpacity>
+                  <Icons.LockIcon
+                    size={20}
+                    color={themeColors.textLighter}
+                    weight="fill"
+                  />
                 }
               />
             </View>
@@ -202,15 +195,13 @@ const ChangePasswordModal = () => {
                 placeholder="Confirm new password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirm}
+                secureTextEntry
                 icon={
-                  <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
-                    <Icons.EyeIcon
-                      size={20}
-                      color={themeColors.textLighter}
-                      weight={showConfirm ? "fill" : "regular"}
-                    />
-                  </TouchableOpacity>
+                  <Icons.LockIcon
+                    size={20}
+                    color={themeColors.textLighter}
+                    weight="fill"
+                  />
                 }
               />
               {confirmPassword.length > 0 && confirmPassword !== newPassword && (

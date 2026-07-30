@@ -37,6 +37,8 @@ const BudgetModal = () => {
 
   const { budgets: existingBudgets } = useData();
 
+  const oldBudget = useLocalSearchParams<{ id?: string; category?: string; amount?: string }>();
+
   // Filter category dropdown data so users don't select a category that already has a budget
   const availableCategories = React.useMemo(() => {
     const categories = Object.values(expenseCategories);
@@ -45,8 +47,6 @@ const BudgetModal = () => {
     }
     return categories.filter(cat => !existingBudgets.some(b => b.category === cat.value));
   }, [existingBudgets, oldBudget?.id]);
-
-  const oldBudget = useLocalSearchParams<{ id?: string; category?: string; amount?: string }>();
 
   useEffect(() => {
     if (oldBudget?.id) {
@@ -103,7 +103,7 @@ const BudgetModal = () => {
     setMissingFields([]);
 
     const data: BudgetType = {
-      category,
+      category: category as string,
       amount: Number(amount),
       uid: user.uid,
     };
@@ -175,7 +175,7 @@ const BudgetModal = () => {
         <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
           {/* Category Selector */}
           <View style={styles.inputContainer}>
-            <Typo color={colors.neutral200} size={16}>
+            <Typo color={themeColors.text} size={16}>
               Category
             </Typo>
             <Dropdown
@@ -203,7 +203,7 @@ const BudgetModal = () => {
 
           {/* Amount Input */}
           <View style={styles.inputContainer}>
-            <Typo color={colors.neutral200} size={16}>
+            <Typo color={themeColors.text} size={16}>
               Monthly Budget Limit ({user?.currency || "$"})
             </Typo>
             <Input
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral500,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.15,
     shadowRadius: 15,
     elevation: 5,
   },
