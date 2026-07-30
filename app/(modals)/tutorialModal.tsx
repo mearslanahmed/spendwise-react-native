@@ -103,13 +103,19 @@ const TutorialModal = () => {
         const userRef = doc(firestore, "users", user.uid);
         await updateDoc(userRef, { currency: selectedCurrency });
         await updateUserData(user.uid);
+        await AsyncStorage.setItem(`hasSeenTutorial_${user.uid}`, 'true');
+      } else {
+        await AsyncStorage.setItem('hasSeenTutorial', 'true');
       }
-      await AsyncStorage.setItem('hasSeenTutorial', 'true');
       router.back();
     } catch (e) {
       console.error("Error setting currency on onboarding:", e);
       // Let them pass anyway so they aren't stuck
-      await AsyncStorage.setItem('hasSeenTutorial', 'true');
+      if (user?.uid) {
+        await AsyncStorage.setItem(`hasSeenTutorial_${user.uid}`, 'true');
+      } else {
+        await AsyncStorage.setItem('hasSeenTutorial', 'true');
+      }
       router.back();
     } finally {
       setLoading(false);

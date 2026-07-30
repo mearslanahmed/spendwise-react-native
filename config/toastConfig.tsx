@@ -47,7 +47,30 @@ const CustomErrorToast = (props: any) => {
   );
 };
 
+const InfoToast = (props: any) => {
+  const { colors: themeColors } = useTheme();
+  return (
+    <BaseToast
+      {...props}
+      text1NumberOfLines={0}
+      text2NumberOfLines={0}
+      style={{ borderLeftColor: colors.primaryLight, backgroundColor: themeColors.inputBg, height: 'auto', paddingVertical: verticalScale(10) }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: verticalScale(15),
+        fontWeight: 'bold',
+        color: themeColors.text
+      }}
+      text2Style={{
+        fontSize: verticalScale(13),
+        color: themeColors.textLight
+      }}
+    />
+  );
+};
+
 export const customToastConfig: ToastConfig = {
   success: (props) => <SuccessToast {...props} />,
   error: (props) => <CustomErrorToast {...props} />,
+  info: (props) => <InfoToast {...props} />,
 };

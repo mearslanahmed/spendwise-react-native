@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: spacingY._8,
+    paddingTop: spacingY._7,
     borderTopWidth: 1,
     borderTopColor: "rgba(150, 150, 150, 0.1)",
   },

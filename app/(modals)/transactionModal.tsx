@@ -198,7 +198,7 @@ const TransactionModal = () => {
     if (!activeBudget) return null;
 
     const currentSpent = spentByCategory[transaction.category] || 0;
-    const newSpent = currentSpent + transaction.amount;
+    const newSpent = currentSpent + Number(transaction.amount);
 
     if (newSpent > activeBudget.amount) {
       const exceededBy = newSpent - activeBudget.amount;
@@ -289,7 +289,7 @@ const TransactionModal = () => {
 
     let transactionData: TransactionType = {
       type,
-      amount,
+      amount: Number(amount),
       description,
       category,
       date,

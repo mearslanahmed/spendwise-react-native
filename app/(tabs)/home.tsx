@@ -25,7 +25,8 @@ const Home = () => {
 
     useEffect(() => {
       const checkTutorial = async () => {
-        const hasSeen = await AsyncStorage.getItem('hasSeenTutorial');
+        if (!user?.uid) return;
+        const hasSeen = await AsyncStorage.getItem(`hasSeenTutorial_${user.uid}`);
         if (!hasSeen) {
           router.push("/(modals)/tutorialModal" as any);
         }

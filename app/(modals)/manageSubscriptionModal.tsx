@@ -257,7 +257,7 @@ const ManageSubscriptionModal = () => {
                     ]}
                     onPress={() => setWalletId(w.id!)}
                   >
-                    <Typo size={14} fontWeight="600" color={walletId === w.id ? colors.white : themeColors.text}>
+                    <Typo size={14} fontWeight="600" color={walletId === w.id ? colors.black : themeColors.text}>
                       {w.name}
                     </Typo>
                   </TouchableOpacity>
