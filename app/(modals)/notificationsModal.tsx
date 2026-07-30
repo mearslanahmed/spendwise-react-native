@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
+import { Swipeable } from "react-native-gesture-handler";
 import { colors, spacingX, spacingY, radius } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
@@ -10,7 +11,7 @@ import Typo from "@/components/Typo";
 import { useAuth } from "@/contexts/authContext";
 import { useData } from "@/contexts/dataContext";
 import { useTheme } from "@/contexts/themeContext";
-import { deleteAllNotifications, deleteNotification, markAllAsRead } from "@/services/notificationService";
+import { deleteAllNotifications, deleteNotification, markAllAsRead, markAsRead } from "@/services/notificationService";
 import CustomAlert from "@/components/CustomAlert";
 import { resolveDate, formatDateShort } from "@/utils/dateHelper";
 
@@ -28,13 +29,32 @@ const NotificationsModal = () => {
 
   const formatDate = (date: any) => {
     const d = resolveDate(date);
-    const shortDate = formatDateShort(d, false);
+    
+    // Time formatting
     let h = d.getHours();
     const m = String(d.getMinutes()).padStart(2, '0');
     const ampm = h >= 12 ? 'PM' : 'AM';
     h = h % 12;
     h = h ? h : 12;
-    return `${shortDate} at ${h}:${m} ${ampm}`;
+    const timeStr = `${h}:${m} ${ampm}`;
+
+    // Date comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const targetDate = new Date(d);
+    targetDate.setHours(0, 0, 0, 0);
+
+    if (targetDate.getTime() === today.getTime()) {
+      return timeStr; // Just show time for Today
+    } else if (targetDate.getTime() === yesterday.getTime()) {
+      return `Yesterday at ${timeStr}`;
+    }
+    
+    const shortDate = formatDateShort(d, false);
+    return `${shortDate} at ${timeStr}`;
   };
 
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
@@ -71,6 +91,54 @@ const NotificationsModal = () => {
     }
   };
 
+  const renderRightActions = (id: string) => {
+    return (
+      <TouchableOpacity 
+        style={styles.swipeDeleteAction} 
+        onPress={() => handleDelete(id)}
+      >
+        <Icon.TrashIcon size={24} color={colors.white} weight="fill" />
+      </TouchableOpacity>
+    );
+  };
+
+  const groupNotifications = (notifs: any[]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+
+    const groups = {
+      'Today': [] as any[],
+      'Yesterday': [] as any[],
+      'This Week': [] as any[],
+      'Older': [] as any[]
+    };
+
+    notifs.forEach(n => {
+      const d = resolveDate(n.createdAt);
+      d.setHours(0, 0, 0, 0);
+      if (d.getTime() === today.getTime()) {
+        groups['Today'].push(n);
+      } else if (d.getTime() === yesterday.getTime()) {
+        groups['Yesterday'].push(n);
+      } else if (d.getTime() > lastWeek.getTime()) {
+        groups['This Week'].push(n);
+      } else {
+        groups['Older'].push(n);
+      }
+    });
+
+    return Object.entries(groups).filter(([_, items]) => items.length > 0);
+  };
+  const handleNotificationTap = async (item: any) => {
+    if (!item.read && item.id) {
+      await markAsRead(item.id);
+    }
+  };
+
   return (
     <ModalWrapper>
       <View style={styles.container}>
@@ -80,21 +148,19 @@ const NotificationsModal = () => {
           style={{ marginBottom: spacingY._15, marginTop: spacingY._10 }}
           rightIcon={
             notifications.length > 0 ? (
-              <TouchableOpacity onPress={() => setDeleteAllAlertVisible(true)} style={styles.headerActionBtn}>
-                <Icon.TrashIcon size={22} color={colors.rose} weight="bold" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {notifications.some(n => !n.read) && (
+                  <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.headerActionBtn}>
+                    <Icon.ChecksIcon size={22} color={colors.primary} weight="bold" />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setDeleteAllAlertVisible(true)} style={styles.headerActionBtn}>
+                  <Icon.TrashIcon size={22} color={themeColors.textLighter} weight="bold" />
+                </TouchableOpacity>
+              </View>
             ) : null
           }
         />
-
-        {notifications.length > 0 && notifications.some(n => !n.read) && (
-          <View style={styles.listHeader}>
-            <Typo size={14} color={themeColors.textLighter}>You have unread notifications</Typo>
-            <TouchableOpacity onPress={handleMarkAllAsRead}>
-              <Typo size={14} color={colors.primary} fontWeight="600">Mark all as read</Typo>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
           {notifications.length === 0 ? (
@@ -105,35 +171,50 @@ const NotificationsModal = () => {
               </Typo>
             </View>
           ) : (
-            notifications.map((item) => (
-              <View 
-                key={item.id} 
-                style={[
-                  styles.notificationCard, 
-                  { backgroundColor: themeColors.card },
-                  !item.read && styles.unreadCard
-                ]}
-              >
-                {!item.read && <View style={styles.unreadDot} />}
-                <View style={styles.iconContainer}>
-                  {renderIcon(item.type)}
+            groupNotifications(notifications).map(([groupName, items]) => (
+              <View key={groupName} style={{ marginBottom: spacingY._20 }}>
+                <Typo size={16} fontWeight="700" color={themeColors.text} style={{ marginBottom: spacingY._15 }}>
+                  {groupName}
+                </Typo>
+                <View style={{ gap: spacingY._10 }}>
+                  {items.map((item) => (
+                    <Swipeable
+                      key={item.id}
+                      renderRightActions={() => renderRightActions(item.id!)}
+                      overshootRight={false}
+                      containerStyle={{ width: '100%' }}
+                    >
+                      <TouchableOpacity 
+                        activeOpacity={0.7}
+                        onPress={() => handleNotificationTap(item)}
+                        style={[
+                          styles.notificationCard, 
+                          !item.read && styles.unreadCard
+                        ]}
+                      >
+                        <View style={[
+                            styles.iconContainer, 
+                            { backgroundColor: themeColors.inputBg }
+                        ]}>
+                          {renderIcon(item.type)}
+                        </View>
+                        <View style={styles.textContainer}>
+                          <View style={styles.titleRow}>
+                            <Typo size={16} fontWeight="600" color={themeColors.text} style={{ flex: 1 }}>
+                              {item.title}
+                            </Typo>
+                          </View>
+                          <Typo size={12} color={themeColors.textLighter} style={{ marginTop: 2 }}>
+                            {formatDate(item.createdAt)}
+                          </Typo>
+                          <Typo size={14} color={themeColors.textLighter} style={{ marginTop: 6 }}>
+                            {item.message}
+                          </Typo>
+                        </View>
+                      </TouchableOpacity>
+                    </Swipeable>
+                  ))}
                 </View>
-                <View style={styles.textContainer}>
-                  <View style={styles.titleRow}>
-                    <Typo size={16} fontWeight="600" color={themeColors.text} style={{ flex: 1 }}>
-                      {item.title}
-                    </Typo>
-                    <Typo size={12} color={themeColors.textLighter}>
-                      {formatDate(item.createdAt)}
-                    </Typo>
-                  </View>
-                  <Typo size={14} color={themeColors.textLighter} style={{ marginTop: 4 }}>
-                    {item.message}
-                  </Typo>
-                </View>
-                <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
-                  <Icon.TrashIcon size={20} color={colors.rose} />
-                </TouchableOpacity>
               </View>
             ))
           )}
@@ -166,35 +247,34 @@ export default NotificationsModal;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: spacingX._25,
+    paddingHorizontal: spacingX._20,
   },
   listContainer: {
     paddingBottom: verticalScale(40),
-    gap: spacingY._15,
     marginTop: spacingY._10,
   },
   notificationCard: {
+    width: '100%',
     flexDirection: 'row',
-    padding: spacingY._15,
-    borderRadius: radius._15,
+    paddingVertical: spacingY._10,
+    paddingHorizontal: spacingX._10,
+    borderRadius: radius._12,
     alignItems: 'flex-start',
     position: 'relative',
   },
   unreadCard: {
-    // Removed background tint to match seen notifications UI
+    backgroundColor: "rgba(163, 230, 53, 0.1)",
   },
   unreadDot: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
+    // Unused now, keeping for reference
   },
   iconContainer: {
-    marginRight: spacingX._15,
-    marginTop: 2,
+    width: verticalScale(40),
+    height: verticalScale(40),
+    borderRadius: verticalScale(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacingX._12,
   },
   textContainer: {
     flex: 1,
@@ -209,6 +289,15 @@ const styles = StyleSheet.create({
     paddingLeft: spacingX._10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  swipeDeleteAction: {
+    backgroundColor: colors.rose,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: radius._15,
+    marginVertical: spacingY._5,
+    marginLeft: spacingX._10,
   },
   markReadBtn: {
     flexDirection: 'row',

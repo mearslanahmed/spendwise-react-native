@@ -1,5 +1,6 @@
 import React from 'react'
 import { Stack } from 'expo-router'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AuthProvider } from '@/contexts/authContext'
 import Toast from 'react-native-toast-message'
 import { customToastConfig } from '@/config/toastConfig'
@@ -25,13 +26,15 @@ const StackLayout = () => {
 
 export default function _layout() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <DataProvider>
-          <StackLayout/>
-          <Toast config={customToastConfig} position="top" topOffset={50} />
-        </DataProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <ThemeProvider>
+          <DataProvider>
+            <StackLayout/>
+            <Toast config={customToastConfig} position="top" topOffset={50} />
+          </DataProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   )
 }
