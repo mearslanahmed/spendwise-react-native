@@ -38,7 +38,15 @@
         }
       ],
       "@react-native-google-signin/google-signin/app.plugin.js",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
