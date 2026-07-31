@@ -47,8 +47,8 @@ Thumbs.db
 app-example
 
 # Generated native folders (Expo will create these after prebuild)
-ios/
-android/
+/ios/
+/android/
 
 # IDE
 .vscode/
@@ -85,5 +85,5 @@ google-services.json
 scratch.js
 dummy.txt
 
-android/
-ios/
+/android/
+/ios/
