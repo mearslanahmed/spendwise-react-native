@@ -1,6 +1,6 @@
 import { updateUser } from '../../services/userService';
 import { uploadFileToCloudinary } from '../../services/imageService';
-import { updateDoc, doc } from 'firebase/firestore';
+import { updateDoc } from 'firebase/firestore';
 
 jest.mock('../../services/imageService', () => ({
   uploadFileToCloudinary: jest.fn(),

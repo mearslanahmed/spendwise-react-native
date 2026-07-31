@@ -3,27 +3,12 @@ import { firestore, auth } from "@/config/firebase";
 import { TransactionType, WalletType, ResponseType } from "@/types";
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
-  getDocs,
-  orderBy,
-  query,
-  setDoc,
   Timestamp,
-  updateDoc,
-  where,
   writeBatch,
-  getAggregateFromServer,
-  sum,
-  limit,
 } from "firebase/firestore";
 import { uploadFileToCloudinary } from "./imageService";
-import { CreateOrUpdateWallet } from "./walletService";
-import { getLast12Months, getLast7Days, getYearsRange } from "@/utils/common";
-import { scale } from "@/utils/styling";
-import { colors } from "@/constants/theme";
-import { resolveDate } from "@/utils/dateHelper";
 
 /**
  * Creates a transfer transaction between two wallets. 

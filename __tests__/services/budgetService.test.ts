@@ -4,7 +4,7 @@ import {
   fetchUserBudgets,
   fetchCategorySpentThisMonth,
 } from '../../services/budgetService';
-import { doc, collection, setDoc, deleteDoc, getDocs, getAggregateFromServer } from 'firebase/firestore';
+import { doc, getDocs, setDoc, deleteDoc, getAggregateFromServer } from 'firebase/firestore';
 
 jest.mock('@/config/firebase', () => ({
   firestore: {},

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { Stack, useRouter } from 'expo-router'
+import { Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AuthProvider, useAuth } from '@/contexts/authContext'
 import Toast from 'react-native-toast-message'
@@ -15,8 +15,6 @@ import * as Haptics from 'expo-haptics'
 import { colors } from '@/constants/theme'
 
 const StackLayout = () => {
-  const router = useRouter();
-
   return (
     <Stack screenOptions={{headerShown: false}}>
       <Stack.Screen name="index" />

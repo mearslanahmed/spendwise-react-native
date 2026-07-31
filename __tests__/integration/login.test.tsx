@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, waitFor, act, screen } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import Login from '../../app/(auth)/login';
 import { useAuth } from '@/contexts/authContext';
 import { useRouter } from 'expo-router';

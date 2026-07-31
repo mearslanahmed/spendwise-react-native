@@ -14,7 +14,6 @@ import Typo from "@/components/Typo";
 import Button from "@/components/Button";
 import { useAuth } from "@/contexts/authContext";
 import Toast from "react-native-toast-message";
-import { useRouter } from "expo-router";
 import { Dropdown } from "react-native-element-dropdown";
 import { useTheme } from "@/contexts/themeContext";
 import { cacheDirectory, writeAsStringAsync } from "expo-file-system/legacy";
@@ -40,7 +39,6 @@ const transactionTypes = [
 const ExportModal = () => {
   const { user } = useAuth();
   const { colors: themeColors } = useTheme();
-  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [selectedTimeframe, setSelectedTimeframe] = useState("all");

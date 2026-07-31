@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, Platform } from 'react-native';
+import { Text } from 'react-native';
 import { render } from '@testing-library/react-native';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '@/contexts/themeContext';

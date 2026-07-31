@@ -1,5 +1,5 @@
 import { CreateOrUpdateWallet, deleteWallet, deleteTransactionByWalletId } from "../../services/walletService";
-import { doc, setDoc, deleteDoc, getDocs, writeBatch, collection, query, where, limit } from "firebase/firestore";
+import { doc, setDoc, deleteDoc, getDocs, collection, query, where, limit } from "firebase/firestore";
 
 jest.mock("@/config/firebase", () => ({ firestore: {} }));
 jest.mock("../../services/imageService", () => ({
@@ -74,7 +74,7 @@ describe("deleteTransactionByWalletId", () => {
   });
 });
 
-describe("deleteWallet — C3 fix: must await transaction deletion", () => {
+describe("deleteWallet ï¿½ C3 fix: must await transaction deletion", () => {
   it("awaits transaction deletion before returning success", async () => {
     (deleteDoc as jest.Mock).mockResolvedValue(undefined);
     (getDocs as jest.Mock).mockResolvedValue({ size: 0, docs: [], forEach: jest.fn(), empty: true });

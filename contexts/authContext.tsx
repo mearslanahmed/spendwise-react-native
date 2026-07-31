@@ -8,7 +8,7 @@ import {
   GoogleAuthProvider, 
   signInWithCredential 
 } from "firebase/auth";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { auth, firestore } from "@/config/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter, useRootNavigationState, useSegments } from "expo-router";
@@ -20,16 +20,13 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     const [user, setUser] = useState<UserType | undefined>(undefined);
     const router = useRouter();
     const segments = useSegments();
-    // Track the previously-navigated UID so we only redirect when auth truly changes.
-    // Using a ref (not state) so it doesn't trigger re-renders.
-    const lastNavigatedUid = useRef<string | null | undefined>(undefined); // undefined = never navigated
     // useRootNavigationState gives us the navigator's key once it has mounted.
     const navigationState = useRootNavigationState();
 
     useEffect(() => {
         if (!navigationState?.key) return;
 
-        const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             const newUid = firebaseUser?.uid ?? null;
 
             if (firebaseUser) {
@@ -39,7 +36,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                 AsyncStorage.getItem(`@user_profile_${newUid}`).then(cachedStr => {
                     let cachedUser = {};
                     if (cachedStr) {
-                        try { cachedUser = JSON.parse(cachedStr); } catch (e) {}
+                        try { cachedUser = JSON.parse(cachedStr); } catch {}
                     }
 
                     setUser({
@@ -56,7 +53,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                 setUser(null);
             }
         });
-        return () => unsub();
+        return () => unsubscribe();
     }, [navigationState?.key]);
 
     // Handle Route Protection
@@ -85,7 +82,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                 }
             }
         }
-    }, [user, segments, navigationState?.key]);
+    }, [user, segments, navigationState?.key, router]);
 
 
     const login = async (email: string, password: string) => {

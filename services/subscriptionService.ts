@@ -1,5 +1,5 @@
 import { firestore } from "@/config/firebase";
-import { ResponseType, SubscriptionType, TransactionType, WalletType } from "@/types";
+import { ResponseType, SubscriptionType, WalletType } from "@/types";
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, Timestamp, updateDoc, where, runTransaction } from "firebase/firestore";
 import { scheduleLocalNotification } from "./expoNotificationService";
 import { resolveDate } from "@/utils/dateHelper";

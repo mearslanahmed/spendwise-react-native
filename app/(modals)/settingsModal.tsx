@@ -21,14 +21,15 @@ import { deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCr
 import { useRouter } from "expo-router";
 import { useTheme } from "@/contexts/themeContext";
 import { registerForPushNotificationsAsync, scheduleDailyReminder, cancelAllScheduledNotifications } from "@/services/expoNotificationService";
+// cspell:disable-next-line
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 
 let GoogleSignin: any = null;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
-} catch (error) {
+} catch {
   // Ignore
 }
 

@@ -44,7 +44,7 @@ const PresetCardItem = ({
 
   useEffect(() => {
     scaleVal.value = withTiming(isSelected ? 1.03 : 1, { duration: 150 });
-  }, [isSelected]);
+  }, [isSelected, scaleVal]);
 
   const handlePressIn = () => {
     scaleVal.value = withTiming(0.95, { duration: 100 });

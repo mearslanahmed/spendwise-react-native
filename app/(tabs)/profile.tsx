@@ -40,7 +40,7 @@ const Profile = () => {
   const router = useRouter();
   const [logoutAlertVisible, setLogoutAlertVisible] = React.useState(false);
 
-  const [loading, setLoading] = React.useState(false);
+  const [loading] = React.useState(false);
 
   const accountGroup: accountOptionType[] = [
     { title: "Edit Profile", icon: <Icons.UserIcon size={24} color={colors.black} weight="fill" />, routeName: "/(modals)/profileModal", bgColor: colors.primary },

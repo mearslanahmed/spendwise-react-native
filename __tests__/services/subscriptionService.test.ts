@@ -1,5 +1,4 @@
 import { calculateNextBillingDate, checkAndProcessSubscriptions } from "@/services/subscriptionService";
-import { firestore } from "@/config/firebase";
 import { getDoc, getDocs, runTransaction } from "firebase/firestore";
 
 jest.mock("@/config/firebase", () => ({

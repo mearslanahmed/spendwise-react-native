@@ -1,5 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { collection, onSnapshot, query, QueryConstraint } from 'firebase/firestore'
 import { firestore } from '@/config/firebase'
 
@@ -12,7 +11,6 @@ const useFetchData = <T>(
   const [data, setData] = useState<T[]>([])
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentLimit, setCurrentLimit] = useState(30);
 
   useEffect(() => {
     if (!collectionName) return;
@@ -38,12 +36,11 @@ const useFetchData = <T>(
         setLoading(false);
     });
     return () => unsub();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionName, ...dependencies]) 
   // We use explicit dependencies instead of JSON.stringify on constraints to avoid infinite re-renders or stringification errors with complex Firestore objects
 
   return {data, loading, error};
 }
 
-export default useFetchData
-
-const styles = StyleSheet.create({})
+export default useFetchData
