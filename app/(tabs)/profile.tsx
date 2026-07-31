@@ -22,7 +22,7 @@ import * as Icons from "phosphor-react-native";
 import Constants from 'expo-constants';
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { signOut } from "firebase/auth";
-import { auth, firestore } from "@/config/firebase";
+import { auth } from "@/config/firebase";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { updateUser } from "@/services/userService";

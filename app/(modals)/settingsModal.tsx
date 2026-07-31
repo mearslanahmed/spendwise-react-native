@@ -1,5 +1,6 @@
-import { ActivityIndicator, Linking, Platform, StyleSheet, TouchableOpacity, View, Switch, ScrollView } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View, Switch, ScrollView } from "react-native";
 import React, { useState, useEffect } from "react";
+import * as LocalAuthentication from 'expo-local-authentication';
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
 import ModalWrapper from "@/components/ModalWrapper";
@@ -17,16 +18,19 @@ import Input from "@/components/Input";
 import { deleteUserAccountData, resetUserAccountData } from "@/services/userService";
 import { deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 
-let GoogleSignin: any = null;
-try {
-  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
-} catch (error) {
-  // Ignore
-}
 import { useRouter } from "expo-router";
 import { useTheme } from "@/contexts/themeContext";
 import { registerForPushNotificationsAsync, scheduleDailyReminder, cancelAllScheduledNotifications } from "@/services/expoNotificationService";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
+
+let GoogleSignin: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
+} catch (error) {
+  // Ignore
+}
 
 const currencies = [
   { label: "USD ($)", value: "$" },
@@ -55,12 +59,16 @@ const SettingsModal = () => {
 
   const selectedCurrency = user?.currency || "$";
   const [localPushEnabled, setLocalPushEnabled] = useState(user?.pushNotificationsEnabled || false);
+  const [appLockEnabled, setAppLockEnabled] = useState(user?.appLockEnabled || false);
+  const [appLockTimeout, setAppLockTimeout] = useState(user?.appLockTimeout || 0);
 
   // Sync toggle with the live user profile — handles the case where user data loads
   // after the modal has already rendered (e.g., first app open, slow network)
   useEffect(() => {
     setLocalPushEnabled(user?.pushNotificationsEnabled || false);
-  }, [user?.pushNotificationsEnabled]);
+    setAppLockEnabled(user?.appLockEnabled || false);
+    setAppLockTimeout(user?.appLockTimeout || 0);
+  }, [user?.pushNotificationsEnabled, user?.appLockEnabled, user?.appLockTimeout]);
 
   // Compute the reminder time date from the stored string, only when it changes.
   // Avoids creating a new Date object on every render which caused picker flicker.
@@ -79,6 +87,79 @@ const SettingsModal = () => {
   const [localReminderDate, setLocalReminderDate] = useState(reminderDate);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
+
+  const handleToggleAppLock = async (value: boolean) => {
+    if (!user?.uid) return;
+    setLoading(true);
+    try {
+        if (value) {
+            const hasHardware = await LocalAuthentication.hasHardwareAsync();
+            if (!hasHardware) {
+                Toast.show({ type: "error", text1: "Error", text2: "Biometric hardware not found on this device." });
+                setLoading(false);
+                return;
+            }
+            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+            if (!isEnrolled) {
+                Toast.show({ type: "error", text1: "Error", text2: "No biometrics enrolled. Please set up device lock." });
+                setLoading(false);
+                return;
+            }
+            // Ask them to authenticate right now to prove it works before enabling
+            const authRes = await LocalAuthentication.authenticateAsync({
+                promptMessage: "Authenticate to enable App Lock",
+            });
+            if (!authRes.success) {
+                Toast.show({ type: "error", text1: "Authentication failed", text2: "Could not verify identity." });
+                setLoading(false);
+                return;
+            }
+        }
+        
+        setAppLockEnabled(value);
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, { appLockEnabled: value });
+        await updateUserData(user.uid);
+        
+        Toast.show({
+            type: "success",
+            text1: "Settings Updated",
+            text2: `App Lock ${value ? "Enabled" : "Disabled"}.`,
+        });
+    } catch (error: any) {
+        Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: error.message || "Failed to update App Lock settings",
+        });
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleAppLockTimeoutChange = async (item: { label: string; value: number }) => {
+    if (!user?.uid) return;
+    setLoading(true);
+    try {
+      const userRef = doc(firestore, "users", user.uid);
+      await updateDoc(userRef, { appLockTimeout: item.value });
+      setAppLockTimeout(item.value);
+      await updateUserData(user.uid);
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: `App Lock timeout updated`,
+      });
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error.message || "Failed to update timeout",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleTogglePushNotifications = async (value: boolean) => {
     if (!user?.uid) return;
@@ -318,12 +399,12 @@ const SettingsModal = () => {
         <ScrollView contentContainerStyle={{ paddingBottom: verticalScale(40) }} showsVerticalScrollIndicator={false}>
 
         <View style={styles.content}>
-          {/* Preferences Section */}
+          {/* General Section */}
           <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
-              <Icons.CurrencyCircleDollarIcon size={24} color={themeColors.textLighter} weight="fill" />
+              <Icons.FadersHorizontalIcon size={24} color={themeColors.textLighter} weight="fill" />
               <Typo size={16} fontWeight="600" color={themeColors.text}>
-                Preferences
+                General
               </Typo>
             </View>
             
@@ -379,6 +460,29 @@ const SettingsModal = () => {
 
             <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => router.push("/(modals)/tutorialModal")}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              <Icons.PlayCircleIcon size={24} color={themeColors.textLighter} weight="fill" />
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1, paddingVertical: 5 }}>
+                Replay App Tutorial
+              </Typo>
+              <Icons.CaretRight size={verticalScale(20)} color={themeColors.textLighter} weight="bold" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Security & Alerts Section */}
+          <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
+              <Icons.ShieldCheck size={24} color={themeColors.textLighter} weight="fill" />
+              <Typo size={16} fontWeight="600" color={themeColors.text}>
+                Security & Alerts
+              </Typo>
+            </View>
+
             <View style={styles.settingRow}>
               <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
                 Push Notifications
@@ -421,18 +525,50 @@ const SettingsModal = () => {
 
             <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
-            <TouchableOpacity
-              style={styles.settingRow}
-              onPress={() => router.push("/(modals)/tutorialModal")}
-              disabled={loading}
-              activeOpacity={0.7}
-            >
-              <Icons.PlayCircleIcon size={24} color={themeColors.textLighter} weight="fill" />
-              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1, paddingVertical: 5 }}>
-                Replay App Tutorial
+            <View style={styles.settingRow}>
+              <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+                App Lock (Biometrics)
               </Typo>
-              <Icons.CaretRight size={verticalScale(20)} color={themeColors.textLighter} weight="bold" />
-            </TouchableOpacity>
+              <Switch
+                value={appLockEnabled}
+                onValueChange={handleToggleAppLock}
+                disabled={loading}
+                trackColor={{ false: themeColors.border, true: colors.primary }}
+                thumbColor={colors.white}
+              />
+            </View>
+
+            {appLockEnabled && (
+              <Animated.View entering={FadeInUp.duration(300)} exiting={FadeOutUp.duration(300)} style={{ gap: spacingY._15 }}>
+                <View style={[styles.divider, { backgroundColor: themeColors.border, marginLeft: spacingX._20 }]} />
+                <View style={[styles.settingRow, { paddingLeft: spacingX._15 }]}>
+                  <Typo size={15} color={themeColors.textLighter} style={{ flex: 1 }}>
+                    Require Passcode
+                  </Typo>
+                  <Dropdown
+                    style={[styles.dropdownContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border, flex: 1, marginLeft: 10, maxWidth: 160 }]}
+                    activeColor={themeColors.card}
+                    selectedTextStyle={[styles.dropdownSelectedText, { color: themeColors.text }]}
+                    iconStyle={[styles.dropdownIcon, { tintColor: themeColors.textLighter }]}
+                    data={[
+                      { label: "Immediately", value: 0 },
+                      { label: "After 1 minute", value: 60000 },
+                      { label: "After 15 minutes", value: 900000 },
+                      { label: "After 1 hour", value: 3600000 },
+                    ]}
+                    maxHeight={250}
+                    labelField="label"
+                    valueField="value"
+                    itemTextStyle={[styles.dropdownItemText, { color: themeColors.text }]}
+                    itemContainerStyle={[styles.dropdownItemContainer, { backgroundColor: themeColors.inputBg }]}
+                    containerStyle={[styles.dropdownListContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}
+                    value={appLockTimeout}
+                    onChange={handleAppLockTimeoutChange}
+                    disable={loading}
+                  />
+                </View>
+              </Animated.View>
+            )}
 
           </View>
 

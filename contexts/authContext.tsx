@@ -187,6 +187,8 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
                     theme: data?.theme || "dark",
                     pushNotificationsEnabled: data?.pushNotificationsEnabled || false,
                     reminderTime: data?.reminderTime || null,
+                    appLockEnabled: data?.appLockEnabled || false,
+                    appLockTimeout: data?.appLockTimeout || 0,
                 };
                 setUser({...userData});
                 await AsyncStorage.setItem(`@user_profile_${uid}`, JSON.stringify(userData));

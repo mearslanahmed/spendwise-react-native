@@ -160,7 +160,9 @@ export type UserType = {
     currency?: string;
     theme?: 'dark' | 'light' | 'system';
     pushNotificationsEnabled?: boolean;
-    reminderTime?: string; // Format "HH:mm"
+    reminderTime?: string; // Format "HH:mm";
+    appLockEnabled?: boolean;
+    appLockTimeout?: number;
 } | null;
 
 export type UserDataType = {
