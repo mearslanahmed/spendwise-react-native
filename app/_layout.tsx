@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Stack } from 'expo-router'
+import React, { useEffect, useState, useCallback } from 'react'
+import { Stack, useRouter } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AuthProvider, useAuth } from '@/contexts/authContext'
 import Toast from 'react-native-toast-message'
@@ -8,7 +8,6 @@ import { ThemeProvider, useTheme } from '@/contexts/themeContext'
 import { DataProvider } from '@/contexts/dataContext'
 import { AppState, View, StyleSheet, TouchableOpacity } from 'react-native'
 import * as LocalAuthentication from 'expo-local-authentication'
-import { BlurView } from 'expo-blur'
 import * as Icons from 'phosphor-react-native'
 import Typo from '@/components/Typo'
 import Animated, { FadeIn, FadeOut, useSharedValue, useAnimatedStyle, withSequence, withTiming } from 'react-native-reanimated'
@@ -16,6 +15,8 @@ import * as Haptics from 'expo-haptics'
 import { colors } from '@/constants/theme'
 
 const StackLayout = () => {
+  const router = useRouter();
+
   return (
     <Stack screenOptions={{headerShown: false}}>
       <Stack.Screen name="index" />
@@ -48,13 +49,37 @@ const AppLockWrapper = ({ children }: { children: React.ReactNode }) => {
     };
   });
 
+  const authenticate = useCallback(async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Unlock SpendWise',
+        fallbackLabel: 'Use Passcode',
+      });
+      if (result.success) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setIsLocked(false);
+        lastBackgroundTime.current = null;
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        shakeValue.value = withSequence(
+          withTiming(10, { duration: 50 }),
+          withTiming(-10, { duration: 50 }),
+          withTiming(10, { duration: 50 }),
+          withTiming(0, { duration: 50 })
+        );
+      }
+    } catch (error) {
+      console.log('Authentication error:', error);
+    }
+  }, [shakeValue]);
+
   // Trigger lock if it's enabled on initial load (when user data is restored)
   useEffect(() => {
     if (user?.appLockEnabled) {
       setIsLocked(true);
       authenticate();
     }
-  }, [user?.appLockEnabled]);
+  }, [user?.appLockEnabled, authenticate]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -92,31 +117,7 @@ const AppLockWrapper = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.remove();
     };
-  }, [user?.appLockEnabled, user?.appLockTimeout, isLocked]);
-
-  const authenticate = async () => {
-    try {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock SpendWise',
-        fallbackLabel: 'Use Passcode',
-      });
-      if (result.success) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setIsLocked(false);
-        lastBackgroundTime.current = null;
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        shakeValue.value = withSequence(
-          withTiming(10, { duration: 50 }),
-          withTiming(-10, { duration: 50 }),
-          withTiming(10, { duration: 50 }),
-          withTiming(0, { duration: 50 })
-        );
-      }
-    } catch (error) {
-      console.log('Authentication error:', error);
-    }
-  };
+  }, [user?.appLockEnabled, user?.appLockTimeout, isLocked, authenticate]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -132,7 +133,7 @@ const AppLockWrapper = ({ children }: { children: React.ReactNode }) => {
         <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={[StyleSheet.absoluteFill, { zIndex: 9999, elevation: 9999, justifyContent: 'center', alignItems: 'center', backgroundColor: themeColors.background }]}>
           <Animated.View style={[{ alignItems: 'center', zIndex: 10000 }, shakeAnimation]}>
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-               <Icons.LockKey size={40} color={themeColors.text} weight="fill" />
+               <Icons.LockKeyIcon size={40} color={themeColors.text} weight="fill" />
             </View>
             <Typo size={24} color={themeColors.text} fontWeight="700">
               SpendWise

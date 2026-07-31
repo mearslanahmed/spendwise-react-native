@@ -63,7 +63,7 @@ const TransactionModal = () => {
   const router = useRouter();
 
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const { wallets: allWallets, budgets, transactions } = useData();
+  const { wallets: allWallets, budgets, transactions, loading: dataLoading } = useData();
 
   const wallets = React.useMemo(() => {
     return [...allWallets].sort((a, b) => {
@@ -75,15 +75,7 @@ const TransactionModal = () => {
     });
   }, [allWallets]);
 
-  useEffect(() => {
-    if (wallets.length === 0) {
-      Toast.show({
-        type: 'error',
-        text1: 'Wallet Required',
-        text2: 'Please create a wallet to log this transaction.',
-      });
-    }
-  }, [wallets.length]);
+
 
   useEffect(() => {
     if (analyzingReceipt) {
@@ -426,7 +418,11 @@ const TransactionModal = () => {
             <Typo color={themeColors.text} size={16}>
               Wallet
             </Typo>
-            {wallets.length > 0 ? (
+            {dataLoading.wallets ? (
+              <View style={[styles.dateInput, { borderColor: themeColors.border, borderWidth: 1, justifyContent: 'center' }]}>
+                <Typo color={themeColors.textLighter} size={14} style={{ textAlign: 'center' }}>Loading wallets...</Typo>
+              </View>
+            ) : wallets.length > 0 ? (
               <Dropdown
                 style={[styles.dropdownContainer, { borderColor: missingFields.includes("wallet") ? colors.rose : themeColors.border, borderWidth: missingFields.includes("wallet") ? 1.5 : 1 }]}
                 activeColor={themeColors.inputBg}

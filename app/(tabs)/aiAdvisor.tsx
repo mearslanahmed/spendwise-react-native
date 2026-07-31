@@ -159,7 +159,7 @@ const AiAdvisor = () => {
                     <View style={{ flex: 1, gap: 10 }}>
                         {!isKeyboardVisible && messages.length < 3 && (
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 5 }}>
-                                {['Analyze my spending', 'What are my top expenses?', 'Add a $15 lunch expense'].map((prompt, i) => (
+                                {['Analyze my spending', 'What are my top expenses?', `Add a ${user?.currency || "$"}15 lunch expense`].map((prompt, i) => (
                                     <TouchableOpacity 
                                         key={i} 
                                         style={[styles.quickPrompt, { backgroundColor: themeColors.card }]}

@@ -84,3 +84,6 @@ google-services.json
 # Temporary files
 scratch.js
 dummy.txt
+
+android/
+ios/

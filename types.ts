@@ -163,7 +163,7 @@ export type UserType = {
     reminderTime?: string; // Format "HH:mm";
     appLockEnabled?: boolean;
     appLockTimeout?: number;
-} | null;
+} | null | undefined;
 
 export type UserDataType = {
     name: string;

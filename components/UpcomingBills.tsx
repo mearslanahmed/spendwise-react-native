@@ -12,7 +12,6 @@ import { useAuth } from '@/contexts/authContext';
 import { resolveDate } from '@/utils/dateHelper';
 import { paySubscriptionManually } from '@/services/subscriptionService';
 import Toast from 'react-native-toast-message';
-import { Alert } from 'react-native';
 import CustomAlert from './CustomAlert';
 import Input from './Input';
 

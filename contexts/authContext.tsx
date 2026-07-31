@@ -11,14 +11,15 @@ import {
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { auth, firestore } from "@/config/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { useRouter, useRootNavigationState } from "expo-router";
+import { useRouter, useRootNavigationState, useSegments } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
-    const [user, setUser] = useState<UserType>(null);
+    const [user, setUser] = useState<UserType | undefined>(undefined);
     const router = useRouter();
+    const segments = useSegments();
     // Track the previously-navigated UID so we only redirect when auth truly changes.
     // Using a ref (not state) so it doesn't trigger re-renders.
     const lastNavigatedUid = useRef<string | null | undefined>(undefined); // undefined = never navigated
@@ -26,56 +27,65 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     const navigationState = useRootNavigationState();
 
     useEffect(() => {
-        // Wait until the Expo Router navigator has fully mounted before allowing navigation.
-        // This prevents "Cannot navigate before navigator mounts" crashes on cold start.
         if (!navigationState?.key) return;
 
         const unsub = onAuthStateChanged(auth, (firebaseUser) => {
             const newUid = firebaseUser?.uid ?? null;
 
-            if(firebaseUser){
+            if (firebaseUser) {
                 const email = firebaseUser.email ?? undefined;
                 const name = firebaseUser.displayName ?? null;
-                
-                // Fetch cached user to preserve theme and avoid ThemeContext flash
+
                 AsyncStorage.getItem(`@user_profile_${newUid}`).then(cachedStr => {
                     let cachedUser = {};
                     if (cachedStr) {
-                        try { cachedUser = JSON.parse(cachedStr); } catch(e){}
+                        try { cachedUser = JSON.parse(cachedStr); } catch (e) {}
                     }
-                    
+
                     setUser({
-                        ...cachedUser, // Preserves theme, currency, etc.
-                        uid: firebaseUser?.uid,
+                        ...cachedUser,
+                        uid: firebaseUser.uid,
                         email,
                         name,
                         emailVerified: firebaseUser.emailVerified,
                     });
-
-                    // Kick off silent cloud refresh
-                    updateUserData(firebaseUser.uid);
                     
-                    // Only navigate when the user identity actually changed.
-                    if (lastNavigatedUid.current !== newUid) {
-                        lastNavigatedUid.current = newUid;
-                        if (firebaseUser.emailVerified) {
-                            router.replace("/(tabs)/home");
-                        } else {
-                            router.replace("/(auth)/verify-email");
-                        }
-                    }
+                    updateUserData(firebaseUser.uid);
                 });
-            }else{
-                // no user
+            } else {
                 setUser(null);
-                if (lastNavigatedUid.current !== null) {
-                    lastNavigatedUid.current = null;
-                    router.replace("/(auth)/welcome");
-                }
             }
         });
         return () => unsub();
-    },[navigationState?.key]);
+    }, [navigationState?.key]);
+
+    // Handle Route Protection
+    useEffect(() => {
+        if (!navigationState?.key) return;
+        
+        const inAuthGroup = segments[0] === '(auth)';
+        const isRoot = (segments.length as number) === 0 || (segments[0] as string) === 'index';
+
+        if (user === null) {
+            // Not logged in -> Redirect to welcome if they are trying to access protected screens
+            if (!inAuthGroup && !isRoot) {
+                router.replace('/(auth)/welcome');
+            }
+        } else if (user) {
+            // Logged in
+            if (user.emailVerified) {
+                // Redirect away from auth screens or splash screen
+                if (inAuthGroup || isRoot) {
+                    router.replace('/(tabs)/home');
+                }
+            } else {
+                // Must verify email
+                if (segments[1] !== 'verify-email') {
+                    router.replace('/(auth)/verify-email');
+                }
+            }
+        }
+    }, [user, segments, navigationState?.key]);
 
 
     const login = async (email: string, password: string) => {
