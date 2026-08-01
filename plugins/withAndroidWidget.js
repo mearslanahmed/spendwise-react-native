@@ -1,6 +1,7 @@
 const {
   withAndroidManifest,
   withAppBuildGradle,
+  withProjectBuildGradle,
   withDangerousMod,
   withStringsXml,
 } = require('@expo/config-plugins');
@@ -129,9 +130,23 @@ const withWidgetStrings = (config) => {
   });
 };
 
+// 5. Inject Compose Compiler Classpath
+const withWidgetProjectGradle = (config) => {
+  return withProjectBuildGradle(config, (config) => {
+    if (!config.modResults.contents.includes('org.jetbrains.kotlin:compose-compiler-gradle-plugin')) {
+      config.modResults.contents = config.modResults.contents.replace(
+        /classpath\('org\.jetbrains\.kotlin:kotlin-gradle-plugin(?:.*?)'\)/,
+        `classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')\n    classpath('org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.1.20')`
+      );
+    }
+    return config;
+  });
+};
+
 module.exports = (config) => {
   config = withWidgetManifest(config);
   config = withWidgetGradle(config);
+  config = withWidgetProjectGradle(config);
   config = withWidgetSourceCode(config);
   config = withWidgetStrings(config);
   return config;
