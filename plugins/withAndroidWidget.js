@@ -57,6 +57,13 @@ const withWidgetManifest = (config) => {
 // 2. Inject Jetpack Glance
 const withWidgetGradle = (config) => {
   return withAppBuildGradle(config, (config) => {
+    if (!config.modResults.contents.includes('org.jetbrains.kotlin.plugin.compose')) {
+      config.modResults.contents = config.modResults.contents.replace(
+        /apply plugin: "com\.android\.application"/,
+        `apply plugin: "com.android.application"\napply plugin: "org.jetbrains.kotlin.plugin.compose"`
+      );
+    }
+    
     config.modResults.contents += `
 dependencies {
     implementation "androidx.glance:glance-appwidget:1.1.0"
