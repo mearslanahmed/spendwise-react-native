@@ -64,8 +64,8 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
         const isRoot = (segments.length as number) === 0 || (segments[0] as string) === 'index';
 
         if (user === null) {
-            // Not logged in -> Redirect to welcome if they are trying to access protected screens
-            if (!inAuthGroup && !isRoot) {
+            // Not logged in -> Redirect to welcome if they are on splash/index or accessing protected screens
+            if (!inAuthGroup) {
                 router.replace('/(auth)/welcome');
             }
         } else if (user) {

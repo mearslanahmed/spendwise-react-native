@@ -77,6 +77,11 @@ jest.mock('firebase/firestore', () => ({
   },
 }));
 
+jest.mock('firebase/functions', () => ({
+  getFunctions: jest.fn(() => ({})),
+  httpsCallable: jest.fn(),
+}));
+
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {
     configure: jest.fn(),

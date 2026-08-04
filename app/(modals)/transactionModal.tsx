@@ -418,7 +418,7 @@ const TransactionModal = () => {
             <Typo color={themeColors.text} size={16}>
               Wallet
             </Typo>
-            {dataLoading.wallets ? (
+            {dataLoading?.wallets ? (
               <View style={[styles.dateInput, { borderColor: themeColors.border, borderWidth: 1, justifyContent: 'center' }]}>
                 <Typo color={themeColors.textLighter} size={14} style={{ textAlign: 'center' }}>Loading wallets...</Typo>
               </View>

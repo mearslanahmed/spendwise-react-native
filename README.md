@@ -9,6 +9,12 @@
   [![Expo](https://img.shields.io/badge/Expo-54.0.32-white?style=for-the-badge&logo=expo&logoColor=black)](https://expo.dev/)
   [![Firebase](https://img.shields.io/badge/Firebase-12.6.0-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 
+  <br/>
+  <br/>
+  <a href="https://play.google.com/store/apps/details?id=com.mearslanahmed.SpendWise">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="60" />
+  </a>
+
   <p align="center">
     SpendWise is a next-generation personal finance application built for Android and iOS. It combines robust expense tracking with cutting-edge Artificial Intelligence to automatically scan receipts and provide personalized financial advice.
   </p>
@@ -24,6 +30,9 @@
 - **Multi-Wallet Architecture:** Segregate funds into different wallets (Checking, Savings, Crypto, Cash) and track transfers between them.
 - **Budget Tracking:** Create robust monthly budgets and easily view the remaining allowance per category.
 - **Subscription Management:** Keep track of active subscriptions to ensure no surprise charges.
+- **Home Screen Widget:** Easily track spending and add transactions directly from your Android home screen at a glance.
+- **App Lock Privacy:** Keep your financial data completely secure and private with the new built-in app lock feature.
+- **Beautiful & Polished UI:** Enjoy a meticulously designed, gorgeous user interface with smooth animations and layout improvements.
 - **Dynamic Theming:** Seamless support for Light and Dark modes, heavily optimized for a gorgeous dark-mode experience.
 - **Push Notifications:** Configurable daily reminders to keep tracking habits consistent.
 - **CSV Export:** Instantly generate and share spreadsheet reports of financial history.
