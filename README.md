@@ -5,15 +5,16 @@
   **The definitive AI-powered personal finance tracker.**
   
   [![Website](https://img.shields.io/badge/Official_Website-spendwiseapp.tech-a3e635?style=for-the-badge)](https://spendwiseapp.tech)
-  [![React Native](https://img.shields.io/badge/React_Native-0.76.5-0ea5e9?style=for-the-badge&logo=react)](https://reactnative.dev/)
-  [![Expo](https://img.shields.io/badge/Expo-54.0.32-white?style=for-the-badge&logo=expo&logoColor=black)](https://expo.dev/)
+  [![React Native](https://img.shields.io/badge/React_Native-0.81.5-0ea5e9?style=for-the-badge&logo=react)](https://reactnative.dev/)
+  [![Expo](https://img.shields.io/badge/Expo-54.0.36-white?style=for-the-badge&logo=expo&logoColor=black)](https://expo.dev/)
+  [![Kotlin](https://img.shields.io/badge/Kotlin-2.1.20-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
   [![Firebase](https://img.shields.io/badge/Firebase-12.6.0-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
-
-  <br/>
-  <br/>
+  <p align="center"><strong>Download the App on Android:</strong></p>
   <a href="https://play.google.com/store/apps/details?id=com.mearslanahmed.SpendWise">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="60" />
   </a>
+  
+  **Scan receipts with AI, chat with your financial advisor, and track budgets on the go.**
 
   <p align="center">
     SpendWise is a next-generation personal finance application built for Android and iOS. It combines robust expense tracking with cutting-edge Artificial Intelligence to automatically scan receipts and provide personalized financial advice.
@@ -56,6 +57,7 @@
 - **React Native (0.76.5)** with **Expo (54.0)** for cross-platform compilation.
 - **Expo Router (6.0)** for modern, file-based navigation.
 - **TypeScript** for strict type-safety across the entire codebase.
+- **Kotlin & Jetpack Glance (1.1.0):** Native Android module for the interactive home screen widget.
 - **React Native Gifted Charts** for data visualization.
 
 ### Backend & Cloud
