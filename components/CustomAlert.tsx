@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, StyleSheet, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Modal, StyleSheet, View, TouchableOpacity, ActivityIndicator, TextStyle } from 'react-native';
 import { colors, spacingX, spacingY, radius } from '@/constants/theme';
 import { verticalScale } from '@/utils/styling';
 import Typo from './Typo';
@@ -15,6 +15,7 @@ type CustomAlertProps = {
   confirmText?: string;
   loading?: boolean;
   children?: React.ReactNode;
+  messageStyle?: TextStyle;
 };
 
 const CustomAlert = ({
@@ -27,6 +28,7 @@ const CustomAlert = ({
   confirmText = "Confirm",
   loading = false,
   children,
+  messageStyle,
 }: CustomAlertProps) => {
   const { colors: themeColors, isDark } = useTheme();
   return (
@@ -36,7 +38,15 @@ const CustomAlert = ({
           <Typo size={20} fontWeight="700" color={themeColors.text} style={styles.title}>
             {title}
           </Typo>
-          <Typo size={15} color={themeColors.textLight} style={styles.message}>
+          <Typo
+            size={15}
+            color={themeColors.textLight}
+            style={StyleSheet.flatten([
+              styles.message,
+              children ? { marginBottom: spacingY._10 } : null,
+              messageStyle,
+            ])}
+          >
             {message}
           </Typo>
 

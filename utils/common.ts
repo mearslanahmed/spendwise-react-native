@@ -76,3 +76,89 @@ export const getYearsRange = (startYear: number, endYear: number): any => {
 
   return result;
 };
+
+/**
+ * Sanitizes technical, backend, or Firestore errors into user-friendly messages.
+ * Prevents internal details, stack traces, and document paths from leaking into UI toasts.
+ */
+export const sanitizeErrorMessage = (
+  error: unknown,
+  fallbackMessage: string = "An unexpected error occurred. Please try again."
+): string => {
+  if (!error) return fallbackMessage;
+
+  const rawMsg =
+    typeof error === "string"
+      ? error
+      : (error as any)?.message || (error as any)?.msg || String(error);
+
+  const lower = rawMsg.toLowerCase();
+
+  // Network / connectivity issues
+  if (
+    lower.includes("network") ||
+    lower.includes("offline") ||
+    lower.includes("unavailable") ||
+    lower.includes("failed to fetch") ||
+    lower.includes("timeout") ||
+    lower.includes("deadline-exceeded")
+  ) {
+    return "Network connection issue. Please check your internet and try again.";
+  }
+
+  // Permission / authentication issues
+  if (
+    lower.includes("permission-denied") ||
+    lower.includes("permission_denied") ||
+    lower.includes("unauthenticated") ||
+    lower.includes("not authenticated") ||
+    lower.includes("insufficient permissions")
+  ) {
+    return "You do not have permission to perform this action. Please check your account.";
+  }
+
+  // Not found
+  if (lower.includes("not-found") || lower.includes("not found")) {
+    return "The requested record could not be found.";
+  }
+
+  // Quota / rate limits
+  if (lower.includes("resource-exhausted") || lower.includes("quota")) {
+    return "Service is temporarily busy. Please wait a moment and try again.";
+  }
+
+  // Image upload issues
+  if (
+    lower.includes("cloudinary") ||
+    lower.includes("upload failed") ||
+    lower.includes("receipt image")
+  ) {
+    return "Failed to upload receipt image. Please check your connection or choose another image.";
+  }
+
+  // Technical backend / Firestore leak detection
+  const isTechnical =
+    rawMsg.includes("FirebaseError") ||
+    rawMsg.includes("Firestore") ||
+    rawMsg.includes("WriteBatch") ||
+    rawMsg.includes("Unsupported field") ||
+    rawMsg.includes("invalid-argument") ||
+    rawMsg.includes("debts/") ||
+    rawMsg.includes("wallets/") ||
+    rawMsg.includes("transactions/") ||
+    rawMsg.includes("at ") ||
+    rawMsg.includes("undefined (found in") ||
+    rawMsg.includes("Cannot read property") ||
+    rawMsg.includes("null is not an object");
+
+  if (isTechnical) {
+    return fallbackMessage;
+  }
+
+  // If it's a short, intentional validation message (e.g. "Please enter a valid amount"), keep it
+  if (rawMsg.trim().length > 0 && rawMsg.length < 140) {
+    return rawMsg.trim();
+  }
+
+  return fallbackMessage;
+};

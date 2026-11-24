@@ -28,6 +28,8 @@ const StackLayout = () => {
       <Stack.Screen name="(modals)/budgetModal" options={{presentation: 'modal'}}/>
       <Stack.Screen name="(modals)/tutorialModal" options={{presentation: 'modal', animation: 'fade'}}/>
       <Stack.Screen name="(modals)/exportModal" options={{presentation: 'modal'}}/>
+      <Stack.Screen name="(modals)/debtsListModal" options={{presentation: 'modal'}}/>
+      <Stack.Screen name="(modals)/debtModal" options={{presentation: 'modal'}}/>
     </Stack>
   )
 }

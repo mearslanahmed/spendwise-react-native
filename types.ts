@@ -222,3 +222,33 @@ export type Message = {
     text: string;
     sender: 'user' | 'ai';
 };
+
+export type DebtType = "lent" | "borrowed";
+export type DebtStatus = "pending" | "settled";
+
+export type DebtSettlementType = {
+    id: string;
+    amount: number;
+    date: Date | Timestamp | string;
+    walletId?: string;
+    notes?: string;
+};
+
+export type DebtItemType = {
+    id?: string;
+    uid: string;
+    personName: string;
+    type: DebtType;
+    amount: number;
+    remainingAmount: number;
+    settledAmount: number;
+    status: DebtStatus;
+    dueDate?: Date | Timestamp | string | null;
+    date: Date | Timestamp | string;
+    description?: string;
+    image?: any;
+    walletId?: string;
+    syncWithWallet: boolean;
+    settlements?: DebtSettlementType[];
+    createdAt?: Date | Timestamp | string;
+};

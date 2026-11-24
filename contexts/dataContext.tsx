@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./authContext";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { firestore } from "@/config/firebase";
-import { TransactionType, BudgetType, WalletType, NotificationType, SubscriptionType } from "@/types";
+import { TransactionType, BudgetType, WalletType, NotificationType, SubscriptionType, DebtItemType } from "@/types";
 import { checkAndProcessSubscriptions } from "@/services/subscriptionService";
 import { resolveTime } from "@/utils/dateHelper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -13,12 +13,16 @@ interface DataContextType {
   wallets: WalletType[];
   notifications: NotificationType[];
   subscriptions: SubscriptionType[];
+  debts: DebtItemType[];
+  setDebts: React.Dispatch<React.SetStateAction<DebtItemType[]>>;
+  setWallets: React.Dispatch<React.SetStateAction<WalletType[]>>;
   loading: {
     transactions: boolean;
     budgets: boolean;
     wallets: boolean;
     notifications: boolean;
     subscriptions: boolean;
+    debts: boolean;
   };
   error: {
     transactions: string | null;
@@ -26,6 +30,7 @@ interface DataContextType {
     wallets: string | null;
     notifications: string | null;
     subscriptions: string | null;
+    debts: string | null;
   };
 }
 
@@ -38,6 +43,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [wallets, setWallets] = useState<WalletType[]>([]);
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionType[]>([]);
+  const [debts, setDebts] = useState<DebtItemType[]>([]);
 
   const [loading, setLoading] = useState({
     transactions: true,
@@ -45,6 +51,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     wallets: true,
     notifications: true,
     subscriptions: true,
+    debts: true,
   });
 
   const [error, setError] = useState<{
@@ -53,12 +60,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     wallets: string | null;
     notifications: string | null;
     subscriptions: string | null;
+    debts: string | null;
   }>({
     transactions: null,
     budgets: null,
     wallets: null,
     notifications: null,
     subscriptions: null,
+    debts: null,
   });
 
   useEffect(() => {
@@ -68,11 +77,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setWallets([]);
       setNotifications([]);
       setSubscriptions([]);
-      setLoading({ transactions: false, budgets: false, wallets: false, notifications: false, subscriptions: false });
+      setDebts([]);
+      setLoading({ transactions: false, budgets: false, wallets: false, notifications: false, subscriptions: false, debts: false });
       return;
     }
 
-    setError({ transactions: null, budgets: null, wallets: null, notifications: null, subscriptions: null });
+    setError({ transactions: null, budgets: null, wallets: null, notifications: null, subscriptions: null, debts: null });
 
     // Run subscription auto-deduction in the background.
     // A 1-hour cooldown prevents duplicate deductions if the app is opened multiple times
@@ -95,7 +105,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Preload all cached data. Only set loading state to true for entities that are NOT cached,
     // to prevent UI flicker when data is already available locally.
     const loadCacheAndSetLoading = async () => {
-      let loadingState = { transactions: true, budgets: true, wallets: true, notifications: true, subscriptions: true };
+      let loadingState = { transactions: true, budgets: true, wallets: true, notifications: true, subscriptions: true, debts: true };
       try {
         const cachedTx = await AsyncStorage.getItem(`@cache_tx_${user.uid}`);
         if (cachedTx) { setTransactions(JSON.parse(cachedTx)); loadingState.transactions = false; }
@@ -111,6 +121,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const cachedSubs = await AsyncStorage.getItem(`@cache_subs_${user.uid}`);
         if (cachedSubs) { setSubscriptions(JSON.parse(cachedSubs)); loadingState.subscriptions = false; }
+
+        const cachedDebts = await AsyncStorage.getItem(`@cache_debts_${user.uid}`);
+        if (cachedDebts) { setDebts(JSON.parse(cachedDebts)); loadingState.debts = false; }
         
         setLoading(loadingState);
       } catch (e) {
@@ -244,17 +257,41 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    // Debts listener
+    const debtQuery = query(
+      collection(firestore, "debts"),
+      where("uid", "==", user.uid)
+    );
+    const unsubDebt = onSnapshot(
+      debtQuery,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as DebtItemType[];
+        setDebts(data);
+        setLoading((prev) => ({ ...prev, debts: false }));
+        AsyncStorage.setItem(`@cache_debts_${user.uid}`, JSON.stringify(data));
+      },
+      (err) => {
+        console.error("DataContext Debts error:", err);
+        setError((prev) => ({ ...prev, debts: err.message }));
+        setLoading((prev) => ({ ...prev, debts: false }));
+      }
+    );
+
     return () => {
       unsubTx();
       unsubBudget();
       unsubWallet();
       unsubNotification();
       unsubSubscription();
+      unsubDebt();
     };
   }, [user?.uid]);
 
   return (
-    <DataContext.Provider value={{ transactions, budgets, wallets, notifications, subscriptions, loading, error }}>
+    <DataContext.Provider value={{ transactions, budgets, wallets, notifications, subscriptions, debts, setDebts, setWallets, loading, error }}>
       {children}
     </DataContext.Provider>
   );

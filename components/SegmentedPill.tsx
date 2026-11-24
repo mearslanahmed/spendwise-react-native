@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, LayoutChangeEvent, Easing } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, LayoutChangeEvent, Easing, Dimensions } from 'react-native';
 import { colors, radius, spacingX, spacingY } from '@/constants/theme';
 import { useTheme } from '@/contexts/themeContext';
 import Typo from './Typo';
@@ -14,26 +14,43 @@ type SegmentedPillProps = {
 
 const SegmentedPill = ({ tabs, activeIndex, onChange, style }: SegmentedPillProps) => {
   const { colors: themeColors, isDark } = useTheme();
-  const [containerWidth, setContainerWidth] = useState(0);
+  const screenWidth = Dimensions.get('window').width;
+  // Estimate container width on initial mount (screenWidth minus standard modal horizontal padding 20*2)
+  const estimatedInitialWidth = Math.max(0, screenWidth - spacingX._20 * 2);
+  const [containerWidth, setContainerWidth] = useState(estimatedInitialWidth);
   
   const PADDING = spacingX._5;
   const tabWidth = containerWidth > 0 ? (containerWidth - PADDING * 2) / tabs.length : 0;
   
-  const translateX = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(activeIndex * ((estimatedInitialWidth - PADDING * 2) / tabs.length))).current;
+  const isInitialized = useRef(false);
 
   useEffect(() => {
     if (tabWidth > 0) {
-      Animated.timing(translateX, {
-        toValue: activeIndex * tabWidth,
-        useNativeDriver: true,
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-      }).start();
+      if (!isInitialized.current) {
+        translateX.setValue(activeIndex * tabWidth);
+        isInitialized.current = true;
+      } else {
+        Animated.timing(translateX, {
+          toValue: activeIndex * tabWidth,
+          useNativeDriver: true,
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
+        }).start();
+      }
     }
   }, [activeIndex, tabWidth, translateX]);
 
   const onLayout = (e: LayoutChangeEvent) => {
-    setContainerWidth(e.nativeEvent.layout.width);
+    const measuredWidth = e.nativeEvent.layout.width;
+    if (measuredWidth > 0 && Math.abs(measuredWidth - containerWidth) > 2) {
+      setContainerWidth(measuredWidth);
+      if (!isInitialized.current) {
+        const newTabWidth = (measuredWidth - PADDING * 2) / tabs.length;
+        translateX.setValue(activeIndex * newTabWidth);
+        isInitialized.current = true;
+      }
+    }
   };
 
   return (

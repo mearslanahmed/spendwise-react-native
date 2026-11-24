@@ -49,6 +49,7 @@ const Profile = () => {
 
   const financeGroup: accountOptionType[] = [
     { title: "Bills & Subscriptions", icon: <Icons.Receipt size={24} color={colors.white} weight="fill" />, routeName: "/(modals)/subscriptionsListModal", bgColor: "#059669" },
+    { title: "Lent & Borrowed", icon: <Icons.HandCoins size={24} color={colors.white} weight="fill" />, routeName: "/(modals)/debtsListModal", bgColor: "#0284c7" },
   ];
 
   const supportGroup: accountOptionType[] = [
